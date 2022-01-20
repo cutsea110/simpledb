@@ -1,3 +1,5 @@
+pub mod filemanager;
+
 #[cfg(test)]
 mod tests {
     #[test]
