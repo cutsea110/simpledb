@@ -90,6 +90,21 @@ impl FileMgr {
 
         Err(From::from(FileMgrError::FileAccessFailed(blk.file_name())))
     }
+    pub fn write(&mut self, blk: &BlockId, p: &mut Page) -> Result<()> {
+        if self.l.lock().is_ok() {
+            self.configure_file_table(blk.file_name())?;
+
+            if let Some(f) = self.open_files.get_mut(&blk.file_name()) {
+                let offset = blk.number() * self.blocksize;
+                f.seek(SeekFrom::Start(offset))?;
+                f.write_all(p.contents())?;
+
+                return Ok(());
+            }
+        }
+
+        Err(From::from(FileMgrError::FileAccessFailed(blk.file_name())))
+    }
     pub fn append(&mut self, filename: String) -> Result<BlockId> {
         if self.l.lock().is_ok() {
             let new_blknum = self.length(filename.clone())?;
@@ -109,21 +124,6 @@ impl FileMgr {
 
         Err(From::from(FileMgrError::FileAccessFailed(filename)))
     }
-    pub fn write(&mut self, blk: &BlockId, p: &mut Page) -> Result<()> {
-        if self.l.lock().is_ok() {
-            self.configure_file_table(blk.file_name())?;
-
-            if let Some(f) = self.open_files.get_mut(&blk.file_name()) {
-                let offset = blk.number() * self.blocksize;
-                f.seek(SeekFrom::Start(offset))?;
-                f.write_all(p.contents())?;
-
-                return Ok(());
-            }
-        }
-
-        Err(From::from(FileMgrError::FileAccessFailed(blk.file_name())))
-    }
     pub fn length(&mut self, filename: String) -> Result<u64> {
         let path = Path::new(&self.db_directory).join(&filename);
         self.configure_file_table(filename)?;
@@ -132,7 +132,13 @@ impl FileMgr {
         // ceiling
         Ok((meta.len() + self.blocksize - 1) / self.blocksize)
     }
-    pub fn configure_file_table(&mut self, filename: String) -> Result<()> {
+    pub fn is_new(&self) -> bool {
+        self.is_new
+    }
+    pub fn blocksize(&self) -> u64 {
+        self.blocksize
+    }
+    fn configure_file_table(&mut self, filename: String) -> Result<()> {
         let path = Path::new(&self.db_directory).join(&filename);
 
         self.open_files.entry(filename).or_insert(
@@ -144,11 +150,5 @@ impl FileMgr {
         );
 
         Ok(())
-    }
-    pub fn blocksize(&self) -> u64 {
-        self.blocksize
-    }
-    pub fn is_new(&self) -> bool {
-        self.is_new
     }
 }
