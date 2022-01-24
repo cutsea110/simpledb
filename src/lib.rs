@@ -1,4 +1,5 @@
 pub mod file;
+pub mod log;
 
 #[cfg(test)]
 mod tests {
