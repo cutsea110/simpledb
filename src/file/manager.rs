@@ -49,7 +49,7 @@ impl FileMgr {
         for entry in fs::read_dir(path)? {
             let entry_path = entry?.path();
             let filename = match entry_path.as_path().to_str() {
-                Some(s) => String::from(s),
+                Some(s) => s.to_string(),
                 None => return Err(From::from(FileMgrError::ParseFailed)),
             };
 
@@ -59,7 +59,7 @@ impl FileMgr {
         }
 
         Ok(Self {
-            db_directory: String::from(db_directory),
+            db_directory: db_directory.to_string(),
             blocksize,
             is_new,
             open_files: HashMap::new(),
