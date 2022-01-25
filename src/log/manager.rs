@@ -94,7 +94,13 @@ impl LogMgr {
         }
         Err(From::from(LogMgrError::Todo))
     }
+    pub fn flush_from_lsn(&mut self, lsn: u64) -> Result<()> {
+        if lsn > self.last_saved_lsn {
+            self.flush()?;
+        }
 
+        Ok(())
+    }
     fn flush(&mut self) -> Result<()> {
         self.fm
             .borrow_mut()

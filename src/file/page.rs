@@ -90,4 +90,14 @@ impl Page {
     pub fn contents(&mut self) -> &mut Vec<u8> {
         &mut self.bb
     }
+    pub(crate) fn get_bytes_vec(&self, offset: usize) -> Result<Vec<u8>> {
+        let len = self.get_i32(offset)? as usize;
+        let new_offset = offset + mem::size_of::<i32>();
+
+        if new_offset + len - 1 < self.bb.len() {
+            Ok(self.bb[new_offset..new_offset + len].try_into()?)
+        } else {
+            Err(PageError::BufferSizeExceeded.into())
+        }
+    }
 }
