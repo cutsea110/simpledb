@@ -102,9 +102,9 @@ impl FileMgr {
 
         Err(From::from(FileMgrError::FileAccessFailed(blk.file_name())))
     }
-    pub fn append(&mut self, filename: String) -> Result<BlockId> {
+    pub fn append(&mut self, filename: &str) -> Result<BlockId> {
         if self.l.lock().is_ok() {
-            let new_blknum = self.length(filename.clone())?;
+            let new_blknum = self.length(filename.to_string())?;
             let blk = BlockId::new(&filename, new_blknum);
 
             let b: Vec<u8> = vec![0u8; self.blocksize as usize];
@@ -118,7 +118,9 @@ impl FileMgr {
             }
         }
 
-        Err(From::from(FileMgrError::FileAccessFailed(filename)))
+        Err(From::from(FileMgrError::FileAccessFailed(
+            filename.to_string(),
+        )))
     }
     pub fn length(&mut self, filename: String) -> Result<u64> {
         let path = Path::new(&self.db_directory).join(&filename);
