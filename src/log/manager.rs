@@ -36,20 +36,20 @@ pub struct LogMgr {
 }
 
 impl LogMgr {
-    pub fn new(fm: Arc<RefCell<FileMgr>>, logfile: String) -> Result<Self> {
+    pub fn new(fm: Arc<RefCell<FileMgr>>, logfile: &str) -> Result<Self> {
         let mut logpage = Page::new_from_size(fm.borrow().blocksize() as usize);
-        let logsize = fm.borrow_mut().length(logfile.clone())?;
+        let logsize = fm.borrow_mut().length(logfile.to_string())?;
 
         let logmgr;
 
         if logsize == 0 {
-            let blk = fm.borrow_mut().append(logfile.clone())?;
+            let blk = fm.borrow_mut().append(logfile.to_string())?;
             logpage.set_i32(0, fm.borrow().blocksize() as i32)?;
             fm.borrow_mut().write(&blk, &mut logpage)?;
 
             logmgr = Self {
                 fm,
-                logfile,
+                logfile: logfile.to_string(),
                 logpage,
                 current_blk: blk,
                 latest_lsn: 0,
@@ -62,7 +62,7 @@ impl LogMgr {
 
             logmgr = Self {
                 fm,
-                logfile,
+                logfile: logfile.to_string(),
                 logpage,
                 current_blk: newblk,
                 latest_lsn: 0,
