@@ -29,7 +29,9 @@ pub struct LogMgr {
     current_blk: BlockId,
     // latest log sequence number
     latest_lsn: u64,
+    // last saved log sequence number
     last_saved_lsn: u64,
+    // for synchronized
     l: Arc<Mutex<()>>,
 }
 

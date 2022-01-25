@@ -33,6 +33,7 @@ pub struct FileMgr {
     blocksize: u64,
     is_new: bool,
     open_files: HashMap<String, File>,
+    // for synchronized
     l: Arc<Mutex<()>>,
 }
 
