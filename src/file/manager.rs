@@ -69,7 +69,7 @@ impl FileMgr {
     pub fn read(&mut self, blk: &BlockId, p: &mut Page) -> Result<()> {
         if self.l.lock().is_ok() {
             let offset = blk.number() * self.blocksize;
-            if let Some(f) = self.get_file(blk.file_name()) {
+            if let Some(f) = self.get_file(blk.file_name().as_str()) {
                 f.seek(SeekFrom::Start(offset))?;
 
                 let read_len = f.read(p.contents())?;
@@ -92,7 +92,7 @@ impl FileMgr {
     pub fn write(&mut self, blk: &BlockId, p: &mut Page) -> Result<()> {
         if self.l.lock().is_ok() {
             let offset = blk.number() * self.blocksize;
-            if let Some(f) = self.get_file(blk.file_name()) {
+            if let Some(f) = self.get_file(blk.file_name().as_str()) {
                 f.seek(SeekFrom::Start(offset))?;
                 f.write_all(p.contents())?;
 
@@ -104,13 +104,13 @@ impl FileMgr {
     }
     pub fn append(&mut self, filename: &str) -> Result<BlockId> {
         if self.l.lock().is_ok() {
-            let new_blknum = self.length(filename.to_string())?;
-            let blk = BlockId::new(&filename, new_blknum);
+            let new_blknum = self.length(filename)?;
+            let blk = BlockId::new(filename, new_blknum);
 
             let b: Vec<u8> = vec![0u8; self.blocksize as usize];
 
             let offset = blk.number() * self.blocksize;
-            if let Some(f) = self.get_file(blk.file_name()) {
+            if let Some(f) = self.get_file(blk.file_name().as_str()) {
                 f.seek(SeekFrom::Start(offset))?;
                 f.write_all(&b)?;
 
@@ -122,8 +122,8 @@ impl FileMgr {
             filename.to_string(),
         )))
     }
-    pub fn length(&mut self, filename: String) -> Result<u64> {
-        let path = Path::new(&self.db_directory).join(&filename);
+    pub fn length(&mut self, filename: &str) -> Result<u64> {
+        let path = Path::new(&self.db_directory).join(filename);
         let _ = self.get_file(filename).unwrap();
         let meta = fs::metadata(&path)?;
 
@@ -136,10 +136,10 @@ impl FileMgr {
     pub fn blocksize(&self) -> u64 {
         self.blocksize
     }
-    fn get_file(&mut self, filename: String) -> Option<&mut File> {
-        let path = Path::new(&self.db_directory).join(&filename);
+    fn get_file(&mut self, filename: &str) -> Option<&mut File> {
+        let path = Path::new(&self.db_directory).join(filename);
 
-        let f = self.open_files.entry(filename).or_insert(
+        let f = self.open_files.entry(filename.to_string()).or_insert(
             OpenOptions::new()
                 .read(true)
                 .write(true)

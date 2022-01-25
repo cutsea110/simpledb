@@ -38,7 +38,7 @@ pub struct LogMgr {
 impl LogMgr {
     pub fn new(fm: Arc<RefCell<FileMgr>>, logfile: &str) -> Result<Self> {
         let mut logpage = Page::new_from_size(fm.borrow().blocksize() as usize);
-        let logsize = fm.borrow_mut().length(logfile.to_string())?;
+        let logsize = fm.borrow_mut().length(logfile)?;
 
         let logmgr;
 
@@ -57,7 +57,7 @@ impl LogMgr {
                 l: Arc::new(Mutex::default()),
             };
         } else {
-            let newblk = BlockId::new(&logfile, logsize - 1);
+            let newblk = BlockId::new(logfile, logsize - 1);
             fm.borrow_mut().read(&newblk, &mut logpage)?;
 
             logmgr = Self {
