@@ -10,14 +10,14 @@ use crate::file::page::Page;
 
 #[derive(Debug)]
 enum LogMgrError {
-    Todo,
+    LogPageAccessFailed,
 }
 
 impl std::error::Error for LogMgrError {}
 impl fmt::Display for LogMgrError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LogMgrError::Todo => write!(f, "TODO"),
+            LogMgrError::LogPageAccessFailed => write!(f, "TODO"),
         }
     }
 }
@@ -92,7 +92,8 @@ impl LogMgr {
 
             return Ok(self.last_saved_lsn);
         }
-        Err(From::from(LogMgrError::Todo))
+
+        Err(From::from(LogMgrError::LogPageAccessFailed))
     }
     pub fn flush_from_lsn(&mut self, lsn: u64) -> Result<()> {
         if lsn > self.last_saved_lsn {
