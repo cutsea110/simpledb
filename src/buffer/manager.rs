@@ -93,7 +93,7 @@ impl BufferMgr {
             let timestamp = SystemTime::now();
 
             while !waiting_too_long(timestamp) {
-                if let Some(buff) = self.try_to_pin(blk) {
+                if let Ok(buff) = self.try_to_pin(blk) {
                     return Ok(buff);
                 }
                 thread::sleep(Duration::new(1, 0))
@@ -104,16 +104,16 @@ impl BufferMgr {
 
         Err(From::from(BufferMgrError::BufferAbort))
     }
-    fn try_to_pin(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
+    fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
         if let Ok(buff) = self.pickup_pinnable_buffer(blk) {
             if !buff.borrow_mut().is_pinned() {
                 self.num_available -= 1;
             }
             buff.borrow_mut().pin();
-            return Some(buff);
+            return Ok(buff);
         }
 
-        None
+        Err(From::from(BufferMgrError::BufferAbort))
     }
     fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
         if let Some(buff) = self.find_existing_buffer(blk) {
