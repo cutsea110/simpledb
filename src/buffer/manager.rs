@@ -105,7 +105,7 @@ impl BufferMgr {
         Err(From::from(BufferMgrError::BufferAbort))
     }
     fn try_to_pin(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
-        if let Some(buff) = self.pickup_pinnable_buffer(blk) {
+        if let Ok(buff) = self.pickup_pinnable_buffer(blk) {
             if !buff.borrow_mut().is_pinned() {
                 self.num_available -= 1;
             }
@@ -115,17 +115,18 @@ impl BufferMgr {
 
         None
     }
-    fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
+    fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
         if let Some(buff) = self.find_existing_buffer(blk) {
-            return Some(buff);
+            return Ok(buff);
         }
 
         if let Some(buff) = self.choose_unpinned_buffer() {
-            buff.borrow_mut().assign_to_block(blk.clone()).unwrap();
-            return Some(buff);
+            let result = buff.borrow_mut().assign_to_block(blk.clone());
+
+            return result.and_then(|_| Ok(buff));
         }
 
-        None
+        Err(From::from(BufferMgrError::BufferAbort))
     }
     fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
         for i in 0..self.bufferpool.len() {
