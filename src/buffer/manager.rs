@@ -105,27 +105,27 @@ impl BufferMgr {
         Err(From::from(BufferMgrError::LockFailed("pin".to_string())))
     }
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
-        self.pickup_pinnable_buffer(blk).and_then(|buff| {
+        if let Some(buff) = self.pickup_pinnable_buffer(blk) {
             if !buff.borrow_mut().is_pinned() {
                 self.num_available -= 1;
             }
             buff.borrow_mut().pin();
 
-            Ok(buff)
-        })
-    }
-    fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
-        if let Some(buff) = self.find_existing_buffer(blk) {
             return Ok(buff);
         }
 
-        if let Some(buff) = self.choose_unpinned_buffer() {
-            let result = buff.borrow_mut().assign_to_block(blk.clone());
-
-            return result.and_then(|_| Ok(buff));
-        }
-
         Err(From::from(BufferMgrError::BufferAbort))
+    }
+    fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
+        self.find_existing_buffer(blk).or_else(|| {
+            self.choose_unpinned_buffer().and_then(|buff| {
+                if buff.borrow_mut().assign_to_block(blk.clone()).is_err() {
+                    return None;
+                }
+
+                Some(buff)
+            })
+        })
     }
     fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
         for i in 0..self.bufferpool.len() {
