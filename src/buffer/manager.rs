@@ -105,7 +105,7 @@ impl BufferMgr {
         Err(From::from(BufferMgrError::BufferAbort))
     }
     fn try_to_pin(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
-        if let Some(buff) = self.find_existing_or_choose_unpinned(blk) {
+        if let Some(buff) = self.pickup_pinnable_buffer(blk) {
             if !buff.borrow_mut().is_pinned() {
                 self.num_available -= 1;
             }
@@ -115,7 +115,7 @@ impl BufferMgr {
 
         None
     }
-    fn find_existing_or_choose_unpinned(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
+    fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
         if let Some(buff) = self.find_existing_buffer(blk) {
             return Some(buff);
         }
