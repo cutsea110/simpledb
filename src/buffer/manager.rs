@@ -102,7 +102,7 @@ impl BufferMgr {
             return Err(From::from(BufferMgrError::BufferAbort));
         }
 
-        Err(From::from(BufferMgrError::BufferAbort))
+        Err(From::from(BufferMgrError::LockFailed("pin".to_string())))
     }
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
         self.pickup_pinnable_buffer(blk).and_then(|buff| {
