@@ -11,28 +11,28 @@ pub struct LogIterator {
     fm: Arc<RefCell<FileMgr>>,
     blk: BlockId,
     p: Page,
-    current_pos: u64,
+    currentpos: u64,
     boundary: u64,
 }
 
 impl LogIterator {
     pub fn new(fm: Arc<RefCell<FileMgr>>, blk: BlockId) -> Result<Self> {
-        let mut p = Page::new_from_size(fm.borrow().blocksize() as usize);
+        let mut p = Page::new_from_size(fm.borrow().block_size() as usize);
 
         fm.borrow_mut().read(&blk, &mut p)?;
         let boundary = p.get_i32(0)? as u64;
-        let current_pos = boundary;
+        let currentpos = boundary;
 
         Ok(Self {
             fm,
             blk,
             p,
-            current_pos,
+            currentpos,
             boundary,
         })
     }
     pub fn has_next(&self) -> bool {
-        self.current_pos < self.fm.borrow().blocksize() || self.blk.number() > 0
+        self.currentpos < self.fm.borrow().block_size() || self.blk.number() > 0
     }
 }
 
@@ -44,7 +44,7 @@ impl Iterator for LogIterator {
             return None;
         }
 
-        if self.current_pos == self.fm.borrow().blocksize() {
+        if self.currentpos == self.fm.borrow().block_size() {
             self.blk = BlockId::new(&self.blk.file_name(), self.blk.number() - 1);
 
             if self.fm.borrow_mut().read(&self.blk, &mut self.p).is_err() {
@@ -53,15 +53,15 @@ impl Iterator for LogIterator {
 
             if let Ok(n) = self.p.get_i32(0) {
                 self.boundary = n as u64;
-                self.current_pos = self.boundary;
+                self.currentpos = self.boundary;
             } else {
                 return None;
             }
         }
 
-        if let Ok(rec) = self.p.get_bytes_vec(self.current_pos as usize) {
+        if let Ok(rec) = self.p.get_bytes_vec(self.currentpos as usize) {
             let i32_size = mem::size_of::<i32>() as u64;
-            self.current_pos += i32_size + rec.len() as u64;
+            self.currentpos += i32_size + rec.len() as u64;
 
             return Some(rec);
         }

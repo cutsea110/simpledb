@@ -133,7 +133,7 @@ impl FileMgr {
     pub fn is_new(&self) -> bool {
         self.is_new
     }
-    pub fn blocksize(&self) -> u64 {
+    pub fn block_size(&self) -> u64 {
         self.blocksize
     }
     fn get_file(&mut self, filename: &str) -> Option<&mut File> {
