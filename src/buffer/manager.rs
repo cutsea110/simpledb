@@ -3,7 +3,7 @@ use core::fmt;
 use std::{
     cell::RefCell,
     sync::{Arc, Mutex},
-    thread::sleep,
+    thread,
     time::{Duration, SystemTime},
 };
 
@@ -96,7 +96,7 @@ impl BufferMgr {
                 if let Some(buff) = self.try_to_pin(blk) {
                     return Ok(buff);
                 }
-                sleep(Duration::new(1, 0))
+                thread::sleep(Duration::new(1, 0))
             }
 
             return Err(From::from(BufferMgrError::BufferAbort));
