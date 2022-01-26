@@ -19,6 +19,7 @@ impl LogIterator {
     pub fn new(fm: Arc<RefCell<FileMgr>>, blk: BlockId) -> Result<Self> {
         let mut p = Page::new_from_size(fm.borrow().block_size() as usize);
 
+        // move to block
         fm.borrow_mut().read(&blk, &mut p)?;
         let boundary = p.get_i32(0)? as u64;
         let currentpos = boundary;
