@@ -13,7 +13,7 @@ use crate::{
     log::manager::LogMgr,
 };
 
-const MAX_TIME: i64 = 10000; // 10 seconds
+const MAX_TIME: i64 = 10_000; // 10 seconds
 
 #[derive(Debug)]
 enum BufferMgrError {
