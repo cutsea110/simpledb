@@ -1,9 +1,6 @@
 use anyhow::Result;
 use core::fmt;
-use std::error::Error;
-
-use std::cell::RefCell;
-use std::sync::Arc;
+use std::{cell::RefCell, error::Error, sync::Arc};
 
 use crate::{
     file::{block_id::BlockId, manager::FileMgr, page::Page},

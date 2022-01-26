@@ -1,11 +1,7 @@
 use anyhow::Result;
-use std::cell::RefCell;
-use std::mem;
-use std::sync::Arc;
+use std::{cell::RefCell, mem, sync::Arc};
 
-use crate::file::block_id::BlockId;
-use crate::file::manager::FileMgr;
-use crate::file::page::Page;
+use crate::file::{block_id::BlockId, manager::FileMgr, page::Page};
 
 pub struct LogIterator {
     fm: Arc<RefCell<FileMgr>>,

@@ -1,14 +1,13 @@
 use anyhow::Result;
 use core::fmt;
-use std::cell::RefCell;
-use std::mem;
-use std::sync::{Arc, Mutex};
-
-use crate::file::block_id::BlockId;
-use crate::file::manager::FileMgr;
-use crate::file::page::Page;
+use std::{
+    cell::RefCell,
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use super::iterator::LogIterator;
+use crate::file::{block_id::BlockId, manager::FileMgr, page::Page};
 
 #[derive(Debug)]
 enum LogMgrError {
