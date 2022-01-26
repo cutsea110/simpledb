@@ -1,6 +1,6 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, error::Error, sync::Arc};
+use std::{cell::RefCell, sync::Arc};
 
 use crate::{
     file::{block_id::BlockId, manager::FileMgr, page::Page},
@@ -11,9 +11,9 @@ use crate::{
 enum BufferError {
     BlockNotFound,
 }
-impl Error for BufferError {}
+impl std::error::Error for BufferError {}
 impl fmt::Display for BufferError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &BufferError::BlockNotFound => {
                 write!(f, "block not found")
