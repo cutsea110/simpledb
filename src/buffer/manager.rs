@@ -105,7 +105,27 @@ impl BufferMgr {
         Err(From::from(BufferMgrError::BufferAbort))
     }
     fn try_to_pin(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
-        panic!("TODO")
+        if let Some(buff) = self.find_existing_or_choose_unpinned(blk) {
+            if !buff.borrow_mut().is_pinned() {
+                self.num_available -= 1;
+            }
+            buff.borrow_mut().pin();
+            return Some(buff);
+        }
+
+        None
+    }
+    fn find_existing_or_choose_unpinned(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
+        if let Some(buff) = self.find_existing_buffer(blk) {
+            return Some(buff);
+        }
+
+        if let Some(buff) = self.choose_unpinned_buffer() {
+            buff.borrow_mut().assign_to_block(blk.clone()).unwrap();
+            return Some(buff);
+        }
+
+        None
     }
     fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
         for i in 0..self.bufferpool.len() {
