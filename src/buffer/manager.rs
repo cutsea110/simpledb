@@ -140,6 +140,7 @@ impl BufferMgr {
 
         None
     }
+    // The Naive Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<RefCell<Buffer>>> {
         for i in 0..self.bufferpool.len() {
             if !self.bufferpool[i].borrow().is_pinned() {
