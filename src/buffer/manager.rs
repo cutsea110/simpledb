@@ -38,6 +38,7 @@ impl fmt::Display for BufferMgrError {
 pub struct BufferMgr {
     bufferpool: Vec<Arc<RefCell<Buffer>>>,
     num_available: usize,
+    // for synchronized
     l: Arc<Mutex<()>>,
 }
 
