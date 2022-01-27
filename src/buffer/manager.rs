@@ -119,7 +119,8 @@ impl BufferMgr {
     fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
         self.find_existing_buffer(blk).or_else(|| {
             self.choose_unpinned_buffer().and_then(|buff| {
-                if buff.borrow_mut().assign_to_block(blk.clone()).is_err() {
+                if let Err(e) = buff.borrow_mut().assign_to_block(blk.clone()) {
+                    eprintln!("failed to assign to block: {}", e);
                     return None;
                 }
 
