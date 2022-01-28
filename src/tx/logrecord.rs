@@ -30,11 +30,11 @@ impl LogRecord {
 
         match FromPrimitive::from_i32(tx_type) {
             Some(TxType::CHECKPOINT) => Ok(LogRecord::SetCheckpoint(SetCheckpointRecord {})),
-            Some(TxType::START) => panic!("TODO"),
-            Some(TxType::COMMIT) => panic!("TODO"),
-            Some(TxType::ROLLBACK) => panic!("TODO"),
-            Some(TxType::SETI32) => panic!("TODO"),
-            Some(TxType::SETSTRING) => panic!("TODO"),
+            Some(TxType::START) => Ok(LogRecord::SetStart(SetStartRecord {})),
+            Some(TxType::COMMIT) => Ok(LogRecord::SetCommit(SetCommitRecord {})),
+            Some(TxType::ROLLBACK) => Ok(LogRecord::SetRollback(SetRollbackRecord {})),
+            Some(TxType::SETI32) => Ok(LogRecord::SetI32(SetI32Record {})),
+            Some(TxType::SETSTRING) => Ok(LogRecord::SetString(SetStringRecord {})),
             None => panic!("TODO"),
         }
     }
