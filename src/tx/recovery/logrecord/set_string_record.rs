@@ -35,9 +35,7 @@ impl LogRecord for SetStringRecord {
     fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
         tx.pin(&self.blk)?;
         tx.set_string(&self.blk, self.offset, self.val.as_str(), false)?;
-        tx.unpin(&self.blk)?;
-
-        Ok(())
+        tx.unpin(&self.blk)
     }
 }
 impl SetStringRecord {

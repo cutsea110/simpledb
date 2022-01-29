@@ -23,7 +23,7 @@ impl LogRecord for RollbackRecord {
     fn tx_number(&self) -> i32 {
         self.txnum
     }
-    fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
+    fn undo(&mut self, _tx: &mut Transaction) -> Result<()> {
         // nop
         Ok(())
     }

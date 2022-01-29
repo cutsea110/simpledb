@@ -37,9 +37,7 @@ impl LogRecord for SetI32Record {
     fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
         tx.pin(&self.blk)?;
         tx.set_i32(&self.blk, self.offset, self.val, false)?;
-        tx.unpin(&self.blk)?;
-
-        Ok(())
+        tx.unpin(&self.blk)
     }
 }
 impl SetI32Record {
