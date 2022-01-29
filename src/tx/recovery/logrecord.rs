@@ -42,7 +42,7 @@ pub enum TxType {
 pub trait LogRecord {
     fn op(&self) -> TxType;
     fn tx_number(&self) -> i32;
-    fn undo(&mut self, tx: Transaction) -> Result<()>;
+    fn undo(&mut self, tx: &mut Transaction) -> Result<()>;
 }
 
 impl dyn LogRecord {

@@ -32,8 +32,12 @@ impl LogRecord for SetStringRecord {
     fn tx_number(&self) -> i32 {
         self.txnum
     }
-    fn undo(&mut self, tx: Transaction) -> Result<()> {
-        panic!("TODO")
+    fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
+        tx.pin(&self.blk)?;
+        tx.set_string(&self.blk, self.offset, self.val.as_str(), false)?;
+        tx.unpin(&self.blk)?;
+
+        Ok(())
     }
 }
 impl SetStringRecord {

@@ -21,7 +21,7 @@ impl LogRecord for CheckpointRecord {
     fn tx_number(&self) -> i32 {
         -1 // dummy
     }
-    fn undo(&mut self, tx: Transaction) -> Result<()> {
+    fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
         // nop
         Ok(())
     }

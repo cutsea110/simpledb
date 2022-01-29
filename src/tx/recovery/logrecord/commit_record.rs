@@ -23,7 +23,7 @@ impl LogRecord for CommitRecord {
     fn tx_number(&self) -> i32 {
         self.txnum
     }
-    fn undo(&mut self, tx: Transaction) -> Result<()> {
+    fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
         panic!("TODO")
     }
 }

@@ -27,40 +27,34 @@ impl Transaction {
     pub fn recover(&mut self) -> Result<()> {
         panic!("TODO")
     }
-    pub fn pin(&mut self, blk: BlockId) -> Result<()> {
+    pub fn pin(&mut self, blk: &BlockId) -> Result<()> {
         panic!("TODO")
     }
-    pub fn unpin(&mut self, blk: BlockId) -> Result<()> {
+    pub fn unpin(&mut self, blk: &BlockId) -> Result<()> {
         panic!("TODO")
     }
-    pub fn get_i32(&self, blk: BlockId, offset: usize) -> Result<i32> {
+    pub fn get_i32(&self, blk: &BlockId, offset: i32) -> Result<i32> {
         panic!("TODO")
     }
-    pub fn get_string(&self, blk: BlockId, offset: usize) -> Result<String> {
+    pub fn get_string(&self, blk: &BlockId, offset: i32) -> Result<String> {
         panic!("TODO")
     }
-    pub fn set_i32(
-        &mut self,
-        blk: BlockId,
-        offset: usize,
-        val: i32,
-        ok_to_log: bool,
-    ) -> Result<()> {
+    pub fn set_i32(&mut self, blk: &BlockId, offset: i32, val: i32, ok_to_log: bool) -> Result<()> {
         panic!("TODO")
     }
     pub fn set_string(
         &mut self,
-        blk: BlockId,
-        offset: usize,
-        val: String,
+        blk: &BlockId,
+        offset: i32,
+        val: &str,
         ok_to_log: bool,
     ) -> Result<()> {
         panic!("TODO")
     }
-    pub fn size(&self, filename: String) -> u64 {
+    pub fn size(&self, filename: &str) -> u64 {
         panic!("TODO")
     }
-    pub fn append(&mut self, filename: String) -> Result<BlockId> {
+    pub fn append(&mut self, filename: &str) -> Result<BlockId> {
         panic!("TODO")
     }
     pub fn block_size(&self) -> u64 {
