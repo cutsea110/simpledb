@@ -2,7 +2,7 @@ use anyhow::Result;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
-use crate::file::page::Page;
+use crate::{file::page::Page, tx::transaction::Transaction};
 
 mod checkpoint_record;
 mod commit_record;
@@ -24,6 +24,7 @@ pub enum TxType {
 pub trait LogRecord {
     fn op(&self) -> TxType;
     fn tx_number(&self) -> i32;
+    fn undo(&mut self, tx: Transaction) -> Result<()>;
 }
 
 impl dyn LogRecord {

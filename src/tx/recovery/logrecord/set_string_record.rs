@@ -6,6 +6,7 @@ use super::{LogRecord, TxType};
 use crate::{
     file::{block_id::BlockId, page::Page},
     log::manager::LogMgr,
+    tx::transaction::Transaction,
 };
 
 pub struct SetStringRecord {
@@ -30,6 +31,9 @@ impl LogRecord for SetStringRecord {
     }
     fn tx_number(&self) -> i32 {
         self.txnum
+    }
+    fn undo(&mut self, tx: Transaction) -> Result<()> {
+        panic!("TODO")
     }
 }
 impl SetStringRecord {

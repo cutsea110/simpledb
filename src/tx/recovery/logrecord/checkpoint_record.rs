@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::fmt;
 use std::{cell::RefCell, mem, sync::Arc};
 
-use crate::{file::page::Page, log::manager::LogMgr};
+use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
 
 use super::{LogRecord, TxType};
 
@@ -20,6 +20,10 @@ impl LogRecord for CheckpointRecord {
     }
     fn tx_number(&self) -> i32 {
         -1 // dummy
+    }
+    fn undo(&mut self, tx: Transaction) -> Result<()> {
+        // nop
+        Ok(())
     }
 }
 impl CheckpointRecord {

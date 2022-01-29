@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::fmt;
 use std::{cell::RefCell, mem, sync::Arc};
 
-use crate::{file::page::Page, log::manager::LogMgr};
+use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
 
 use super::{LogRecord, TxType};
 
@@ -22,6 +22,9 @@ impl LogRecord for StartRecord {
     }
     fn tx_number(&self) -> i32 {
         self.txnum
+    }
+    fn undo(&mut self, tx: Transaction) -> Result<()> {
+        panic!("TODO")
     }
 }
 impl StartRecord {

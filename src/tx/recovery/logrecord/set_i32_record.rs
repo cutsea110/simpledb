@@ -5,6 +5,7 @@ use std::{cell::RefCell, mem, sync::Arc};
 use crate::{
     file::{block_id::BlockId, page::Page},
     log::manager::LogMgr,
+    tx::transaction::Transaction,
 };
 
 use super::{LogRecord, TxType};
@@ -32,6 +33,9 @@ impl LogRecord for SetI32Record {
     }
     fn tx_number(&self) -> i32 {
         self.txnum
+    }
+    fn undo(&mut self, tx: Transaction) -> Result<()> {
+        panic!("TODO")
     }
 }
 impl SetI32Record {
