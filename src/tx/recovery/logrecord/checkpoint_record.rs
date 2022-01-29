@@ -23,7 +23,7 @@ impl LogRecord for CheckpointRecord {
     }
 }
 impl CheckpointRecord {
-    pub fn new(p: Page) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Self {})
     }
     pub fn write_to_log(lm: Arc<RefCell<LogMgr>>) -> Result<u64> {
