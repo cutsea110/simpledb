@@ -24,7 +24,8 @@ impl LogRecord for CommitRecord {
         self.txnum
     }
     fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
-        panic!("TODO")
+        // nop
+        Ok(())
     }
 }
 impl CommitRecord {
