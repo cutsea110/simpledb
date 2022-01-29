@@ -1,3 +1,5 @@
+use core::fmt;
+
 use anyhow::Result;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
@@ -10,6 +12,22 @@ mod rollback_record;
 mod set_i32_record;
 mod set_string_record;
 mod start_record;
+
+#[derive(Debug)]
+enum LogRecordError {
+    UnknownRecord,
+}
+
+impl std::error::Error for LogRecordError {}
+impl fmt::Display for LogRecordError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &LogRecordError::UnknownRecord => {
+                write!(f, "unknown log record")
+            }
+        }
+    }
+}
 
 #[derive(FromPrimitive, Debug, Eq, PartialEq, Clone, Copy)]
 pub enum TxType {
@@ -39,7 +57,7 @@ impl dyn LogRecord {
             Some(TxType::ROLLBACK) => Ok(Box::new(rollback_record::RollbackRecord::new(p)?)),
             Some(TxType::SETI32) => Ok(Box::new(set_i32_record::SetI32Record::new(p)?)),
             Some(TxType::SETSTRING) => Ok(Box::new(set_string_record::SetStringRecord::new(p)?)),
-            None => panic!("Unsupported TxType found."),
+            None => Err(From::from(LogRecordError::UnknownRecord)),
         }
     }
 }
