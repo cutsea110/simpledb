@@ -36,7 +36,7 @@ impl CommitRecord {
         let reclen = tpos + mem::size_of::<i32>();
 
         let mut p = Page::new_from_size(reclen as usize);
-        p.set_i32(0, TxType::START as i32)?;
+        p.set_i32(0, TxType::COMMIT as i32)?;
         p.set_i32(tpos, txnum)?;
 
         lm.borrow_mut().append(p.contents())
