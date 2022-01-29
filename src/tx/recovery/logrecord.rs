@@ -49,7 +49,7 @@ pub struct SetStringRecord {
     blk: BlockId,
 }
 impl fmt::Display for SetStringRecord {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "<SETSTRING {} {} {} {}>",
