@@ -4,6 +4,7 @@ use num_traits::FromPrimitive;
 
 use crate::file::page::Page;
 
+mod commit_record;
 mod set_i32_record;
 mod set_string_record;
 mod start_record;
@@ -31,7 +32,7 @@ impl dyn LogRecord {
         match tx_type {
             Some(TxType::CHECKPOINT) => panic!("TODO"),
             Some(TxType::START) => Ok(Box::new(start_record::StartRecord::new(p)?)),
-            Some(TxType::COMMIT) => panic!("TODO"),
+            Some(TxType::COMMIT) => Ok(Box::new(commit_record::CommitRecord::new(p)?)),
             Some(TxType::ROLLBACK) => panic!("TODO"),
             Some(TxType::SETI32) => Ok(Box::new(set_i32_record::SetI32Record::new(p)?)),
             Some(TxType::SETSTRING) => Ok(Box::new(set_string_record::SetStringRecord::new(p)?)),
