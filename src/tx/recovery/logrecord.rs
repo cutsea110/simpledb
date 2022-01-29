@@ -32,7 +32,7 @@ impl dyn LogRecord {
             Some(TxType::START) => panic!("TODO"),
             Some(TxType::COMMIT) => panic!("TODO"),
             Some(TxType::ROLLBACK) => panic!("TODO"),
-            Some(TxType::SETI32) => panic!("TODO"),
+            Some(TxType::SETI32) => Ok(Box::new(set_i32_record::SetI32Record::new(p)?)),
             Some(TxType::SETSTRING) => Ok(Box::new(set_string_record::SetStringRecord::new(p)?)),
             None => panic!("TODO"),
         }
