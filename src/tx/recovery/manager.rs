@@ -10,9 +10,9 @@ use crate::{
 };
 
 use super::logrecord::{
-    checkpoint_record::CheckpointRecord, commit_record::CommitRecord,
+    checkpoint_record::CheckpointRecord, commit_record::CommitRecord, create_log_record,
     rollback_record::RollbackRecord, set_i32_record::SetI32Record,
-    set_string_record::SetStringRecord,
+    set_string_record::SetStringRecord, TxType,
 };
 
 #[derive(Debug)]
@@ -99,7 +99,19 @@ impl RecoveryMgr {
         )))
     }
     fn do_rollback(&mut self) -> Result<()> {
-        panic!("TODO")
+        let mut iter = self.lm.borrow_mut().iterator()?;
+        while let Some(bytes) = iter.next() {
+            let mut rec = create_log_record(bytes)?;
+            if rec.tx_number() == self.txnum {
+                if rec.op() == TxType::START {
+                    return Ok(());
+                }
+
+                rec.undo(&mut self.tx)?;
+            }
+        }
+
+        Ok(())
     }
     fn do_recover(&mut self) -> Result<()> {
         panic!("TODO")
