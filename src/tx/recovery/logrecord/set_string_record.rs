@@ -62,7 +62,7 @@ impl SetStringRecord {
     pub fn write_to_log(
         lm: Arc<RefCell<LogMgr>>,
         txnum: i32,
-        blk: BlockId,
+        blk: &BlockId,
         offset: i32,
         val: String,
     ) -> Result<u64> {

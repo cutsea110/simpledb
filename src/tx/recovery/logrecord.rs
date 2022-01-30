@@ -6,12 +6,12 @@ use num_traits::FromPrimitive;
 
 use crate::{file::page::Page, tx::transaction::Transaction};
 
-mod checkpoint_record;
-mod commit_record;
-mod rollback_record;
-mod set_i32_record;
-mod set_string_record;
-mod start_record;
+pub mod checkpoint_record;
+pub mod commit_record;
+pub mod rollback_record;
+pub mod set_i32_record;
+pub mod set_string_record;
+pub mod start_record;
 
 #[derive(Debug)]
 enum LogRecordError {

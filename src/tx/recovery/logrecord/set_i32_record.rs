@@ -64,7 +64,7 @@ impl SetI32Record {
     pub fn write_to_log(
         lm: Arc<RefCell<LogMgr>>,
         txnum: i32,
-        blk: BlockId,
+        blk: &BlockId,
         offset: i32,
         val: i32,
     ) -> Result<u64> {
