@@ -114,6 +114,23 @@ impl RecoveryMgr {
         Ok(())
     }
     fn do_recover(&mut self) -> Result<()> {
-        panic!("TODO")
+        let mut finished_txs = vec![];
+        let mut iter = self.lm.borrow_mut().iterator()?;
+        while let Some(bytes) = iter.next() {
+            let mut rec = create_log_record(bytes)?;
+            match rec.op() {
+                TxType::CHECKPOINT => return Ok(()),
+                TxType::COMMIT | TxType::ROLLBACK => {
+                    finished_txs.push(rec.tx_number());
+                }
+                _ => {
+                    if !finished_txs.contains(&rec.tx_number()) {
+                        rec.undo(&mut self.tx)?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 }
