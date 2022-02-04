@@ -79,6 +79,7 @@ impl LockTable {
                 self.locks.entry(blk).or_insert(val - 1);
             } else {
                 self.locks.remove(&blk);
+                // means notify_all
             }
 
             return Ok(());
