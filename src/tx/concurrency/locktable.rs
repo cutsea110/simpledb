@@ -37,6 +37,12 @@ pub struct LockTable {
 }
 
 impl LockTable {
+    pub fn new() -> Self {
+        Self {
+            locks: HashMap::new(),
+            l: Arc::new(Mutex::default()),
+        }
+    }
     pub fn s_lock(&mut self, blk: BlockId) -> Result<()> {
         if self.l.lock().is_ok() {
             let timestamp = SystemTime::now();
