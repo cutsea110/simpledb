@@ -1,5 +1,7 @@
-use std::collections::HashMap;
-use std::sync::{Arc, LockResult, Mutex, Once, ONCE_INIT};
+use std::{
+    collections::HashMap,
+    sync::{Arc, LockResult, Mutex, Once, ONCE_INIT},
+};
 
 use super::locktable::LockTable;
 use crate::file::block_id::BlockId;
