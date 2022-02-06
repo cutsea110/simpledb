@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use anyhow::Result;
+use std::{cell::RefCell, collections::HashMap, sync::Arc};
 
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
@@ -6,7 +7,7 @@ use crate::{
 };
 
 pub struct BufferList {
-    buffers: HashMap<BlockId, Buffer>,
+    buffers: HashMap<BlockId, Arc<RefCell<Buffer>>>,
     pins: Vec<BlockId>,
     bm: BufferMgr,
 }
@@ -19,7 +20,14 @@ impl BufferList {
             bm,
         }
     }
-    fn get_bufer(&self, blk: &BlockId) -> Option<&Buffer> {
-        self.buffers.get(blk)
+    fn get_bufer(&mut self, blk: &BlockId) -> Option<&mut Arc<RefCell<Buffer>>> {
+        self.buffers.get_mut(blk)
+    }
+    fn pin(&mut self, blk: BlockId) -> Result<()> {
+        let buff = self.bm.pin(&blk)?;
+        self.buffers.insert(blk.clone(), buff);
+        self.pins.push(blk);
+
+        Ok(())
     }
 }
