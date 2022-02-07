@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{cell::RefCell, collections::HashMap, sync::Arc};
+use std::{cell::RefCell, collections::HashMap, ops::Deref, sync::Arc};
 
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
@@ -28,6 +28,16 @@ impl BufferList {
         self.buffers.insert(blk.clone(), buff);
         self.pins.push(blk);
 
+        Ok(())
+    }
+    fn unpin(&mut self, blk: &BlockId) -> Result<()> {
+        if let Some(buff) = self.buffers.get(blk) {
+            self.bm.unpin(buff.clone())?;
+            self.pins.retain(|x| x == blk);
+            if self.pins.contains(blk) {
+                self.buffers.remove(blk);
+            }
+        }
         Ok(())
     }
 }
