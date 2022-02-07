@@ -1,5 +1,5 @@
 use anyhow::Result;
-use std::{cell::RefCell, collections::HashMap, ops::Deref, sync::Arc};
+use std::{cell::RefCell, collections::HashMap, sync::Arc};
 
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
