@@ -40,4 +40,15 @@ impl BufferList {
         }
         Ok(())
     }
+    fn unpil_all(&mut self) -> Result<()> {
+        for blk in self.pins.iter() {
+            if let Some(buff) = self.buffers.get(blk) {
+                self.bm.unpin(buff.clone())?;
+            }
+        }
+        self.buffers.clear();
+        self.pins.clear();
+
+        Ok(())
+    }
 }
