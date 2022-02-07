@@ -2,13 +2,11 @@ use anyhow::Result;
 
 use std::{
     collections::HashMap,
-    net::ToSocketAddrs,
-    sync::{Arc, LockResult, Mutex, Once, ONCE_INIT},
+    sync::{Arc, Mutex, Once},
 };
 
 use super::locktable::LockTable;
 use crate::file::block_id::BlockId;
-use crate::tx::concurrency::locktable;
 
 pub struct ConcurrencyMgr {
     // static member (shared by all ConcurrentMgr)
@@ -22,7 +20,7 @@ impl ConcurrencyMgr {
         // make locktbl a static member by singleton pattern
         // ref.) https://stackoverflow.com/questions/27791532/how-do-i-create-a-global-mutable-singleton
         static mut SINGLETON: Option<Arc<Mutex<LockTable>>> = None;
-        static ONCE: Once = ONCE_INIT;
+        static ONCE: Once = Once::new();
 
         unsafe {
             ONCE.call_once(|| {
