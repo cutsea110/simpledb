@@ -1,10 +1,13 @@
 use anyhow::Result;
-use std::{cell::RefCell, mem, sync::Arc};
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::file::{block_id::BlockId, manager::FileMgr, page::Page};
 
 pub struct LogIterator {
-    fm: Arc<RefCell<FileMgr>>,
+    fm: Arc<Mutex<FileMgr>>,
     blk: BlockId,
     p: Page,
     currentpos: u64,
@@ -12,14 +15,17 @@ pub struct LogIterator {
 }
 
 impl LogIterator {
-    pub fn new(fm: Arc<RefCell<FileMgr>>, blk: BlockId) -> Result<Self> {
-        let mut p = Page::new_from_size(fm.borrow().block_size() as usize);
+    pub fn new(fm: Arc<Mutex<FileMgr>>, blk: BlockId) -> Result<Self> {
+        let mut filemgr = fm.lock().unwrap();
+
+        let mut p = Page::new_from_size(filemgr.block_size() as usize);
 
         // move to block
-        fm.borrow_mut().read(&blk, &mut p)?;
+        filemgr.read(&blk, &mut p)?;
         let boundary = p.get_i32(0)? as u64;
         let currentpos = boundary;
 
+        drop(filemgr);
         Ok(Self {
             fm,
             blk,
@@ -29,7 +35,7 @@ impl LogIterator {
         })
     }
     pub fn has_next(&self) -> bool {
-        self.currentpos < self.fm.borrow().block_size() || self.blk.number() > 0
+        self.currentpos < self.fm.lock().unwrap().block_size() || self.blk.number() > 0
     }
 }
 
@@ -41,10 +47,12 @@ impl Iterator for LogIterator {
             return None;
         }
 
-        if self.currentpos == self.fm.borrow().block_size() {
+        let mut filemgr = self.fm.lock().unwrap();
+
+        if self.currentpos == filemgr.block_size() {
             self.blk = BlockId::new(&self.blk.file_name(), self.blk.number() - 1);
 
-            if self.fm.borrow_mut().read(&self.blk, &mut self.p).is_err() {
+            if filemgr.read(&self.blk, &mut self.p).is_err() {
                 return None;
             }
 
