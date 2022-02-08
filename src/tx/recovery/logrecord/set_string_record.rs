@@ -1,9 +1,6 @@
 use anyhow::Result;
 use core::fmt;
-use std::{
-    mem,
-    sync::{Arc, Mutex},
-};
+use std::mem;
 
 use super::{LogRecord, TxType};
 use crate::{

@@ -1,9 +1,6 @@
 use anyhow::Result;
 use core::fmt;
-use std::{
-    mem,
-    sync::{Arc, Mutex},
-};
+use std::mem;
 
 use crate::{
     file::{block_id::BlockId, page::Page},

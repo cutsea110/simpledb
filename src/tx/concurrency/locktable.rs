@@ -43,6 +43,7 @@ impl LockTable {
             l: Arc::new(Mutex::default()),
         }
     }
+    // synchronized
     pub fn s_lock(&mut self, blk: BlockId) -> Result<()> {
         if self.l.lock().is_ok() {
             let timestamp = SystemTime::now();
@@ -61,6 +62,7 @@ impl LockTable {
 
         Err(From::from(LockTableError::LockFailed("s_lock".to_string())))
     }
+    // synchronized
     pub fn x_lock(&mut self, blk: BlockId) -> Result<()> {
         if self.l.lock().is_ok() {
             let timestamp = SystemTime::now();
@@ -78,6 +80,7 @@ impl LockTable {
 
         Err(From::from(LockTableError::LockFailed("x_lock".to_string())))
     }
+    // synchronized
     pub fn unlock(&mut self, blk: BlockId) -> Result<()> {
         if self.l.lock().is_ok() {
             let val = self.get_lock_val(&blk);
