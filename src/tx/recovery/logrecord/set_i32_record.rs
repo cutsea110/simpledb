@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, mem, sync::Arc};
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     file::{block_id::BlockId, page::Page},
@@ -62,7 +65,7 @@ impl SetI32Record {
         })
     }
     pub fn write_to_log(
-        lm: Arc<RefCell<LogMgr>>,
+        lm: Arc<Mutex<LogMgr>>,
         txnum: i32,
         blk: &BlockId,
         offset: i32,
@@ -83,6 +86,6 @@ impl SetI32Record {
         p.set_i32(opos, offset)?;
         p.set_i32(vpos, val)?;
 
-        lm.borrow_mut().append(p.contents())
+        lm.lock().unwrap().append(p.contents())
     }
 }

@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, mem, sync::Arc};
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
 
@@ -30,12 +33,12 @@ impl CheckpointRecord {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
-    pub fn write_to_log(lm: Arc<RefCell<LogMgr>>) -> Result<u64> {
+    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>) -> Result<u64> {
         let reclen = mem::size_of::<i32>();
 
         let mut p = Page::new_from_size(reclen);
         p.set_i32(0, TxType::CHECKPOINT as i32)?;
 
-        lm.borrow_mut().append(p.contents())
+        lm.lock().unwrap().append(p.contents())
     }
 }

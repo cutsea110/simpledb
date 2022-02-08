@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, mem, sync::Arc};
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
 
@@ -35,7 +38,7 @@ impl RollbackRecord {
 
         Ok(Self { txnum })
     }
-    pub fn write_to_log(lm: Arc<RefCell<LogMgr>>, txnum: i32) -> Result<u64> {
+    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>, txnum: i32) -> Result<u64> {
         let tpos = mem::size_of::<i32>();
         let reclen = tpos + mem::size_of::<i32>();
 
@@ -43,6 +46,6 @@ impl RollbackRecord {
         p.set_i32(0, TxType::ROLLBACK as i32)?;
         p.set_i32(tpos, txnum)?;
 
-        lm.borrow_mut().append(p.contents())
+        lm.lock().unwrap().append(p.contents())
     }
 }

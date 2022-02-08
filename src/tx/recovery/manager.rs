@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, sync::Arc};
+use std::{
+    cell::RefCell,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
@@ -32,8 +35,8 @@ impl fmt::Display for RecoveryMgrError {
 }
 
 pub struct RecoveryMgr {
-    lm: Arc<RefCell<LogMgr>>,
-    bm: Arc<RefCell<BufferMgr>>,
+    lm: Arc<Mutex<LogMgr>>,
+    bm: Arc<Mutex<BufferMgr>>,
     tx: Transaction,
     txnum: i32,
 }
@@ -42,29 +45,40 @@ impl RecoveryMgr {
     pub fn new(
         tx: Transaction,
         txnum: i32,
-        lm: Arc<RefCell<LogMgr>>,
-        bm: Arc<RefCell<BufferMgr>>,
+        lm: Arc<Mutex<LogMgr>>,
+        bm: Arc<Mutex<BufferMgr>>,
     ) -> Result<Self> {
         StartRecord::write_to_log(Arc::clone(&lm), txnum)?;
 
         Ok(Self { lm, bm, tx, txnum })
     }
     pub fn commit(&mut self) -> Result<()> {
-        self.bm.borrow_mut().flush_all(self.txnum)?;
+        let mut lm = self.lm.lock().unwrap();
+        let mut bm = self.bm.lock().unwrap();
+
+        bm.flush_all(self.txnum)?;
         let lsn = CommitRecord::write_to_log(Arc::clone(&self.lm), self.txnum)?;
-        self.lm.borrow_mut().flush(lsn)
+        lm.flush(lsn)
     }
     pub fn rollback(&mut self) -> Result<()> {
         self.do_rollback()?;
-        self.bm.borrow_mut().flush_all(self.txnum)?;
+
+        let mut lm = self.lm.lock().unwrap();
+        let mut bm = self.bm.lock().unwrap();
+
+        bm.flush_all(self.txnum)?;
         let lsn = RollbackRecord::write_to_log(Arc::clone(&self.lm), self.txnum)?;
-        self.lm.borrow_mut().flush(lsn)
+        lm.flush(lsn)
     }
     pub fn recover(&mut self) -> Result<()> {
         self.do_recover()?;
-        self.bm.borrow_mut().flush_all(self.txnum)?;
+
+        let mut lm = self.lm.lock().unwrap();
+        let mut bm = self.bm.lock().unwrap();
+
+        bm.flush_all(self.txnum)?;
         let lsn = CheckpointRecord::write_to_log(Arc::clone(&self.lm))?;
-        self.lm.borrow_mut().flush(lsn)
+        lm.flush(lsn)
     }
     pub fn set_i32(&mut self, buff: &mut Buffer, offset: i32, _new_val: i32) -> Result<u64> {
         let old_val = buff.contents().get_i32(offset as usize)?;
@@ -99,7 +113,9 @@ impl RecoveryMgr {
         )))
     }
     fn do_rollback(&mut self) -> Result<()> {
-        let mut iter = self.lm.borrow_mut().iterator()?;
+        let mut lm = self.lm.lock().unwrap();
+
+        let mut iter = lm.iterator()?;
         while let Some(bytes) = iter.next() {
             let mut rec = logrecord::create_log_record(bytes)?;
             if rec.tx_number() == self.txnum {
@@ -115,7 +131,9 @@ impl RecoveryMgr {
     }
     fn do_recover(&mut self) -> Result<()> {
         let mut finished_txs = vec![];
-        let mut iter = self.lm.borrow_mut().iterator()?;
+        let mut lm = self.lm.lock().unwrap();
+
+        let mut iter = lm.iterator()?;
         while let Some(bytes) = iter.next() {
             let mut rec = logrecord::create_log_record(bytes)?;
             match rec.op() {
