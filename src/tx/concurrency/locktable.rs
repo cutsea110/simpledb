@@ -94,7 +94,7 @@ impl LockTable {
         Err(From::from(LockTableError::LockFailed("x_lock".to_string())))
     }
     fn has_x_lock(&self, blk: &BlockId) -> bool {
-        self.get_lock_val(&blk) < 0
+        self.get_lock_val(blk) < 0
     }
     fn has_other_s_locks(&self, blk: &BlockId) -> bool {
         self.get_lock_val(blk) > 1
