@@ -1,7 +1,6 @@
 use anyhow::Result;
 use core::fmt;
 use std::{
-    cell::RefCell,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -36,102 +35,106 @@ impl fmt::Display for BufferMgrError {
 }
 
 pub struct BufferMgr {
-    bufferpool: Vec<Arc<RefCell<Buffer>>>,
-    num_available: usize,
-    // for synchronized
-    l: Arc<Mutex<()>>,
+    bufferpool: Vec<Arc<Mutex<Buffer>>>,
+    num_available: Arc<Mutex<usize>>,
 }
 
 impl BufferMgr {
-    pub fn new(fm: Arc<RefCell<FileMgr>>, lm: Arc<RefCell<LogMgr>>, numbuffs: usize) -> Self {
+    pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, numbuffs: usize) -> Self {
         let bufferpool = (0..numbuffs)
-            .map(|_| Arc::new(RefCell::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
+            .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
 
         Self {
             bufferpool,
-            num_available: numbuffs,
-            l: Arc::new(Mutex::default()),
+            num_available: Arc::new(Mutex::new(numbuffs)),
         }
     }
     pub fn available(&self) -> Result<usize> {
-        if self.l.lock().is_ok() {
-            return Ok(self.num_available);
-        }
-
-        Err(From::from(BufferMgrError::LockFailed(
-            "available".to_string(),
-        )))
+        let num = self.num_available.lock().unwrap();
+        return Ok(*num);
     }
     pub fn flush_all(&mut self, txnum: i32) -> Result<()> {
-        if self.l.lock().is_ok() {
-            for i in 0..self.bufferpool.len() {
-                if self.bufferpool[i].borrow().modifying_tx() == txnum {
-                    self.bufferpool[i].borrow_mut().flush()?;
-                }
+        for i in 0..self.bufferpool.len() {
+            let mut buff = self.bufferpool[i].lock().unwrap();
+            if buff.modifying_tx() == txnum {
+                buff.flush()?;
             }
         }
 
-        Err(From::from(BufferMgrError::LockFailed(
-            "flush_all".to_string(),
-        )))
+        Ok(())
     }
-    pub fn unpin(&mut self, buff: Arc<RefCell<Buffer>>) -> Result<()> {
-        if self.l.lock().is_ok() {
-            buff.borrow_mut().unpin();
+    pub fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
+        let mut b = buff.lock().unwrap();
 
-            if !buff.borrow().is_pinned() {
-                self.num_available += 1;
-            }
+        b.unpin();
 
-            return Ok(());
+        if !b.is_pinned() {
+            *(self.num_available.lock().unwrap()) += 1;
         }
 
-        Err(From::from(BufferMgrError::LockFailed("unpin".to_string())))
+        Ok(())
     }
-    pub fn pin(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
-        if self.l.lock().is_ok() {
-            let timestamp = SystemTime::now();
+    pub fn pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
+        let timestamp = SystemTime::now();
 
-            while !waiting_too_long(timestamp) {
-                if let Ok(buff) = self.try_to_pin(blk) {
-                    return Ok(buff);
-                }
-                thread::sleep(Duration::new(1, 0))
+        while !waiting_too_long(timestamp) {
+            if let Ok(buff) = self.try_to_pin(blk) {
+                return Ok(buff);
             }
-
-            return Err(From::from(BufferMgrError::BufferAbort));
+            thread::sleep(Duration::new(1, 0))
         }
 
-        Err(From::from(BufferMgrError::LockFailed("pin".to_string())))
+        return Err(From::from(BufferMgrError::BufferAbort));
     }
-    fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<RefCell<Buffer>>> {
+    fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         if let Some(buff) = self.pickup_pinnable_buffer(blk) {
-            if !buff.borrow_mut().is_pinned() {
-                self.num_available -= 1;
+            match buff.lock() {
+                Err(e) => {
+                    return Err(From::from(BufferMgrError::LockFailed(
+                        "try_to_pin".to_string(),
+                    )));
+                }
+                Ok(mut b) => {
+                    if !b.is_pinned() {
+                        *(self.num_available.lock().unwrap()) -= 1;
+                    }
+                    b.pin()
+                }
             }
-            buff.borrow_mut().pin();
-
             return Ok(buff);
         }
 
         Err(From::from(BufferMgrError::BufferAbort))
     }
-    fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
-        self.find_existing_buffer(blk).or_else(|| {
-            self.choose_unpinned_buffer().and_then(|buff| {
-                if let Err(e) = buff.borrow_mut().assign_to_block(blk.clone()) {
-                    eprintln!("failed to assign to block: {}", e);
+    fn pickup_pinnable_buffer(&mut self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
+        if let Some(buff) = self.find_existing_buffer(blk) {
+            return Some(buff);
+        }
+
+        if let Some(buff) = self.choose_unpinned_buffer() {
+            match buff.lock() {
+                Ok(mut b) => {
+                    if let Err(e) = b.assign_to_block(blk.clone()) {
+                        eprintln!("failed to assign to block: {}", e);
+                        return None;
+                    }
+                }
+                Err(e) => {
                     return None;
                 }
+            }
 
-                Some(buff)
-            })
-        })
+            return Some(buff);
+        }
+
+        None
     }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<RefCell<Buffer>>> {
+    fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
         for i in 0..self.bufferpool.len() {
-            if let Some(b) = self.bufferpool[i].borrow().block() {
+            let buff = self.bufferpool[i].lock().unwrap();
+
+            if let Some(b) = buff.block() {
                 if *b == *blk {
                     return Some(Arc::clone(&self.bufferpool[i]));
                 }
@@ -141,9 +144,11 @@ impl BufferMgr {
         None
     }
     // The Naive Strategy
-    fn choose_unpinned_buffer(&mut self) -> Option<Arc<RefCell<Buffer>>> {
+    fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
         for i in 0..self.bufferpool.len() {
-            if !self.bufferpool[i].borrow().is_pinned() {
+            let buff = self.bufferpool[i].lock().unwrap();
+
+            if !buff.is_pinned() {
                 return Some(Arc::clone(&self.bufferpool[i]));
             }
         }

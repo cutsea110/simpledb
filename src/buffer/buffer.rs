@@ -1,6 +1,6 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, sync::Arc};
+use std::sync::{Arc, Mutex};
 
 use crate::{
     file::{block_id::BlockId, manager::FileMgr, page::Page},
@@ -23,8 +23,8 @@ impl fmt::Display for BufferError {
 }
 
 pub struct Buffer {
-    fm: Arc<RefCell<FileMgr>>,
-    lm: Arc<RefCell<LogMgr>>,
+    fm: Arc<Mutex<FileMgr>>,
+    lm: Arc<Mutex<LogMgr>>,
     contents: Page,
     blk: Option<BlockId>,
     pins: u64,
@@ -33,8 +33,8 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(fm: Arc<RefCell<FileMgr>>, lm: Arc<RefCell<LogMgr>>) -> Self {
-        let blksize = fm.borrow().block_size() as usize;
+    pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>) -> Self {
+        let blksize = fm.lock().unwrap().block_size() as usize;
         let contents = Page::new_from_size(blksize);
 
         Self {
@@ -67,19 +67,24 @@ impl Buffer {
     }
     pub fn assign_to_block(&mut self, b: BlockId) -> Result<()> {
         self.flush()?;
-        self.fm.borrow_mut().read(&b, &mut self.contents)?;
+
+        let mut fm = self.fm.lock().unwrap();
+
+        fm.read(&b, &mut self.contents)?;
         self.blk = Some(b);
         self.pins = 0;
 
         Ok(())
     }
     pub fn flush(&mut self) -> Result<()> {
+        let mut lm = self.lm.lock().unwrap();
         if self.txnum >= 0 {
-            self.lm.borrow_mut().flush(self.lsn as u64)?;
+            lm.flush(self.lsn as u64)?;
 
             match self.blk.as_ref() {
                 Some(blk) => {
-                    self.fm.borrow_mut().write(blk, &mut self.contents)?;
+                    let mut fm = self.fm.lock().unwrap();
+                    fm.write(blk, &mut self.contents)?;
                     self.txnum = -1;
                 }
                 None => return Err(From::from(BufferError::BlockNotFound)),
