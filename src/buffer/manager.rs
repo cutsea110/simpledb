@@ -93,19 +93,14 @@ impl BufferMgr {
     }
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         if let Some(buff) = self.pickup_pinnable_buffer(blk) {
-            match buff.lock() {
-                Err(e) => {
-                    return Err(From::from(BufferMgrError::LockFailed(
-                        "try_to_pin".to_string(),
-                    )));
-                }
-                Ok(mut b) => {
-                    if !b.is_pinned() {
-                        *(self.num_available.lock().unwrap()) -= 1;
-                    }
-                    b.pin()
-                }
+            let mut b = buff.lock().unwrap();
+
+            if !b.is_pinned() {
+                *(self.num_available.lock().unwrap()) -= 1;
             }
+            b.pin();
+
+            drop(b); // release lock
             return Ok(buff);
         }
 

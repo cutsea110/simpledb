@@ -51,7 +51,7 @@ impl LockTable {
                 *locks.entry(blk).or_insert(0) += 1; // will not be negative
                 return Ok(());
             }
-            drop(locks); // release
+            drop(locks); // release lock
             thread::sleep(Duration::new(1, 0));
         }
 
@@ -67,7 +67,7 @@ impl LockTable {
                 *locks.entry(blk).or_insert(-1) = -1; // means eXclusive lock
                 return Ok(());
             }
-            drop(locks); // release
+            drop(locks); // release lock
             thread::sleep(Duration::new(1, 0));
         }
 
