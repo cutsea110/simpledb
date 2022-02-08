@@ -38,7 +38,7 @@ impl StartRecord {
 
         Ok(Self { txnum })
     }
-    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>, txnum: i32) -> Result<u64> {
+    pub fn write_to_log(lm: &mut LogMgr, txnum: i32) -> Result<u64> {
         let tpos = mem::size_of::<i32>();
         let reclen = tpos + mem::size_of::<i32>();
 
@@ -46,6 +46,6 @@ impl StartRecord {
         p.set_i32(0, TxType::START as i32)?;
         p.set_i32(tpos, txnum)?;
 
-        lm.lock().unwrap().append(p.contents())
+        lm.append(p.contents())
     }
 }

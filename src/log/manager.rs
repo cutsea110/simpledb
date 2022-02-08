@@ -86,6 +86,7 @@ impl LogMgr {
 
         Ok(iter)
     }
+    // synchronized
     pub fn append(&mut self, logrec: &mut Vec<u8>) -> Result<u64> {
         let mut boundary = self.logpage.get_i32(0)?;
         let recsize = logrec.len() as i32;

@@ -63,7 +63,7 @@ impl SetStringRecord {
         })
     }
     pub fn write_to_log(
-        lm: Arc<Mutex<LogMgr>>,
+        lm: &mut LogMgr,
         txnum: i32,
         blk: &BlockId,
         offset: i32,
@@ -84,6 +84,6 @@ impl SetStringRecord {
         p.set_i32(opos, offset)?;
         p.set_string(vpos, val)?;
 
-        lm.lock().unwrap().append(p.contents())
+        lm.append(p.contents())
     }
 }

@@ -50,10 +50,12 @@ impl BufferMgr {
             num_available: Arc::new(Mutex::new(numbuffs)),
         }
     }
+    // synchronized
     pub fn available(&self) -> Result<usize> {
         let num = self.num_available.lock().unwrap();
         return Ok(*num);
     }
+    // synchronized
     pub fn flush_all(&mut self, txnum: i32) -> Result<()> {
         for i in 0..self.bufferpool.len() {
             let mut buff = self.bufferpool[i].lock().unwrap();
@@ -64,6 +66,7 @@ impl BufferMgr {
 
         Ok(())
     }
+    // synchronized
     pub fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
         let mut b = buff.lock().unwrap();
 
@@ -75,6 +78,7 @@ impl BufferMgr {
 
         Ok(())
     }
+    // synchronized
     pub fn pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         let timestamp = SystemTime::now();
 

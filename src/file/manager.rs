@@ -63,6 +63,7 @@ impl FileMgr {
             open_files: HashMap::new(),
         })
     }
+    // synchronized
     pub fn read(&mut self, blk: &BlockId, p: &mut Page) -> Result<()> {
         let offset = blk.number() * self.blocksize;
 
@@ -86,6 +87,7 @@ impl FileMgr {
 
         Err(From::from(FileMgrError::FileAccessFailed(blk.file_name())))
     }
+    // synchronized
     pub fn write(&mut self, blk: &BlockId, p: &mut Page) -> Result<()> {
         let offset = blk.number() * self.blocksize;
 
@@ -99,6 +101,7 @@ impl FileMgr {
 
         Err(From::from(FileMgrError::FileAccessFailed(blk.file_name())))
     }
+    // synchronized
     pub fn append(&mut self, filename: &str) -> Result<BlockId> {
         let new_blknum = self.length(filename)?;
         let blk = BlockId::new(filename, new_blknum);
