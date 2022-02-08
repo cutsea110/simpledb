@@ -113,18 +113,14 @@ impl BufferMgr {
         }
 
         if let Some(buff) = self.choose_unpinned_buffer() {
-            match buff.lock() {
-                Ok(mut b) => {
-                    if let Err(e) = b.assign_to_block(blk.clone()) {
-                        eprintln!("failed to assign to block: {}", e);
-                        return None;
-                    }
-                }
-                Err(e) => {
-                    return None;
-                }
+            let mut b = buff.lock().unwrap();
+
+            if let Err(e) = b.assign_to_block(blk.clone()) {
+                eprintln!("failed to assign to block: {}", e);
+                return None;
             }
 
+            drop(b);
             return Some(buff);
         }
 
