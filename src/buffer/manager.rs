@@ -95,6 +95,8 @@ impl BufferMgr {
         if let Some(buff) = self.pickup_pinnable_buffer(blk) {
             let mut b = buff.lock().unwrap();
 
+            b.assign_to_block(blk.clone())?;
+
             if !b.is_pinned() {
                 *(self.num_available.lock().unwrap()) -= 1;
             }
