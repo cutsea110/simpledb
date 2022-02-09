@@ -11,7 +11,9 @@ use crate::{
     log::manager::LogMgr,
 };
 
-use super::{bufferlist::BufferList, concurrency::manager::ConcurrencyMgr};
+use super::{
+    bufferlist::BufferList, concurrency::manager::ConcurrencyMgr, recovery::manager::RecoveryMgr,
+};
 
 static END_OF_FILE: i64 = -1;
 
@@ -19,6 +21,7 @@ pub struct Transaction {
     // static member (shared by all Transaction)
     next_tx_num: Arc<Mutex<i32>>,
 
+    recovery_mgr: Option<Arc<Mutex<RecoveryMgr>>>,
     concur_mgr: ConcurrencyMgr,
     bm: Arc<Mutex<BufferMgr>>,
     fm: Arc<Mutex<FileMgr>>,
@@ -39,10 +42,11 @@ impl Transaction {
 
             let mut tran = Self {
                 next_tx_num: NEXT_TX_NUM.clone().unwrap(),
+                recovery_mgr: None, // dummy
                 concur_mgr: ConcurrencyMgr::new(),
                 bm: Arc::clone(&bm),
                 fm,
-                txnum: 0,
+                txnum: 0, // dummy
                 mybuffers: BufferList::new(bm),
             };
 

@@ -38,10 +38,10 @@ pub struct RecoveryMgr {
 }
 
 impl RecoveryMgr {
-    pub fn new(tx: Transaction, txnum: i32, mut lm: LogMgr, bm: BufferMgr) -> Result<Self> {
-        StartRecord::write_to_log(&mut lm, txnum)?;
+    pub fn new(tx: Transaction, txnum: i32, mut lm: LogMgr, bm: BufferMgr) -> Self {
+        StartRecord::write_to_log(&mut lm, txnum).unwrap();
 
-        Ok(Self { lm, bm, tx, txnum })
+        Self { lm, bm, tx, txnum }
     }
     pub fn commit(&mut self) -> Result<()> {
         self.bm.flush_all(self.txnum)?;
