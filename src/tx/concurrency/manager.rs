@@ -19,17 +19,17 @@ impl ConcurrencyMgr {
     pub fn new() -> Self {
         // make locktbl a static member by singleton pattern
         // ref.) https://stackoverflow.com/questions/27791532/how-do-i-create-a-global-mutable-singleton
-        static mut SINGLETON: Option<Arc<Mutex<LockTable>>> = None;
+        static mut LOCKTBL: Option<Arc<Mutex<LockTable>>> = None;
         static ONCE: Once = Once::new();
 
         unsafe {
             ONCE.call_once(|| {
-                let singleton = Arc::new(Mutex::new(LockTable::new()));
-                SINGLETON = Some(singleton);
+                let locktbl = Arc::new(Mutex::new(LockTable::new()));
+                LOCKTBL = Some(locktbl);
             });
 
             Self {
-                locktbl: SINGLETON.clone().unwrap(),
+                locktbl: LOCKTBL.clone().unwrap(),
                 locks: HashMap::new(),
             }
         }

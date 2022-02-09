@@ -11,6 +11,8 @@ use crate::{
     log::manager::LogMgr,
 };
 
+static END_OF_FILE: i64 = -1;
+
 pub struct Transaction {
     // static member (shared by all Transaction)
     next_tx_num: Arc<Mutex<u64>>,
@@ -22,17 +24,17 @@ pub struct Transaction {
 
 impl Transaction {
     pub fn new(fm: FileMgr, lm: LogMgr, bm: BufferMgr) -> Self {
-        static mut SINGLETON: Option<Arc<Mutex<u64>>> = None;
+        static mut NEXT_TX_NUM: Option<Arc<Mutex<u64>>> = None;
         static ONCE: Once = Once::new();
 
         unsafe {
             ONCE.call_once(|| {
-                let singleton = Arc::new(Mutex::new(1));
-                SINGLETON = Some(singleton);
+                let next_tx_num = Arc::new(Mutex::new(1));
+                NEXT_TX_NUM = Some(next_tx_num);
             });
 
             Self {
-                next_tx_num: SINGLETON.clone().unwrap(),
+                next_tx_num: NEXT_TX_NUM.clone().unwrap(),
                 fm,
                 lm,
                 bm,
