@@ -23,8 +23,8 @@ impl BufferList {
             bm,
         }
     }
-    fn get_bufer(&mut self, blk: &BlockId) -> Option<&mut Arc<Mutex<Buffer>>> {
-        self.buffers.get_mut(blk)
+    fn get_bufer(&mut self, blk: &BlockId) -> Option<&Arc<Mutex<Buffer>>> {
+        self.buffers.get(blk)
     }
     fn pin(&mut self, blk: BlockId) -> Result<()> {
         let buff = self.bm.pin(&blk)?;
@@ -41,6 +41,7 @@ impl BufferList {
                 self.buffers.remove(blk);
             }
         }
+
         Ok(())
     }
     fn unpil_all(&mut self) -> Result<()> {
