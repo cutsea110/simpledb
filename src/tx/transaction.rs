@@ -11,19 +11,22 @@ use crate::{
     log::manager::LogMgr,
 };
 
+use super::{bufferlist::BufferList, concurrency::manager::ConcurrencyMgr};
+
 static END_OF_FILE: i64 = -1;
 
 pub struct Transaction {
     // static member (shared by all Transaction)
     next_tx_num: Arc<Mutex<u64>>,
 
-    fm: FileMgr,
-    lm: LogMgr,
-    bm: BufferMgr,
+    concur_mgr: ConcurrencyMgr,
+    fm: Arc<Mutex<FileMgr>>,
+    bm: Arc<Mutex<BufferMgr>>,
+    mybuffers: BufferList,
 }
 
 impl Transaction {
-    pub fn new(fm: FileMgr, lm: LogMgr, bm: BufferMgr) -> Self {
+    pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, bm: Arc<Mutex<BufferMgr>>) -> Self {
         static mut NEXT_TX_NUM: Option<Arc<Mutex<u64>>> = None;
         static ONCE: Once = Once::new();
 
@@ -35,9 +38,10 @@ impl Transaction {
 
             Self {
                 next_tx_num: NEXT_TX_NUM.clone().unwrap(),
+                concur_mgr: ConcurrencyMgr::new(),
                 fm,
-                lm,
-                bm,
+                bm: Arc::clone(&bm),
+                mybuffers: BufferList::new(bm),
             }
         }
     }
@@ -86,10 +90,10 @@ impl Transaction {
     pub fn available_buffs(&self) -> Result<usize> {
         panic!("TODO")
     }
-    fn next_tx_number(&mut self) -> Result<u64> {
+    fn next_tx_number(&mut self) -> u64 {
         let mut next_tx_num = self.next_tx_num.lock().unwrap();
         *next_tx_num += 1;
 
-        Ok(*next_tx_num)
+        *next_tx_num
     }
 }

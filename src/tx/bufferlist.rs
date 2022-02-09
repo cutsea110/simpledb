@@ -12,11 +12,11 @@ use crate::{
 pub struct BufferList {
     buffers: HashMap<BlockId, Arc<Mutex<Buffer>>>,
     pins: Vec<BlockId>,
-    bm: BufferMgr,
+    bm: Arc<Mutex<BufferMgr>>,
 }
 
 impl BufferList {
-    pub fn new(bm: BufferMgr) -> Self {
+    pub fn new(bm: Arc<Mutex<BufferMgr>>) -> Self {
         Self {
             buffers: HashMap::new(),
             pins: vec![],
@@ -27,7 +27,7 @@ impl BufferList {
         self.buffers.get(blk)
     }
     fn pin(&mut self, blk: BlockId) -> Result<()> {
-        let buff = self.bm.pin(&blk)?;
+        let buff = self.bm.lock().unwrap().pin(&blk)?;
         self.buffers.insert(blk.clone(), buff);
         self.pins.push(blk);
 
@@ -35,7 +35,7 @@ impl BufferList {
     }
     fn unpin(&mut self, blk: &BlockId) -> Result<()> {
         if let Some(buff) = self.buffers.get(blk) {
-            self.bm.unpin(buff.clone())?;
+            self.bm.lock().unwrap().unpin(buff.clone())?;
             self.pins.retain(|x| x == blk);
             if self.pins.contains(blk) {
                 self.buffers.remove(blk);
@@ -47,7 +47,7 @@ impl BufferList {
     fn unpil_all(&mut self) -> Result<()> {
         for blk in self.pins.iter() {
             if let Some(buff) = self.buffers.get(blk) {
-                self.bm.unpin(buff.clone())?;
+                self.bm.lock().unwrap().unpin(buff.clone())?;
             }
         }
         self.buffers.clear();
