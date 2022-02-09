@@ -91,8 +91,10 @@ impl BufferMgr {
 
         return Err(From::from(BufferMgrError::BufferAbort));
     }
+    // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         if let Some(buff) = self.pickup_pinnable_buffer(blk) {
+            // TODO: consider what happen, if an another thread get the same buff and assigned at this point?
             let mut b = buff.lock().unwrap();
 
             b.assign_to_block(blk.clone())?;
