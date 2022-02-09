@@ -1,4 +1,7 @@
-use std::usize;
+use std::{
+    sync::{Arc, Mutex, Once},
+    usize,
+};
 
 use anyhow::Result;
 
@@ -9,6 +12,9 @@ use crate::{
 };
 
 pub struct Transaction {
+    // static member (shared by all Transaction)
+    next_tx_num: Arc<Mutex<u64>>,
+
     fm: FileMgr,
     lm: LogMgr,
     bm: BufferMgr,
@@ -16,7 +22,22 @@ pub struct Transaction {
 
 impl Transaction {
     pub fn new(fm: FileMgr, lm: LogMgr, bm: BufferMgr) -> Self {
-        Self { fm, lm, bm }
+        static mut SINGLETON: Option<Arc<Mutex<u64>>> = None;
+        static ONCE: Once = Once::new();
+
+        unsafe {
+            ONCE.call_once(|| {
+                let singleton = Arc::new(Mutex::new(1));
+                SINGLETON = Some(singleton);
+            });
+
+            Self {
+                next_tx_num: SINGLETON.clone().unwrap(),
+                fm,
+                lm,
+                bm,
+            }
+        }
     }
     pub fn commit(&mut self) -> Result<()> {
         panic!("TODO")
@@ -63,7 +84,10 @@ impl Transaction {
     pub fn available_buffs(&self) -> Result<usize> {
         panic!("TODO")
     }
-    fn next_tx_number(&mut self) -> Result<i32> {
-        panic!("TODO")
+    fn next_tx_number(&mut self) -> Result<u64> {
+        let mut next_tx_num = self.next_tx_num.lock().unwrap();
+        *next_tx_num += 1;
+
+        Ok(*next_tx_num)
     }
 }
