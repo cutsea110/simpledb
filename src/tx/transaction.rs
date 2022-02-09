@@ -17,32 +17,40 @@ static END_OF_FILE: i64 = -1;
 
 pub struct Transaction {
     // static member (shared by all Transaction)
-    next_tx_num: Arc<Mutex<u64>>,
+    next_tx_num: Arc<Mutex<i32>>,
 
     concur_mgr: ConcurrencyMgr,
-    fm: Arc<Mutex<FileMgr>>,
     bm: Arc<Mutex<BufferMgr>>,
+    fm: Arc<Mutex<FileMgr>>,
+    txnum: i32,
     mybuffers: BufferList,
 }
 
 impl Transaction {
     pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, bm: Arc<Mutex<BufferMgr>>) -> Self {
-        static mut NEXT_TX_NUM: Option<Arc<Mutex<u64>>> = None;
+        static mut NEXT_TX_NUM: Option<Arc<Mutex<i32>>> = None;
         static ONCE: Once = Once::new();
 
         unsafe {
             ONCE.call_once(|| {
-                let next_tx_num = Arc::new(Mutex::new(1));
+                let next_tx_num = Arc::new(Mutex::new(0));
                 NEXT_TX_NUM = Some(next_tx_num);
             });
 
-            Self {
+            let mut tran = Self {
                 next_tx_num: NEXT_TX_NUM.clone().unwrap(),
                 concur_mgr: ConcurrencyMgr::new(),
-                fm,
                 bm: Arc::clone(&bm),
+                fm,
+                txnum: 0,
                 mybuffers: BufferList::new(bm),
-            }
+            };
+
+            // update txnum
+            let next_tx_num = tran.next_tx_number();
+            tran.txnum = next_tx_num;
+
+            tran
         }
     }
     pub fn commit(&mut self) -> Result<()> {
@@ -90,7 +98,7 @@ impl Transaction {
     pub fn available_buffs(&self) -> Result<usize> {
         panic!("TODO")
     }
-    fn next_tx_number(&mut self) -> u64 {
+    fn next_tx_number(&mut self) -> i32 {
         let mut next_tx_num = self.next_tx_num.lock().unwrap();
         *next_tx_num += 1;
 
