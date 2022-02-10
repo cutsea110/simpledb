@@ -53,33 +53,75 @@ impl Transaction {
             // update txnum
             let next_tx_num = tran.next_tx_number();
             tran.txnum = next_tx_num;
+            // TODO: set recovery_mgr field (cyclic reference)
 
             tran
         }
     }
     pub fn commit(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.recovery_mgr
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .commit()?;
+        self.concur_mgr.release()?;
+        self.mybuffers.unpin_all()?;
+        println!("transaction {} committed", self.txnum);
+
+        Ok(())
     }
     pub fn rollback(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.recovery_mgr
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .rollback()?;
+        self.concur_mgr.release()?;
+        self.mybuffers.unpin_all()?;
+        println!("transaction {} rolled back", self.txnum);
+
+        Ok(())
     }
     pub fn recover(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.bm.lock().unwrap().flush_all(self.txnum)?;
+        self.recovery_mgr
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .recover()
     }
     pub fn pin(&mut self, blk: &BlockId) -> Result<()> {
-        panic!("TODO")
+        self.mybuffers.pin(blk)
     }
     pub fn unpin(&mut self, blk: &BlockId) -> Result<()> {
-        panic!("TODO")
+        self.mybuffers.unpin(blk)
     }
-    pub fn get_i32(&self, blk: &BlockId, offset: i32) -> Result<i32> {
-        panic!("TODO")
+    pub fn get_i32(&mut self, blk: &BlockId, offset: i32) -> Result<i32> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_i32(offset as usize)
     }
-    pub fn get_string(&self, blk: &BlockId, offset: i32) -> Result<String> {
-        panic!("TODO")
+    pub fn get_string(&mut self, blk: &BlockId, offset: i32) -> Result<String> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_string(offset as usize)
     }
     pub fn set_i32(&mut self, blk: &BlockId, offset: i32, val: i32, ok_to_log: bool) -> Result<()> {
-        panic!("TODO")
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_i32(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_i32(offset as usize, val)?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
     }
     pub fn set_string(
         &mut self,
@@ -88,7 +130,18 @@ impl Transaction {
         val: &str,
         ok_to_log: bool,
     ) -> Result<()> {
-        panic!("TODO")
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_string(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_string(offset as usize, val.to_string())?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
     }
     pub fn size(&self, filename: &str) -> u64 {
         panic!("TODO")
@@ -97,10 +150,10 @@ impl Transaction {
         panic!("TODO")
     }
     pub fn block_size(&self) -> u64 {
-        panic!("TODO")
+        self.fm.lock().unwrap().block_size()
     }
     pub fn available_buffs(&self) -> Result<usize> {
-        panic!("TODO")
+        self.bm.lock().unwrap().available()
     }
     fn next_tx_number(&mut self) -> i32 {
         let mut next_tx_num = self.next_tx_num.lock().unwrap();

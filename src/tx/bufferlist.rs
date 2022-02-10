@@ -23,17 +23,17 @@ impl BufferList {
             bm,
         }
     }
-    fn get_bufer(&mut self, blk: &BlockId) -> Option<&Arc<Mutex<Buffer>>> {
+    pub fn get_bufer(&mut self, blk: &BlockId) -> Option<&Arc<Mutex<Buffer>>> {
         self.buffers.get(blk)
     }
-    fn pin(&mut self, blk: BlockId) -> Result<()> {
-        let buff = self.bm.lock().unwrap().pin(&blk)?;
+    pub fn pin(&mut self, blk: &BlockId) -> Result<()> {
+        let buff = self.bm.lock().unwrap().pin(blk)?;
         self.buffers.insert(blk.clone(), buff);
-        self.pins.push(blk);
+        self.pins.push(blk.clone());
 
         Ok(())
     }
-    fn unpin(&mut self, blk: &BlockId) -> Result<()> {
+    pub fn unpin(&mut self, blk: &BlockId) -> Result<()> {
         if let Some(buff) = self.buffers.get(blk) {
             self.bm.lock().unwrap().unpin(buff.clone())?;
             self.pins.retain(|x| x == blk);
@@ -44,7 +44,7 @@ impl BufferList {
 
         Ok(())
     }
-    fn unpil_all(&mut self) -> Result<()> {
+    pub fn unpin_all(&mut self) -> Result<()> {
         for blk in self.pins.iter() {
             if let Some(buff) = self.buffers.get(blk) {
                 self.bm.lock().unwrap().unpin(buff.clone())?;

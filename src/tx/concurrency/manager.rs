@@ -34,19 +34,19 @@ impl ConcurrencyMgr {
             }
         }
     }
-    pub fn s_lock(&mut self, blk: BlockId) -> Result<()> {
-        if self.locks.get(&blk).is_none() {
-            self.locktbl.lock().unwrap().s_lock(blk.clone())?;
-            self.locks.insert(blk, "S".to_string());
+    pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
+        if self.locks.get(blk).is_none() {
+            self.locktbl.lock().unwrap().s_lock(blk)?;
+            self.locks.insert(blk.clone(), "S".to_string());
         }
 
         Ok(())
     }
-    pub fn x_lock(&mut self, blk: BlockId) -> Result<()> {
-        if !self.has_x_lock(&blk) {
-            self.s_lock(blk.clone())?;
-            self.locktbl.lock().unwrap().x_lock(blk.clone())?;
-            self.locks.insert(blk, "X".to_string());
+    pub fn x_lock(&mut self, blk: &BlockId) -> Result<()> {
+        if !self.has_x_lock(blk) {
+            self.s_lock(blk)?;
+            self.locktbl.lock().unwrap().x_lock(blk)?;
+            self.locks.insert(blk.clone(), "X".to_string());
         }
 
         Ok(())
