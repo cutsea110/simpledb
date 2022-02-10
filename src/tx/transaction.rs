@@ -149,7 +149,7 @@ impl Transaction {
     pub fn append(&mut self, filename: &str) -> Result<BlockId> {
         panic!("TODO")
     }
-    pub fn block_size(&self) -> u64 {
+    pub fn block_size(&self) -> i32 {
         self.fm.lock().unwrap().block_size()
     }
     pub fn available_buffs(&self) -> Result<usize> {

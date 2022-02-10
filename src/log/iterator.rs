@@ -10,8 +10,8 @@ pub struct LogIterator {
     fm: Arc<Mutex<FileMgr>>,
     blk: BlockId,
     p: Page,
-    currentpos: u64,
-    boundary: u64,
+    currentpos: i32,
+    boundary: i32,
 }
 
 impl LogIterator {
@@ -22,7 +22,7 @@ impl LogIterator {
 
         // move to block
         filemgr.read(&blk, &mut p)?;
-        let boundary = p.get_i32(0)? as u64;
+        let boundary = p.get_i32(0)?;
         let currentpos = boundary;
 
         drop(filemgr);
@@ -57,7 +57,7 @@ impl Iterator for LogIterator {
             }
 
             if let Ok(n) = self.p.get_i32(0) {
-                self.boundary = n as u64;
+                self.boundary = n;
                 self.currentpos = self.boundary;
             } else {
                 return None;
@@ -65,8 +65,8 @@ impl Iterator for LogIterator {
         }
 
         if let Ok(rec) = self.p.get_bytes_vec(self.currentpos as usize) {
-            let i32_size = mem::size_of::<i32>() as u64;
-            self.currentpos += i32_size + rec.len() as u64;
+            let i32_size = mem::size_of::<i32>() as i32;
+            self.currentpos += i32_size + rec.len() as i32;
 
             return Some(rec);
         }

@@ -30,13 +30,13 @@ impl fmt::Display for FileMgrError {
 
 pub struct FileMgr {
     db_directory: String,
-    blocksize: u64,
+    blocksize: i32,
     is_new: bool,
     open_files: HashMap<String, Arc<Mutex<File>>>,
 }
 
 impl FileMgr {
-    pub fn new(db_directory: &str, blocksize: u64) -> Result<Self> {
+    pub fn new(db_directory: &str, blocksize: i32) -> Result<Self> {
         let path = Path::new(db_directory);
         let is_new = !path.exists();
 
@@ -69,7 +69,7 @@ impl FileMgr {
 
         if let Some(file) = self.get_file(blk.file_name().as_str()) {
             let mut f = file.lock().unwrap();
-            f.seek(SeekFrom::Start(offset))?;
+            f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
 
             let read_len = f.read(p.contents())?;
             let p_len = p.contents().len();
@@ -93,7 +93,7 @@ impl FileMgr {
 
         if let Some(file) = self.get_file(blk.file_name().as_str()) {
             let mut f = file.lock().unwrap();
-            f.seek(SeekFrom::Start(offset))?;
+            f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
             f.write_all(p.contents())?;
 
             return Ok(());
@@ -110,7 +110,7 @@ impl FileMgr {
 
         if let Some(file) = self.get_file(blk.file_name().as_str()) {
             let mut f = file.lock().unwrap();
-            f.seek(SeekFrom::Start(offset))?;
+            f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
             f.write_all(&b)?;
 
             return Ok(blk);
@@ -120,18 +120,18 @@ impl FileMgr {
             filename.to_string(),
         )))
     }
-    pub fn length(&mut self, filename: &str) -> Result<u64> {
+    pub fn length(&mut self, filename: &str) -> Result<i32> {
         let path = Path::new(&self.db_directory).join(filename);
         let _ = self.get_file(filename).unwrap();
         let meta = fs::metadata(&path)?;
 
         // ceiling
-        Ok((meta.len() + self.blocksize - 1) / self.blocksize)
+        Ok((meta.len() as i32 + self.blocksize - 1) / self.blocksize)
     }
     pub fn is_new(&self) -> bool {
         self.is_new
     }
-    pub fn block_size(&self) -> u64 {
+    pub fn block_size(&self) -> i32 {
         self.blocksize
     }
     fn get_file(&mut self, filename: &str) -> Option<&mut Arc<Mutex<File>>> {

@@ -38,7 +38,7 @@ impl LogMgr {
         let mut filemgr = fm.lock().unwrap();
 
         let mut logpage = Page::new_from_size(filemgr.block_size() as usize);
-        let logsize = filemgr.length(logfile)?;
+        let logsize = filemgr.length(logfile)? as i32;
 
         let logmgr;
 

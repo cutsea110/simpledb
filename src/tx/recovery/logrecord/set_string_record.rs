@@ -46,7 +46,7 @@ impl SetStringRecord {
         let filename = p.get_string(fpos)?;
         let bpos = fpos + Page::max_length(filename.len());
         let blknum = p.get_i32(bpos)?;
-        let blk = BlockId::new(&filename, blknum as u64);
+        let blk = BlockId::new(&filename, blknum);
         let opos = bpos + mem::size_of::<i32>();
         let offset = p.get_i32(opos)?;
         let vpos = opos + mem::size_of::<i32>();
