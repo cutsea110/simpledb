@@ -152,3 +152,27 @@ impl FileMgr {
         Some(f)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+
+    #[test]
+    fn unit_test() {
+        let mut fm = FileMgr::new("filetest", 400).unwrap();
+        let blk = BlockId::new("testfile", 2);
+        let mut p1 = Page::new_from_size(fm.block_size() as usize);
+        let pos1 = 88;
+        p1.set_string(pos1, "abcdefghijklm".to_string()).unwrap();
+        let size = Page::max_length("abcdefghijjklm".len());
+        let pos2 = pos1 + size;
+        p1.set_i32(pos2, 345).unwrap();
+        fm.write(&blk, &mut p1).unwrap();
+
+        let mut p2 = Page::new_from_size(fm.block_size() as usize);
+        fm.read(&blk, &mut p2).unwrap();
+        assert_eq!(345, p2.get_i32(pos2).unwrap());
+        assert_eq!("abcdefghijklm".to_string(), p2.get_string(pos1).unwrap());
+    }
+}
