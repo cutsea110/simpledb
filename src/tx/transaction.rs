@@ -15,7 +15,7 @@ use super::{
     bufferlist::BufferList, concurrency::manager::ConcurrencyMgr, recovery::manager::RecoveryMgr,
 };
 
-static END_OF_FILE: i64 = -1;
+static END_OF_FILE: i32 = -1;
 
 pub struct Transaction {
     // static member (shared by all Transaction)
@@ -143,11 +143,15 @@ impl Transaction {
 
         Ok(())
     }
-    pub fn size(&self, filename: &str) -> u64 {
-        panic!("TODO")
+    pub fn size(&mut self, filename: &str) -> Result<i32> {
+        let dummyblk = BlockId::new(filename, END_OF_FILE);
+        self.concur_mgr.s_lock(&dummyblk)?;
+        self.fm.lock().unwrap().length(filename)
     }
     pub fn append(&mut self, filename: &str) -> Result<BlockId> {
-        panic!("TODO")
+        let dummyblk = BlockId::new(filename, END_OF_FILE);
+        self.concur_mgr.x_lock(&dummyblk)?;
+        self.fm.lock().unwrap().append(filename)
     }
     pub fn block_size(&self) -> i32 {
         self.fm.lock().unwrap().block_size()
