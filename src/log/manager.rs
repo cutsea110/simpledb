@@ -128,9 +128,10 @@ impl LogMgr {
 
 #[cfg(test)]
 mod tests {
-    use std::usize;
-
     use super::*;
+
+    use std::fs;
+    use std::usize;
 
     #[test]
     fn unit_test() {
@@ -141,6 +142,8 @@ mod tests {
         create_records(&mut lm, 35, 70);
         lm.flush(65).expect("LogMgr flush");
         print_log_records(&mut lm, "The log file now has these records:");
+
+        fs::remove_dir_all("logtest").expect("cleanup");
     }
     fn print_log_records(lm: &mut LogMgr, msg: &str) {
         println!("{}", msg);
