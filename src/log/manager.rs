@@ -135,6 +135,8 @@ mod tests {
 
     #[test]
     fn unit_test() {
+        fs::remove_dir_all("logtest").expect("cleanup");
+
         let fm = FileMgr::new("logtest", 400).expect("create FileMgr");
         let mut lm = LogMgr::new(Arc::new(Mutex::new(fm)), "testfile").expect("create LogMgr");
         create_records(&mut lm, 1, 35);
@@ -142,8 +144,6 @@ mod tests {
         create_records(&mut lm, 35, 70);
         lm.flush(65).expect("LogMgr flush");
         print_log_records(&mut lm, "The log file now has these records:");
-
-        fs::remove_dir_all("logtest").expect("cleanup");
     }
     fn print_log_records(lm: &mut LogMgr, msg: &str) {
         println!("{}", msg);

@@ -161,6 +161,8 @@ mod tests {
 
     #[test]
     fn unit_test() {
+        fs::remove_dir_all("filetest").expect("cleanup");
+
         let mut fm = FileMgr::new("filetest", 400).expect("create FileMgr");
         let blk = BlockId::new("testfile", 2);
         let mut p1 = Page::new_from_size(fm.block_size() as usize);
@@ -180,7 +182,5 @@ mod tests {
             "abcdefghijklm".to_string(),
             p2.get_string(pos1).expect("get string")
         );
-
-        fs::remove_dir_all("filetest").expect("cleanup");
     }
 }
