@@ -125,3 +125,52 @@ impl LogMgr {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::usize;
+
+    use super::*;
+
+    #[test]
+    fn unit_test() {
+        let fm = FileMgr::new("logtest", 400).expect("create FileMgr");
+        let mut lm = LogMgr::new(Arc::new(Mutex::new(fm)), "testfile").expect("create LogMgr");
+        create_records(&mut lm, 1, 35);
+        print_log_records(&mut lm, "The log file now has these records:");
+        create_records(&mut lm, 35, 70);
+        lm.flush(65).expect("LogMgr flush");
+        print_log_records(&mut lm, "The log file now has these records:");
+    }
+    fn print_log_records(lm: &mut LogMgr, msg: &str) {
+        println!("{}", msg);
+        let mut iter = lm.iterator().unwrap();
+        while iter.has_next() {
+            if let Some(rec) = iter.next() {
+                let p = Page::new_from_bytes(rec.clone());
+                let s = p.get_string(0).unwrap();
+                let npos = Page::max_length(s.len());
+                let val = p.get_i32(npos).unwrap();
+                println!("[{}, {}]", s, val);
+            }
+            println!("");
+        }
+    }
+    fn create_records(lm: &mut LogMgr, start: i32, end: i32) {
+        println!("Creating records: ");
+        for i in start..=end {
+            let mut rec = create_log_record(format!("record: {}", i), i + 100);
+            let lsn = lm.append(&mut rec).expect("LogMgr append");
+            println!("{} ", format!("{}", lsn));
+        }
+        println!("");
+    }
+    fn create_log_record(s: String, n: i32) -> Vec<u8> {
+        let npos = Page::max_length(s.len()) as i32;
+        let size = npos + mem::size_of::<i32>() as i32;
+        let mut p = Page::new_from_size(size as usize);
+        p.set_string(0, s).expect("set string");
+        p.set_i32(npos as usize, n).expect("set i32");
+        p.contents().clone()
+    }
+}
