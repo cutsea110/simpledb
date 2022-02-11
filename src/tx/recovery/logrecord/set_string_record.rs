@@ -39,7 +39,7 @@ impl LogRecord for SetStringRecord {
         let mut t = tx.lock().unwrap();
 
         t.pin(&self.blk)?;
-        t.set_string(&self.blk, self.offset, self.val.as_str(), false)?;
+        t.set_string(&self.blk, self.offset, self.val.as_str(), false)?; // don't log the undo!
         t.unpin(&self.blk)
     }
 }

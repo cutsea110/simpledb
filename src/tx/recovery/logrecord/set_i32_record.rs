@@ -41,7 +41,7 @@ impl LogRecord for SetI32Record {
         let mut t = tx.lock().unwrap();
 
         t.pin(&self.blk)?;
-        t.set_i32(&self.blk, self.offset, self.val, false)?;
+        t.set_i32(&self.blk, self.offset, self.val, false)?; // don't log the undo!
         t.unpin(&self.blk)
     }
 }
