@@ -47,6 +47,7 @@ impl LockTable {
 
         while !waiting_too_long(timestamp) {
             let mut locks = self.locks.lock().unwrap();
+
             if !has_x_lock(&locks, blk) {
                 *locks.entry(blk.clone()).or_insert(0) += 1; // will not be negative
                 return Ok(());
@@ -63,6 +64,7 @@ impl LockTable {
 
         while !waiting_too_long(timestamp) {
             let mut locks = self.locks.lock().unwrap();
+
             if !has_other_s_locks(&locks, blk) {
                 *locks.entry(blk.clone()).or_insert(-1) = -1; // means eXclusive lock
                 return Ok(());
