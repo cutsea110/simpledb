@@ -77,12 +77,12 @@ impl LockTable {
         Err(From::from(LockTableError::LockAbort))
     }
     // synchronized
-    pub fn unlock(&mut self, blk: BlockId) -> Result<()> {
+    pub fn unlock(&mut self, blk: &BlockId) -> Result<()> {
         let mut locks = self.locks.lock().unwrap();
 
         let val = get_lock_val(&locks, &blk);
         if val > 1 {
-            locks.entry(blk).or_insert(val - 1);
+            locks.entry(blk.clone()).or_insert(val - 1);
         } else {
             locks.remove(&blk);
             // means notify_all

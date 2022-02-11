@@ -54,7 +54,7 @@ impl ConcurrencyMgr {
     }
     pub fn release(&mut self) -> Result<()> {
         for blk in self.locks.keys() {
-            self.locktbl.lock().unwrap().unlock(blk.clone())?;
+            self.locktbl.lock().unwrap().unlock(blk)?;
         }
         self.locks.clear();
 
