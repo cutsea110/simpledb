@@ -165,14 +165,14 @@ mod tests {
         let mut bm = BufferMgr::new(Arc::clone(&fm), Arc::clone(&lm), 3);
 
         let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 6];
-        buff[0] = bm.pin(&BlockId::new("testfile", 0)).unwrap().into();
-        buff[1] = bm.pin(&BlockId::new("testfile", 1)).unwrap().into();
-        buff[2] = bm.pin(&BlockId::new("testfile", 2)).unwrap().into();
+        buff[0] = bm.pin(&BlockId::new("testfile", 0))?.into();
+        buff[1] = bm.pin(&BlockId::new("testfile", 1))?.into();
+        buff[2] = bm.pin(&BlockId::new("testfile", 2))?.into();
         bm.unpin(Arc::clone(&buff[1].clone().unwrap()))?;
         buff[1] = None;
 
-        buff[3] = bm.pin(&BlockId::new("testfile", 0)).unwrap().into();
-        buff[4] = bm.pin(&BlockId::new("testfile", 1)).unwrap().into();
+        buff[3] = bm.pin(&BlockId::new("testfile", 0))?.into();
+        buff[4] = bm.pin(&BlockId::new("testfile", 1))?.into();
         println!("Available buffers: {:?}", bm.available());
 
         println!("Attempting to pin block 3...");
@@ -184,7 +184,7 @@ mod tests {
         }
         bm.unpin(Arc::clone(&buff[2].clone().unwrap()))?;
         buff[2] = None;
-        buff[5] = bm.pin(&BlockId::new("testfile", 3)).unwrap().into(); // now this works
+        buff[5] = bm.pin(&BlockId::new("testfile", 3))?.into(); // now this works
 
         println!("Final buffer Allocation:");
         for i in 0..buff.len() {
