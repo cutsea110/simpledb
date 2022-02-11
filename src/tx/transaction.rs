@@ -166,3 +166,11 @@ impl Transaction {
         *next_tx_num
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn unit_test() {
+        // TODO: TxTest p109
+    }
+}

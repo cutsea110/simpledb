@@ -64,3 +64,11 @@ impl ConcurrencyMgr {
         return locktype.is_some() && locktype.unwrap().eq("X");
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn unit_test() {
+        // TODO: ConcurrencyTest p128
+    }
+}
