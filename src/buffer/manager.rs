@@ -95,16 +95,17 @@ impl BufferMgr {
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         if let Some(buff) = self.pickup_pinnable_buffer(blk) {
             // TODO: consider what happen, if an another thread get the same buff and assigned at this point?
-            let mut b = buff.lock().unwrap();
+            {
+                let mut b = buff.lock().unwrap();
 
-            b.assign_to_block(blk.clone())?;
+                b.assign_to_block(blk.clone())?;
 
-            if !b.is_pinned() {
-                *(self.num_available.lock().unwrap()) -= 1;
+                if !b.is_pinned() {
+                    *(self.num_available.lock().unwrap()) -= 1;
+                }
+                b.pin();
             }
-            b.pin();
 
-            drop(b); // release lock
             return Ok(buff);
         }
 
@@ -116,14 +117,15 @@ impl BufferMgr {
         }
 
         if let Some(buff) = self.choose_unpinned_buffer() {
-            let mut b = buff.lock().unwrap();
+            {
+                let mut b = buff.lock().unwrap();
 
-            if let Err(e) = b.assign_to_block(blk.clone()) {
-                eprintln!("failed to assign to block: {}", e);
-                return None;
+                if let Err(e) = b.assign_to_block(blk.clone()) {
+                    eprintln!("failed to assign to block: {}", e);
+                    return None;
+                }
             }
 
-            drop(b);
             return Some(buff);
         }
 
