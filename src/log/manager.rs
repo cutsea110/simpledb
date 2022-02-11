@@ -35,43 +35,34 @@ pub struct LogMgr {
 
 impl LogMgr {
     pub fn new(fm: Arc<Mutex<FileMgr>>, logfile: &str) -> Result<Self> {
-        let mut filemgr = fm.lock().unwrap();
+        let (logpage, currentblk) = {
+            let mut filemgr = fm.lock().unwrap();
 
-        let mut logpage = Page::new_from_size(filemgr.block_size() as usize);
-        let logsize = filemgr.length(logfile)? as i32;
+            let mut logpage = Page::new_from_size(filemgr.block_size() as usize);
+            let logsize = filemgr.length(logfile)? as i32;
 
-        let logmgr;
+            if logsize == 0 {
+                let blk = filemgr.append(logfile)?;
+                logpage.set_i32(0, filemgr.block_size() as i32)?;
+                filemgr.write(&blk, &mut logpage)?;
 
-        if logsize == 0 {
-            let blk = filemgr.append(logfile)?;
-            logpage.set_i32(0, filemgr.block_size() as i32)?;
-            filemgr.write(&blk, &mut logpage)?;
+                (logpage, blk)
+            } else {
+                let newblk = BlockId::new(logfile, logsize - 1);
+                filemgr.read(&newblk, &mut logpage)?;
 
-            drop(filemgr); // release lock
-            logmgr = Self {
-                fm,
-                logfile: logfile.to_string(),
-                logpage,
-                currentblk: blk,
-                latest_lsn: 0,
-                last_saved_lsn: 0,
-            };
-        } else {
-            let newblk = BlockId::new(logfile, logsize - 1);
-            filemgr.read(&newblk, &mut logpage)?;
+                (logpage, newblk)
+            }
+        };
 
-            drop(filemgr); // release lock
-            logmgr = Self {
-                fm,
-                logfile: logfile.to_string(),
-                logpage,
-                currentblk: newblk,
-                latest_lsn: 0,
-                last_saved_lsn: 0,
-            };
-        }
-
-        Ok(logmgr)
+        Ok(Self {
+            fm,
+            logfile: logfile.to_string(),
+            logpage,
+            currentblk,
+            latest_lsn: 0,
+            last_saved_lsn: 0,
+        })
     }
     pub fn flush(&mut self, lsn: u64) -> Result<()> {
         if lsn > self.last_saved_lsn {
