@@ -22,6 +22,7 @@ impl fmt::Display for LogMgrError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct LogMgr {
     fm: Arc<Mutex<FileMgr>>,
     logfile: String,

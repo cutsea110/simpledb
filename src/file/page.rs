@@ -17,6 +17,7 @@ impl fmt::Display for PageError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Page {
     bb: Vec<u8>,
 }

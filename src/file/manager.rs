@@ -28,6 +28,7 @@ impl fmt::Display for FileMgrError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct FileMgr {
     db_directory: String,
     blocksize: i32,
