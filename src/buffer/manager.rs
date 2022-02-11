@@ -164,13 +164,15 @@ mod tests {
 
         let mut bm = BufferMgr::new(Arc::clone(&fm), Arc::clone(&lm), 3);
 
-        let buff0 = bm.pin(&BlockId::new("testfile", 0));
-        let buff1 = bm.pin(&BlockId::new("testfile", 1)).unwrap();
-        let buff2 = bm.pin(&BlockId::new("testfile", 2)).unwrap();
-        bm.unpin(Arc::clone(&buff1))?;
+        let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 6];
+        buff[0] = bm.pin(&BlockId::new("testfile", 0)).unwrap().into();
+        buff[1] = bm.pin(&BlockId::new("testfile", 1)).unwrap().into();
+        buff[2] = bm.pin(&BlockId::new("testfile", 2)).unwrap().into();
+        bm.unpin(Arc::clone(&buff[1].clone().unwrap()))?;
+        buff[1] = None;
 
-        let buff3 = bm.pin(&BlockId::new("testfile", 0));
-        let buff4 = bm.pin(&BlockId::new("testfile", 1));
+        buff[3] = bm.pin(&BlockId::new("testfile", 0)).unwrap().into();
+        buff[4] = bm.pin(&BlockId::new("testfile", 1)).unwrap().into();
         println!("Available buffers: {:?}", bm.available());
 
         println!("Attempting to pin block 3...");
@@ -180,25 +182,20 @@ mod tests {
         } else {
             println!("Failed!");
         }
-        bm.unpin(Arc::clone(&buff2))?;
-        let buff5 = bm.pin(&BlockId::new("testfile", 3)).unwrap(); // now this works
+        bm.unpin(Arc::clone(&buff[2].clone().unwrap()))?;
+        buff[2] = None;
+        buff[5] = bm.pin(&BlockId::new("testfile", 3)).unwrap().into(); // now this works
 
         println!("Final buffer Allocation:");
-        println!(
-            "buff0 pinned to block {:?}",
-            buff0.unwrap().lock().unwrap().block()
-        );
-        println!("buff1 pinned to block {:?}", buff1.lock().unwrap().block());
-        println!("buff2 pinned to block {:?}", buff2.lock().unwrap().block());
-        println!(
-            "buff3 pinned to block {:?}",
-            buff3.unwrap().lock().unwrap().block()
-        );
-        println!(
-            "buff4 pinned to block {:?}",
-            buff4.unwrap().lock().unwrap().block()
-        );
-        println!("buff5 pinned to block {:?}", buff5.lock().unwrap().block());
+        for i in 0..buff.len() {
+            if let Some(b) = buff[i].clone() {
+                println!(
+                    "buff[{:?}] pinned to block {:?}",
+                    i,
+                    b.lock().unwrap().block()
+                );
+            }
+        }
 
         Ok(())
     }
