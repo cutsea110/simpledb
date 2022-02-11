@@ -85,7 +85,6 @@ impl BufferMgr {
             if let Ok(buff) = self.try_to_pin(blk) {
                 return Ok(buff);
             }
-            println!("pin: BUSY LOOP");
             thread::sleep(Duration::new(1, 0))
         }
 
@@ -93,28 +92,20 @@ impl BufferMgr {
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
-        println!("try_to_pin: CALL find_existing_buffer");
         let mut buff = self.find_existing_buffer(blk);
         if buff.is_none() {
-            println!("try_to_pin: NOT found and CALL choose_unpinned_buffer");
             buff = self.choose_unpinned_buffer();
             if buff.is_none() {
-                println!("try_to_pin: NOT choose_unpinned_buffer");
                 return Err(From::from(BufferMgrError::BufferAbort));
             }
-            println!("try_to_pin: choose_unpinned_buffer");
             let mut b = buff.as_ref().unwrap().lock().unwrap();
-            println!("try_to_pin: assign_to_block");
             b.assign_to_block(blk.clone())?;
         }
 
-        println!("try_to_pin: is_pinned?");
         let mut b = buff.as_ref().unwrap().lock().unwrap();
         if !b.is_pinned() {
-            println!("try_to_pin: NOT is_pinned");
             *(self.num_available.lock().unwrap()) -= 1;
         }
-        println!("try_to_pin: pin!!");
         b.pin();
 
         drop(b); // release lock
@@ -182,7 +173,7 @@ mod tests {
         let buff4 = bm.pin(&BlockId::new("testfile", 1));
         println!("Available buffers: {:?}", bm.available());
 
-        print!("Attempting to pin block 3...");
+        println!("Attempting to pin block 3...");
         if let Ok(_) = bm.pin(&BlockId::new("testfile", 3)) {
             // couldn't come here!
             println!("Succeed!");
