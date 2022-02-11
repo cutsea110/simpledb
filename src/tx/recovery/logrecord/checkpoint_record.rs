@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::mem;
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
 
@@ -21,7 +24,7 @@ impl LogRecord for CheckpointRecord {
     fn tx_number(&self) -> i32 {
         -1 // dummy
     }
-    fn undo(&mut self, _tx: &mut Transaction) -> Result<()> {
+    fn undo(&mut self, _tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // nop
         Ok(())
     }
@@ -30,12 +33,12 @@ impl CheckpointRecord {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
-    pub fn write_to_log(lm: &mut LogMgr) -> Result<u64> {
+    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>) -> Result<u64> {
         let reclen = mem::size_of::<i32>();
 
         let mut p = Page::new_from_size(reclen);
         p.set_i32(0, TxType::CHECKPOINT as i32)?;
 
-        lm.append(p.contents())
+        lm.lock().unwrap().append(p.contents())
     }
 }

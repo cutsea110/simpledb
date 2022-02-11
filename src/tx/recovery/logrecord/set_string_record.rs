@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::mem;
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use super::{LogRecord, TxType};
 use crate::{
@@ -32,10 +35,12 @@ impl LogRecord for SetStringRecord {
     fn tx_number(&self) -> i32 {
         self.txnum
     }
-    fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
-        tx.pin(&self.blk)?;
-        tx.set_string(&self.blk, self.offset, self.val.as_str(), false)?;
-        tx.unpin(&self.blk)
+    fn undo(&mut self, tx: Arc<Mutex<Transaction>>) -> Result<()> {
+        let mut t = tx.lock().unwrap();
+
+        t.pin(&self.blk)?;
+        t.set_string(&self.blk, self.offset, self.val.as_str(), false)?;
+        t.unpin(&self.blk)
     }
 }
 impl SetStringRecord {
@@ -60,7 +65,7 @@ impl SetStringRecord {
         })
     }
     pub fn write_to_log(
-        lm: &mut LogMgr,
+        lm: Arc<Mutex<LogMgr>>,
         txnum: i32,
         blk: &BlockId,
         offset: i32,
@@ -81,6 +86,6 @@ impl SetStringRecord {
         p.set_i32(opos, offset)?;
         p.set_string(vpos, val)?;
 
-        lm.append(p.contents())
+        lm.lock().unwrap().append(p.contents())
     }
 }

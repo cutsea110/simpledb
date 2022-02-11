@@ -34,6 +34,7 @@ impl fmt::Display for BufferMgrError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct BufferMgr {
     bufferpool: Vec<Arc<Mutex<Buffer>>>,
     num_available: Arc<Mutex<usize>>,

@@ -8,6 +8,7 @@ use std::{
 use super::locktable::LockTable;
 use crate::file::block_id::BlockId;
 
+#[derive(Debug, Clone)]
 pub struct ConcurrencyMgr {
     // static member (shared by all ConcurrentMgr)
     locktbl: Arc<Mutex<LockTable>>,

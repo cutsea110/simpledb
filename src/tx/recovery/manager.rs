@@ -1,5 +1,6 @@
 use anyhow::Result;
 use core::fmt;
+use std::sync::{Arc, Mutex};
 
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
@@ -30,40 +31,52 @@ impl fmt::Display for RecoveryMgrError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct RecoveryMgr {
-    lm: LogMgr,
-    bm: BufferMgr,
-    tx: Transaction,
+    lm: Arc<Mutex<LogMgr>>,
+    bm: Arc<Mutex<BufferMgr>>,
+    tx: Arc<Mutex<Transaction>>,
     txnum: i32,
 }
 
 impl RecoveryMgr {
-    pub fn new(tx: Transaction, txnum: i32, mut lm: LogMgr, bm: BufferMgr) -> Self {
-        StartRecord::write_to_log(&mut lm, txnum).unwrap();
+    pub fn new(
+        tx: Arc<Mutex<Transaction>>,
+        txnum: i32,
+        lm: Arc<Mutex<LogMgr>>,
+        bm: Arc<Mutex<BufferMgr>>,
+    ) -> Self {
+        StartRecord::write_to_log(Arc::clone(&lm), txnum).unwrap();
 
         Self { lm, bm, tx, txnum }
     }
     pub fn commit(&mut self) -> Result<()> {
-        self.bm.flush_all(self.txnum)?;
-        let lsn = CommitRecord::write_to_log(&mut self.lm, self.txnum)?;
-        self.lm.flush(lsn)
+        self.bm.lock().unwrap().flush_all(self.txnum)?;
+        let lsn = CommitRecord::write_to_log(Arc::clone(&self.lm), self.txnum)?;
+        self.lm.lock().unwrap().flush(lsn)
     }
     pub fn rollback(&mut self) -> Result<()> {
         self.do_rollback()?;
-        self.bm.flush_all(self.txnum)?;
-        let lsn = RollbackRecord::write_to_log(&mut self.lm, self.txnum)?;
-        self.lm.flush(lsn)
+        self.bm.lock().unwrap().flush_all(self.txnum)?;
+        let lsn = RollbackRecord::write_to_log(Arc::clone(&self.lm), self.txnum)?;
+        self.lm.lock().unwrap().flush(lsn)
     }
     pub fn recover(&mut self) -> Result<()> {
         self.do_recover()?;
-        self.bm.flush_all(self.txnum)?;
-        let lsn = CheckpointRecord::write_to_log(&mut self.lm)?;
-        self.lm.flush(lsn)
+        self.bm.lock().unwrap().flush_all(self.txnum)?;
+        let lsn = CheckpointRecord::write_to_log(Arc::clone(&self.lm))?;
+        self.lm.lock().unwrap().flush(lsn)
     }
     pub fn set_i32(&mut self, buff: &mut Buffer, offset: i32, _new_val: i32) -> Result<u64> {
         let old_val = buff.contents().get_i32(offset as usize)?;
         if let Some(blk) = buff.block() {
-            return SetI32Record::write_to_log(&mut self.lm, self.txnum, blk, offset, old_val);
+            return SetI32Record::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
         }
 
         Err(From::from(RecoveryMgrError::BufferFailed(
@@ -73,7 +86,13 @@ impl RecoveryMgr {
     pub fn set_string(&mut self, buff: &mut Buffer, offset: i32, _new_val: &str) -> Result<u64> {
         let old_val = buff.contents().get_string(offset as usize)?;
         if let Some(blk) = buff.block() {
-            return SetStringRecord::write_to_log(&mut self.lm, self.txnum, blk, offset, old_val);
+            return SetStringRecord::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
         }
 
         Err(From::from(RecoveryMgrError::BufferFailed(
@@ -81,7 +100,7 @@ impl RecoveryMgr {
         )))
     }
     fn do_rollback(&mut self) -> Result<()> {
-        let mut iter = self.lm.iterator()?;
+        let mut iter = self.lm.lock().unwrap().iterator()?;
         while let Some(bytes) = iter.next() {
             let mut rec = logrecord::create_log_record(bytes)?;
             if rec.tx_number() == self.txnum {
@@ -89,7 +108,7 @@ impl RecoveryMgr {
                     return Ok(());
                 }
 
-                rec.undo(&mut self.tx)?;
+                rec.undo(Arc::clone(&self.tx))?;
             }
         }
 
@@ -97,7 +116,7 @@ impl RecoveryMgr {
     }
     fn do_recover(&mut self) -> Result<()> {
         let mut finished_txs = vec![];
-        let mut iter = self.lm.iterator()?;
+        let mut iter = self.lm.lock().unwrap().iterator()?;
         while let Some(bytes) = iter.next() {
             let mut rec = logrecord::create_log_record(bytes)?;
             match rec.op() {
@@ -107,7 +126,7 @@ impl RecoveryMgr {
                 }
                 _ => {
                     if !finished_txs.contains(&rec.tx_number()) {
-                        rec.undo(&mut self.tx)?;
+                        rec.undo(Arc::clone(&self.tx))?;
                     }
                 }
             }

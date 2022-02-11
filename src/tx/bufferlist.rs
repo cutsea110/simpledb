@@ -9,6 +9,7 @@ use crate::{
     file::block_id::BlockId,
 };
 
+#[derive(Debug, Clone)]
 pub struct BufferList {
     buffers: HashMap<BlockId, Arc<Mutex<Buffer>>>,
     pins: Vec<BlockId>,

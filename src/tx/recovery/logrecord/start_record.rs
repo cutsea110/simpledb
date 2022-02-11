@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::mem;
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
 
@@ -23,7 +26,7 @@ impl LogRecord for StartRecord {
     fn tx_number(&self) -> i32 {
         self.txnum
     }
-    fn undo(&mut self, _tx: &mut Transaction) -> Result<()> {
+    fn undo(&mut self, _tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // nop
         Ok(())
     }
@@ -35,7 +38,7 @@ impl StartRecord {
 
         Ok(Self { txnum })
     }
-    pub fn write_to_log(lm: &mut LogMgr, txnum: i32) -> Result<u64> {
+    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>, txnum: i32) -> Result<u64> {
         let tpos = mem::size_of::<i32>();
         let reclen = tpos + mem::size_of::<i32>();
 
@@ -43,6 +46,6 @@ impl StartRecord {
         p.set_i32(0, TxType::START as i32)?;
         p.set_i32(tpos, txnum)?;
 
-        lm.append(p.contents())
+        lm.lock().unwrap().append(p.contents())
     }
 }

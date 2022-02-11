@@ -17,6 +17,7 @@ use super::{
 
 static END_OF_FILE: i32 = -1;
 
+#[derive(Debug, Clone)]
 pub struct Transaction {
     // static member (shared by all Transaction)
     next_tx_num: Arc<Mutex<i32>>,
@@ -47,13 +48,19 @@ impl Transaction {
                 bm: Arc::clone(&bm),
                 fm,
                 txnum: 0, // dummy
-                mybuffers: BufferList::new(bm),
+                mybuffers: BufferList::new(Arc::clone(&bm)),
             };
 
             // update txnum
             let next_tx_num = tran.next_tx_number();
             tran.txnum = next_tx_num;
-            // TODO: set recovery_mgr field (cyclic reference)
+            // update recovery_mgr field (cyclic reference)
+            tran.recovery_mgr = Some(Arc::new(Mutex::new(RecoveryMgr::new(
+                Arc::new(Mutex::new(tran.clone())),
+                next_tx_num,
+                lm,
+                bm,
+            ))));
 
             tran
         }

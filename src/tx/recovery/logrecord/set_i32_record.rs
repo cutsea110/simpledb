@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::mem;
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     file::{block_id::BlockId, page::Page},
@@ -34,10 +37,12 @@ impl LogRecord for SetI32Record {
     fn tx_number(&self) -> i32 {
         self.txnum
     }
-    fn undo(&mut self, tx: &mut Transaction) -> Result<()> {
-        tx.pin(&self.blk)?;
-        tx.set_i32(&self.blk, self.offset, self.val, false)?;
-        tx.unpin(&self.blk)
+    fn undo(&mut self, tx: Arc<Mutex<Transaction>>) -> Result<()> {
+        let mut t = tx.lock().unwrap();
+
+        t.pin(&self.blk)?;
+        t.set_i32(&self.blk, self.offset, self.val, false)?;
+        t.unpin(&self.blk)
     }
 }
 impl SetI32Record {
@@ -62,7 +67,7 @@ impl SetI32Record {
         })
     }
     pub fn write_to_log(
-        lm: &mut LogMgr,
+        lm: Arc<Mutex<LogMgr>>,
         txnum: i32,
         blk: &BlockId,
         offset: i32,
@@ -83,6 +88,6 @@ impl SetI32Record {
         p.set_i32(opos, offset)?;
         p.set_i32(vpos, val)?;
 
-        lm.append(p.contents())
+        lm.lock().unwrap().append(p.contents())
     }
 }

@@ -31,6 +31,7 @@ impl fmt::Display for LockTableError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct LockTable {
     locks: Arc<Mutex<HashMap<BlockId, i32>>>,
 }
