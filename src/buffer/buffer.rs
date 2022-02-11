@@ -100,3 +100,53 @@ impl Buffer {
         self.pins -= 1;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::buffer::manager::BufferMgr;
+
+    use std::fs;
+    use std::path::Path;
+
+    #[test]
+    fn unit_test() {
+        if Path::new("_buffertest").exists() {
+            fs::remove_dir_all("_buffertest").expect("cleanup");
+        }
+
+        let fm = Arc::new(Mutex::new(
+            FileMgr::new("_buffertest", 400).expect("create FileMgr"),
+        ));
+        let lm = Arc::new(Mutex::new(
+            LogMgr::new(Arc::clone(&fm), "testfile").expect("create LogMgr"),
+        ));
+
+        let mut bm = BufferMgr::new(Arc::clone(&fm), Arc::clone(&lm), 3);
+        let buff1 = bm.pin(&BlockId::new("testfile", 1)).unwrap();
+        {
+            let mut b1 = buff1.lock().unwrap();
+            let p = b1.contents();
+            let n = p.get_i32(80).unwrap(); // This modification will get written to disk.
+            p.set_i32(80, n + 1).unwrap();
+            b1.set_modified(1, 0);
+            println!("The new value is  {}", n + 1);
+        }
+        bm.unpin(buff1).unwrap();
+
+        // One of these pins will flush buff1 to disk:
+        let buff2 = bm.pin(&BlockId::new("testfile", 2)).unwrap();
+        let _buff3 = bm.pin(&BlockId::new("testfile", 3)).unwrap();
+        let _buff4 = bm.pin(&BlockId::new("testfile", 4)).unwrap();
+
+        bm.unpin(buff2).unwrap();
+        let buff2 = bm.pin(&BlockId::new("testfile", 1)).unwrap();
+        {
+            let mut b2 = buff2.lock().unwrap();
+            let p2 = b2.contents();
+            p2.set_i32(80, 9999).unwrap(); // This modification won't get written to disk.
+            b2.set_modified(1, 0);
+        }
+        bm.unpin(buff2).unwrap();
+    }
+}

@@ -161,11 +161,11 @@ mod tests {
 
     #[test]
     fn unit_test() {
-        if Path::new("filetest").exists() {
-            fs::remove_dir_all("filetest").expect("cleanup");
+        if Path::new("_filetest").exists() {
+            fs::remove_dir_all("_filetest").expect("cleanup");
         }
 
-        let mut fm = FileMgr::new("filetest", 400).expect("create FileMgr");
+        let mut fm = FileMgr::new("_filetest", 400).expect("create FileMgr");
         let blk = BlockId::new("testfile", 2);
         let mut p1 = Page::new_from_size(fm.block_size() as usize);
         let pos1 = 0; // 88;

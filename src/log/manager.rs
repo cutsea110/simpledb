@@ -136,11 +136,11 @@ mod tests {
 
     #[test]
     fn unit_test() {
-        if Path::new("logtest").exists() {
-            fs::remove_dir_all("logtest").expect("cleanup");
+        if Path::new("_logtest").exists() {
+            fs::remove_dir_all("_logtest").expect("cleanup");
         }
 
-        let fm = FileMgr::new("logtest", 400).expect("create FileMgr");
+        let fm = FileMgr::new("_logtest", 400).expect("create FileMgr");
         let mut lm = LogMgr::new(Arc::new(Mutex::new(fm)), "testfile").expect("create LogMgr");
         create_records(&mut lm, 1, 35);
         print_log_records(&mut lm, "The log file now has these records:");
