@@ -161,7 +161,9 @@ mod tests {
 
     #[test]
     fn unit_test() {
-        fs::remove_dir_all("filetest").expect("cleanup");
+        if Path::new("filetest").exists() {
+            fs::remove_dir_all("filetest").expect("cleanup");
+        }
 
         let mut fm = FileMgr::new("filetest", 400).expect("create FileMgr");
         let blk = BlockId::new("testfile", 2);

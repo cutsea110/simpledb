@@ -131,11 +131,14 @@ mod tests {
     use super::*;
 
     use std::fs;
+    use std::path::Path;
     use std::usize;
 
     #[test]
     fn unit_test() {
-        fs::remove_dir_all("logtest").expect("cleanup");
+        if Path::new("logtest").exists() {
+            fs::remove_dir_all("logtest").expect("cleanup");
+        }
 
         let fm = FileMgr::new("logtest", 400).expect("create FileMgr");
         let mut lm = LogMgr::new(Arc::new(Mutex::new(fm)), "testfile").expect("create LogMgr");
