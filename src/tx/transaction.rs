@@ -55,12 +55,9 @@ impl Transaction {
             let next_tx_num = tran.next_tx_number();
             tran.txnum = next_tx_num;
             // update recovery_mgr field (cyclic reference)
-            tran.recovery_mgr = Some(Arc::new(Mutex::new(RecoveryMgr::new(
-                Arc::new(Mutex::new(tran.clone())),
-                next_tx_num,
-                lm,
-                bm,
-            ))));
+            let tx = Arc::new(Mutex::new(tran.clone()));
+            tran.recovery_mgr =
+                Arc::new(Mutex::new(RecoveryMgr::new(tx, next_tx_num, lm, bm))).into();
 
             tran
         }
