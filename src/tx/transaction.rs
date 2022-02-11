@@ -173,8 +173,62 @@ impl Transaction {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    use anyhow::Result;
+    use std::fs;
+    use std::path::Path;
+
     #[test]
-    fn unit_test() {
-        // TODO: TxTest p109
+    fn unit_test() -> Result<()> {
+        if Path::new("_txtest").exists() {
+            fs::remove_dir_all("_txtest")?;
+        }
+
+        let fm = Arc::new(Mutex::new(FileMgr::new("_txtest", 400)?));
+        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
+        let bm = Arc::new(Mutex::new(BufferMgr::new(
+            Arc::clone(&fm),
+            Arc::clone(&lm),
+            8,
+        )));
+
+        let mut tx1 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        let blk = BlockId::new("testfile", 1);
+        tx1.pin(&blk)?;
+        // Don't log initial block values.
+        tx1.set_i32(&blk, 80, 1, false)?;
+        tx1.set_string(&blk, 40, "one", false)?;
+        tx1.commit()?;
+
+        let mut tx2 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        tx2.pin(&blk)?;
+        let ival = tx2.get_i32(&blk, 80)?;
+        let sval = tx2.get_string(&blk, 40)?;
+        println!("initial value at location 80 = {}", ival);
+        println!("initial value at location 40 = {}", sval);
+        let newival = ival + 1;
+        let newsval = format!("{}!", sval);
+        tx2.set_i32(&blk, 80, newival, true)?;
+        tx2.set_string(&blk, 40, &newsval, true)?;
+        tx2.commit()?;
+
+        let mut tx3 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        tx3.pin(&blk)?;
+        println!("new value at location 80 = {}", tx3.get_i32(&blk, 80)?);
+        println!("new value at location 40 = {}", tx3.get_string(&blk, 40)?);
+        tx3.set_i32(&blk, 80, 9999, true)?;
+        println!(
+            "pre-rollback value at location 80 = {}",
+            tx3.get_i32(&blk, 80)?
+        );
+        tx3.rollback()?;
+
+        let mut tx4 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        tx4.pin(&blk)?;
+        println!("post-rollback at location 80 = {}", tx4.get_i32(&blk, 80)?);
+        tx4.commit()?;
+
+        Ok(())
     }
 }

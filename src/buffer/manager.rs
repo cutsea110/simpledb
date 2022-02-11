@@ -162,7 +162,6 @@ mod tests {
 
         let fm = Arc::new(Mutex::new(FileMgr::new("_buffermgrtest", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
-
         let mut bm = BufferMgr::new(Arc::clone(&fm), Arc::clone(&lm), 3);
 
         let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 6];
