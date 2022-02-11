@@ -157,7 +157,7 @@ mod tests {
                 let s = p.get_string(0).unwrap();
                 let npos = Page::max_length(s.len());
                 let val = p.get_i32(npos).unwrap();
-                println!("[{}, {}]", s, val);
+                print!("[{}, {}]", s, val);
             }
             println!("");
         }
@@ -167,7 +167,7 @@ mod tests {
         for i in start..=end {
             let mut rec = create_log_record(format!("record: {}", i), i + 100);
             let lsn = lm.append(&mut rec).expect("LogMgr append");
-            println!("{} ", format!("{}", lsn));
+            print!("{} ", format!("{}", lsn));
         }
         println!("");
     }
