@@ -16,16 +16,19 @@ pub struct LogIterator {
 
 impl LogIterator {
     pub fn new(fm: Arc<Mutex<FileMgr>>, blk: BlockId) -> Result<Self> {
-        let mut filemgr = fm.lock().unwrap();
+        let (p, currentpos, boundary) = {
+            let mut filemgr = fm.lock().unwrap();
 
-        let mut p = Page::new_from_size(filemgr.block_size() as usize);
+            let mut p = Page::new_from_size(filemgr.block_size() as usize);
 
-        // move to block
-        filemgr.read(&blk, &mut p)?;
-        let boundary = p.get_i32(0)?;
-        let currentpos = boundary;
+            // move to block
+            filemgr.read(&blk, &mut p)?;
+            let boundary = p.get_i32(0)?;
+            let currentpos = boundary;
 
-        drop(filemgr);
+            (p, currentpos, boundary)
+        };
+
         Ok(Self {
             fm,
             blk,
