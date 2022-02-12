@@ -1,6 +1,10 @@
 use anyhow::Result;
 use core::fmt;
-use std::sync::{Arc, Mutex};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
@@ -35,13 +39,13 @@ impl fmt::Display for RecoveryMgrError {
 pub struct RecoveryMgr {
     lm: Arc<Mutex<LogMgr>>,
     bm: Arc<Mutex<BufferMgr>>,
-    tx: Arc<Mutex<Transaction>>,
+    tx: Rc<RefCell<Transaction>>,
     txnum: i32,
 }
 
 impl RecoveryMgr {
     pub fn new(
-        tx: Arc<Mutex<Transaction>>,
+        tx: Rc<RefCell<Transaction>>,
         txnum: i32,
         lm: Arc<Mutex<LogMgr>>,
         bm: Arc<Mutex<BufferMgr>>,
@@ -108,7 +112,7 @@ impl RecoveryMgr {
                     return Ok(());
                 }
 
-                rec.undo(Arc::clone(&self.tx))?;
+                rec.undo(Rc::clone(&self.tx))?;
             }
         }
 
@@ -126,7 +130,7 @@ impl RecoveryMgr {
                 }
                 _ => {
                     if !finished_txs.contains(&rec.tx_number()) {
-                        rec.undo(Arc::clone(&self.tx))?;
+                        rec.undo(Rc::clone(&self.tx))?;
                     }
                 }
             }

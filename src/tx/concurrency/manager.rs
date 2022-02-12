@@ -1,7 +1,9 @@
 use anyhow::Result;
 
 use std::{
+    cell::RefCell,
     collections::HashMap,
+    rc::Rc,
     sync::{Arc, Mutex, Once},
 };
 
@@ -12,7 +14,8 @@ use crate::file::block_id::BlockId;
 pub struct ConcurrencyMgr {
     // static member (shared by all ConcurrentMgr)
     locktbl: Arc<Mutex<LockTable>>,
-    locks: HashMap<BlockId, String>,
+
+    locks: Rc<RefCell<HashMap<BlockId, String>>>,
 }
 
 impl ConcurrencyMgr {
@@ -31,14 +34,14 @@ impl ConcurrencyMgr {
 
             Self {
                 locktbl: LOCKTBL.clone().unwrap(),
-                locks: HashMap::new(),
+                locks: Rc::new(RefCell::new(HashMap::new())),
             }
         }
     }
     pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
-        if self.locks.get(blk).is_none() {
+        if self.locks.borrow().get(blk).is_none() {
             self.locktbl.lock().unwrap().s_lock(blk)?;
-            self.locks.insert(blk.clone(), "S".to_string());
+            self.locks.borrow_mut().insert(blk.clone(), "S".to_string());
         }
 
         Ok(())
@@ -47,22 +50,24 @@ impl ConcurrencyMgr {
         if !self.has_x_lock(blk) {
             self.s_lock(blk)?;
             self.locktbl.lock().unwrap().x_lock(blk)?;
-            self.locks.insert(blk.clone(), "X".to_string());
+            self.locks.borrow_mut().insert(blk.clone(), "X".to_string());
         }
 
         Ok(())
     }
     pub fn release(&mut self) -> Result<()> {
-        for blk in self.locks.keys() {
+        for blk in self.locks.borrow().keys() {
             self.locktbl.lock().unwrap().unlock(blk)?;
         }
-        self.locks.clear();
+        self.locks.borrow_mut().clear();
 
         Ok(())
     }
     fn has_x_lock(&self, blk: &BlockId) -> bool {
-        let locktype = self.locks.get(blk);
-        return locktype.is_some() && locktype.unwrap().eq("X");
+        if let Some(locktype) = self.locks.borrow().get(blk) {
+            return locktype.eq("X");
+        }
+        false
     }
 }
 

@@ -1,4 +1,6 @@
 use std::{
+    cell::RefCell,
+    rc::Rc,
     sync::{Arc, Mutex, Once},
     usize,
 };
@@ -22,7 +24,7 @@ pub struct Transaction {
     // static member (shared by all Transaction)
     next_tx_num: Arc<Mutex<i32>>,
 
-    recovery_mgr: Option<Arc<Mutex<RecoveryMgr>>>,
+    recovery_mgr: Option<Rc<RefCell<RecoveryMgr>>>,
     concur_mgr: ConcurrencyMgr,
     bm: Arc<Mutex<BufferMgr>>,
     fm: Arc<Mutex<FileMgr>>,
@@ -55,20 +57,15 @@ impl Transaction {
             let next_tx_num = tran.next_tx_number();
             tran.txnum = next_tx_num;
             // update recovery_mgr field (cyclic reference)
-            let tx = Arc::new(Mutex::new(tran.clone()));
+            let tx = Rc::new(RefCell::new(tran.clone()));
             tran.recovery_mgr =
-                Arc::new(Mutex::new(RecoveryMgr::new(tx, next_tx_num, lm, bm))).into();
+                Rc::new(RefCell::new(RecoveryMgr::new(tx, next_tx_num, lm, bm))).into();
 
             tran
         }
     }
     pub fn commit(&mut self) -> Result<()> {
-        self.recovery_mgr
-            .as_ref()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .commit()?;
+        self.recovery_mgr.as_ref().unwrap().borrow_mut().commit()?;
         self.concur_mgr.release()?;
         self.mybuffers.unpin_all()?;
         println!("transaction {} committed", self.txnum);
@@ -79,8 +76,7 @@ impl Transaction {
         self.recovery_mgr
             .as_ref()
             .unwrap()
-            .lock()
-            .unwrap()
+            .borrow_mut()
             .rollback()?;
         self.concur_mgr.release()?;
         self.mybuffers.unpin_all()?;
@@ -90,12 +86,7 @@ impl Transaction {
     }
     pub fn recover(&mut self) -> Result<()> {
         self.bm.lock().unwrap().flush_all(self.txnum)?;
-        self.recovery_mgr
-            .as_ref()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .recover()
+        self.recovery_mgr.as_ref().unwrap().borrow_mut().recover()
     }
     pub fn pin(&mut self, blk: &BlockId) -> Result<()> {
         self.mybuffers.pin(blk)
@@ -118,7 +109,7 @@ impl Transaction {
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
         let mut lsn: i32 = -1;
         if ok_to_log {
-            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            let mut rm = self.recovery_mgr.as_ref().unwrap().borrow_mut();
             lsn = rm.set_i32(&mut buff, offset, val)?.try_into().unwrap();
         }
         let p = buff.contents();
@@ -138,7 +129,7 @@ impl Transaction {
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
         let mut lsn: i32 = -1;
         if ok_to_log {
-            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            let mut rm = self.recovery_mgr.as_ref().unwrap().borrow_mut();
             lsn = rm.set_string(&mut buff, offset, val)?.try_into().unwrap();
         }
         let p = buff.contents();
