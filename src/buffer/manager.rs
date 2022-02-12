@@ -16,7 +16,6 @@ const MAX_TIME: i64 = 10_000; // 10 seconds
 
 #[derive(Debug)]
 enum BufferMgrError {
-    LockFailed(String),
     BufferAbort,
 }
 
@@ -24,9 +23,6 @@ impl std::error::Error for BufferMgrError {}
 impl fmt::Display for BufferMgrError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            BufferMgrError::LockFailed(s) => {
-                write!(f, "lock failed: {}", s)
-            }
             BufferMgrError::BufferAbort => {
                 write!(f, "buffer abort")
             }

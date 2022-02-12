@@ -14,7 +14,6 @@ const MAX_TIME: i64 = 10_000; // 10 sec
 #[derive(Debug)]
 enum LockTableError {
     LockAbort,
-    LockFailed(String),
 }
 
 impl std::error::Error for LockTableError {}
@@ -23,9 +22,6 @@ impl fmt::Display for LockTableError {
         match self {
             LockTableError::LockAbort => {
                 write!(f, "lock abort")
-            }
-            LockTableError::LockFailed(s) => {
-                write!(f, "lock failed: {}", s)
             }
         }
     }

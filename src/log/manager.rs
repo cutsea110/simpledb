@@ -1,5 +1,4 @@
 use anyhow::Result;
-use core::fmt;
 use std::{
     mem,
     sync::{Arc, Mutex},
@@ -7,20 +6,6 @@ use std::{
 
 use super::iterator::LogIterator;
 use crate::file::{block_id::BlockId, manager::FileMgr, page::Page};
-
-#[derive(Debug)]
-enum LogMgrError {
-    LogPageAccessFailed,
-}
-
-impl std::error::Error for LogMgrError {}
-impl fmt::Display for LogMgrError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            LogMgrError::LogPageAccessFailed => write!(f, "log access failed"),
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct LogMgr {
