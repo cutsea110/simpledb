@@ -39,8 +39,9 @@ impl LockTable {
         }
     }
     // synchronized
-    pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
+    pub fn s_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
         let timestamp = SystemTime::now();
+        println!("{}| slock start at {:?}", txnum, timestamp);
 
         while !waiting_too_long(timestamp) {
             if let Ok(mut locks) = self.locks.try_lock() {
@@ -49,14 +50,21 @@ impl LockTable {
                     return Ok(());
                 }
             }
+            println!(
+                "{}| slock waiting {:?} (start: {:?})",
+                txnum,
+                SystemTime::now().duration_since(timestamp).unwrap(),
+                timestamp
+            );
             thread::sleep(Duration::new(1, 0));
         }
 
         Err(From::from(LockTableError::LockAbort))
     }
     // synchronized
-    pub fn x_lock(&mut self, blk: &BlockId) -> Result<()> {
+    pub fn x_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
         let timestamp = SystemTime::now();
+        println!("{}| xlock start at {:?}", txnum, timestamp);
 
         while !waiting_too_long(timestamp) {
             if let Ok(mut locks) = self.locks.try_lock() {
@@ -65,6 +73,12 @@ impl LockTable {
                     return Ok(());
                 }
             }
+            println!(
+                "{}| xlock waiting {:?} (start: {:?})",
+                txnum,
+                SystemTime::now().duration_since(timestamp).unwrap(),
+                timestamp
+            );
             thread::sleep(Duration::new(1, 0));
         }
 
@@ -83,6 +97,13 @@ impl LockTable {
         }
 
         return Ok(());
+    }
+    // for DEBUG
+    pub fn dump(&self, txnum: i32, _msg: &str) {
+        println!("{}| LockTable", txnum);
+        for (k, v) in self.locks.lock().unwrap().iter() {
+            println!("{}| [{} : {}]", txnum, k, v);
+        }
     }
 }
 

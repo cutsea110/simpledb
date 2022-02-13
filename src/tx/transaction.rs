@@ -95,17 +95,21 @@ impl Transaction {
         self.mybuffers.unpin(blk)
     }
     pub fn get_i32(&mut self, blk: &BlockId, offset: i32) -> Result<i32> {
-        self.concur_mgr.s_lock(blk)?;
+        self.dump(self.txnum, "BEFORE GET");
+        self.concur_mgr.s_lock(self.txnum, blk)?;
+        self.dump(self.txnum, "AFTER GET");
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
         buff.contents().get_i32(offset as usize)
     }
     pub fn get_string(&mut self, blk: &BlockId, offset: i32) -> Result<String> {
-        self.concur_mgr.s_lock(blk)?;
+        self.concur_mgr.s_lock(self.txnum, blk)?;
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
         buff.contents().get_string(offset as usize)
     }
     pub fn set_i32(&mut self, blk: &BlockId, offset: i32, val: i32, ok_to_log: bool) -> Result<()> {
-        self.concur_mgr.x_lock(blk)?;
+        self.dump(self.txnum, "BEFORE SET");
+        self.concur_mgr.x_lock(self.txnum, blk)?;
+        self.dump(self.txnum, "AFTER SET");
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
         let mut lsn: i32 = -1;
         if ok_to_log {
@@ -125,7 +129,7 @@ impl Transaction {
         val: &str,
         ok_to_log: bool,
     ) -> Result<()> {
-        self.concur_mgr.x_lock(blk)?;
+        self.concur_mgr.x_lock(self.txnum, blk)?;
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
         let mut lsn: i32 = -1;
         if ok_to_log {
@@ -140,12 +144,12 @@ impl Transaction {
     }
     pub fn size(&mut self, filename: &str) -> Result<i32> {
         let dummyblk = BlockId::new(filename, END_OF_FILE);
-        self.concur_mgr.s_lock(&dummyblk)?;
+        self.concur_mgr.s_lock(self.txnum, &dummyblk)?;
         self.fm.lock().unwrap().length(filename)
     }
     pub fn append(&mut self, filename: &str) -> Result<BlockId> {
         let dummyblk = BlockId::new(filename, END_OF_FILE);
-        self.concur_mgr.x_lock(&dummyblk)?;
+        self.concur_mgr.x_lock(self.txnum, &dummyblk)?;
         self.fm.lock().unwrap().append(filename)
     }
     pub fn block_size(&self) -> i32 {
@@ -159,6 +163,14 @@ impl Transaction {
         *next_tx_num += 1;
 
         *next_tx_num
+    }
+    // for DEBUG
+    pub fn tx_num(&self) -> i32 {
+        self.txnum
+    }
+    // for DEBUG
+    pub fn dump(&self, txnum: i32, msg: &str) {
+        self.concur_mgr.dump(txnum, msg);
     }
 }
 
