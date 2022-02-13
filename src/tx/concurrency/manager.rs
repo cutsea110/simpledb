@@ -105,8 +105,8 @@ mod tests {
             let mut tx_a = Transaction::new(fm_a, lm_a, bm_a);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
-            tx_a.pin(&blk1);
-            tx_a.pin(&blk2);
+            tx_a.pin(&blk1).unwrap();
+            tx_a.pin(&blk2).unwrap();
             println!("Tx A: request slock 1");
             tx_a.get_i32(&blk1, 0);
             println!("Tx A: receive slock 1");
@@ -124,8 +124,8 @@ mod tests {
             let mut tx_b = Transaction::new(fm_b, lm_b, bm_b);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
-            tx_b.pin(&blk1);
-            tx_b.pin(&blk2);
+            tx_b.pin(&blk1).unwrap();
+            tx_b.pin(&blk2).unwrap();
             println!("Tx B: request xlock 2");
             tx_b.set_i32(&blk2, 0, 0, false);
             println!("Tx B: receive xlock 2");
@@ -143,8 +143,8 @@ mod tests {
             let mut tx_c = Transaction::new(fm_c, lm_c, bm_c);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
-            tx_c.pin(&blk1);
-            tx_c.pin(&blk2);
+            tx_c.pin(&blk1).unwrap();
+            tx_c.pin(&blk2).unwrap();
             println!("Tx C: request xlock 1");
             tx_c.set_i32(&blk1, 0, 0, false);
             println!("Tx C: receive xlock 1");
