@@ -114,7 +114,7 @@ mod tests {
             println!("Tx A: request slock 2");
             tx_a.get_i32(&blk2, 0);
             println!("Tx A: receive slock 2");
-            tx_a.commit();
+            tx_a.commit().unwrap();
         });
 
         let fm_b = Arc::clone(&fm);
@@ -133,7 +133,7 @@ mod tests {
             println!("Tx B: request slock 1");
             tx_b.get_i32(&blk1, 0);
             println!("Tx B: receive slock 1");
-            tx_b.commit();
+            tx_b.commit().unwrap();
         });
 
         let fm_c = Arc::clone(&fm);
@@ -152,7 +152,7 @@ mod tests {
             println!("Tx C: request slock 2");
             tx_c.get_i32(&blk2, 0);
             println!("Tx C: receive slock 2");
-            tx_c.commit();
+            tx_c.commit().unwrap();
         });
 
         handle1.join().unwrap();
