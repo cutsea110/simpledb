@@ -108,11 +108,11 @@ mod tests {
             tx_a.pin(&blk1).unwrap();
             tx_a.pin(&blk2).unwrap();
             println!("Tx A: request slock 1");
-            tx_a.get_i32(&blk1, 0);
+            tx_a.get_i32(&blk1, 0); // FIXME!: To add .unwrap() makes occurring error!
             println!("Tx A: receive slock 1");
             thread::sleep(Duration::new(1, 0));
             println!("Tx A: request slock 2");
-            tx_a.get_i32(&blk2, 0);
+            tx_a.get_i32(&blk2, 0); // FIXME!: To add .unwrap() makes occurring error!
             println!("Tx A: receive slock 2");
             tx_a.commit().unwrap();
         });
@@ -127,11 +127,11 @@ mod tests {
             tx_b.pin(&blk1).unwrap();
             tx_b.pin(&blk2).unwrap();
             println!("Tx B: request xlock 2");
-            tx_b.set_i32(&blk2, 0, 0, false);
+            tx_b.set_i32(&blk2, 0, 0, false); // FIXME!: To add .unwrap() makes occurring error!
             println!("Tx B: receive xlock 2");
             thread::sleep(Duration::new(1, 0));
             println!("Tx B: request slock 1");
-            tx_b.get_i32(&blk1, 0);
+            tx_b.get_i32(&blk1, 0); // FIXME!: To add .unwrap() makes occurring error!
             println!("Tx B: receive slock 1");
             tx_b.commit().unwrap();
         });
@@ -146,11 +146,11 @@ mod tests {
             tx_c.pin(&blk1).unwrap();
             tx_c.pin(&blk2).unwrap();
             println!("Tx C: request xlock 1");
-            tx_c.set_i32(&blk1, 0, 0, false);
+            tx_c.set_i32(&blk1, 0, 0, false); // FIXME!: To add .unwrap() makes occurring error!
             println!("Tx C: receive xlock 1");
             thread::sleep(Duration::new(1, 0));
             println!("Tx C: request slock 2");
-            tx_c.get_i32(&blk2, 0);
+            tx_c.get_i32(&blk2, 0); // FIXME!: To add .unwrap() makes occurring error!
             println!("Tx C: receive slock 2");
             tx_c.commit().unwrap();
         });
