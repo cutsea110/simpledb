@@ -43,13 +43,12 @@ impl LockTable {
         let timestamp = SystemTime::now();
 
         while !waiting_too_long(timestamp) {
-            let mut locks = self.locks.lock().unwrap();
-
-            if !has_x_lock(&locks, blk) {
-                *locks.entry(blk.clone()).or_insert(0) += 1; // will not be negative
-                return Ok(());
+            if let Ok(mut locks) = self.locks.try_lock() {
+                if !has_x_lock(&locks, blk) {
+                    *locks.entry(blk.clone()).or_insert(0) += 1; // will not be negative
+                    return Ok(());
+                }
             }
-            drop(locks); // release lock before thread sleep
             thread::sleep(Duration::new(1, 0));
         }
 
@@ -60,13 +59,12 @@ impl LockTable {
         let timestamp = SystemTime::now();
 
         while !waiting_too_long(timestamp) {
-            let mut locks = self.locks.lock().unwrap();
-
-            if !has_other_s_locks(&locks, blk) {
-                *locks.entry(blk.clone()).or_insert(-1) = -1; // means eXclusive lock
-                return Ok(());
+            if let Ok(mut locks) = self.locks.try_lock() {
+                if !has_other_s_locks(&locks, blk) {
+                    *locks.entry(blk.clone()).or_insert(-1) = -1; // means eXclusive lock
+                    return Ok(());
+                }
             }
-            drop(locks); // release lock before thread sleep
             thread::sleep(Duration::new(1, 0));
         }
 
