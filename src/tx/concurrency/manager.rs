@@ -61,21 +61,7 @@ impl ConcurrencyMgr {
     }
     pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
         if self.locks.borrow().get(blk).is_none() {
-            let timestamp = SystemTime::now();
-            let mut locked = false;
-
-            while !waiting_too_long(timestamp) {
-                if let Ok(mut locktbl) = self.locktbl.try_lock() {
-                    if locktbl.s_lock(blk).is_ok() {
-                        locked = true;
-                        break;
-                    }
-                }
-                thread::sleep(Duration::from_millis(1000));
-            }
-            if !locked {
-                return Err(From::from(ConcurrencyMgrError::LockAbort));
-            }
+            self.try_s_lock(blk)?;
             self.locks.borrow_mut().insert(blk.clone(), "S".to_string());
         }
 
@@ -84,23 +70,7 @@ impl ConcurrencyMgr {
     pub fn x_lock(&mut self, blk: &BlockId) -> Result<()> {
         if !self.has_x_lock(blk) {
             self.s_lock(blk)?;
-
-            let timestamp = SystemTime::now();
-            let mut locked = false;
-
-            while !waiting_too_long(timestamp) {
-                if let Ok(mut locktbl) = self.locktbl.try_lock() {
-                    if locktbl.x_lock(blk).is_ok() {
-                        locked = true;
-                        break;
-                    }
-                }
-                thread::sleep(Duration::from_millis(1000));
-            }
-            if !locked {
-                return Err(From::from(ConcurrencyMgrError::LockAbort));
-            }
-
+            self.try_x_lock(blk)?;
             self.locks.borrow_mut().insert(blk.clone(), "X".to_string());
         }
 
@@ -119,6 +89,34 @@ impl ConcurrencyMgr {
             return locktype.eq("X");
         }
         false
+    }
+    fn try_s_lock(&mut self, blk: &BlockId) -> Result<()> {
+        let timestamp = SystemTime::now();
+
+        while !waiting_too_long(timestamp) {
+            if let Ok(mut locktbl) = self.locktbl.try_lock() {
+                if locktbl.s_lock(blk).is_ok() {
+                    return Ok(());
+                }
+            }
+            thread::sleep(Duration::from_millis(1000));
+        }
+
+        Err(From::from(ConcurrencyMgrError::LockAbort))
+    }
+    fn try_x_lock(&mut self, blk: &BlockId) -> Result<()> {
+        let timestamp = SystemTime::now();
+
+        while !waiting_too_long(timestamp) {
+            if let Ok(mut locktbl) = self.locktbl.try_lock() {
+                if locktbl.x_lock(blk).is_ok() {
+                    return Ok(());
+                }
+            }
+            thread::sleep(Duration::from_millis(1000));
+        }
+
+        Err(From::from(ConcurrencyMgrError::LockAbort))
     }
 }
 
