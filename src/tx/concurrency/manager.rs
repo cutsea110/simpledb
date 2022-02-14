@@ -90,6 +90,7 @@ impl ConcurrencyMgr {
         }
         false
     }
+    // NOTE: Because locktbl is static member, locking/unlocking the member must be here, not in LockTable's.
     fn try_s_lock(&mut self, blk: &BlockId) -> Result<()> {
         let timestamp = SystemTime::now();
 
@@ -104,6 +105,7 @@ impl ConcurrencyMgr {
 
         Err(From::from(ConcurrencyMgrError::LockAbort))
     }
+    // NOTE: Because locktbl is static member, locking/unlocking the member must be here, not in LockTable's.
     fn try_x_lock(&mut self, blk: &BlockId) -> Result<()> {
         let timestamp = SystemTime::now();
 
