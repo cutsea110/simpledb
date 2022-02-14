@@ -1,14 +1,35 @@
 use anyhow::Result;
 
+use core::fmt;
 use std::{
     cell::RefCell,
     collections::HashMap,
     rc::Rc,
     sync::{Arc, Mutex, Once},
+    thread,
+    time::{Duration, SystemTime},
 };
 
 use super::locktable::LockTable;
 use crate::file::block_id::BlockId;
+
+const MAX_TIME: i64 = 20_000; // 20 sec
+
+#[derive(Debug)]
+enum ConcurrencyMgrError {
+    LockAbort,
+}
+
+impl std::error::Error for ConcurrencyMgrError {}
+impl fmt::Display for ConcurrencyMgrError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ConcurrencyMgrError::LockAbort => {
+                write!(f, "lock abort")
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ConcurrencyMgr {
@@ -40,7 +61,28 @@ impl ConcurrencyMgr {
     }
     pub fn s_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
         if self.locks.borrow().get(blk).is_none() {
-            self.locktbl.lock().unwrap().s_lock(txnum, blk)?;
+            let timestamp = SystemTime::now();
+            let mut locked = false;
+
+            while !waiting_too_long(timestamp) {
+                if let Ok(mut locktbl) = self.locktbl.try_lock() {
+                    if locktbl.s_lock(txnum, blk).is_ok() {
+                        locked = true;
+                        break;
+                    }
+                }
+                println!(
+                    "{}| slock waiting blk{} {:?} (start: {:?})",
+                    txnum,
+                    *blk,
+                    SystemTime::now().duration_since(timestamp).unwrap(),
+                    timestamp
+                );
+                thread::sleep(Duration::from_millis(1000));
+            }
+            if !locked {
+                return Err(From::from(ConcurrencyMgrError::LockAbort));
+            }
             self.locks.borrow_mut().insert(blk.clone(), "S".to_string());
         }
 
@@ -49,7 +91,30 @@ impl ConcurrencyMgr {
     pub fn x_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
         if !self.has_x_lock(blk) {
             self.s_lock(txnum, blk)?;
-            self.locktbl.lock().unwrap().x_lock(txnum, blk)?;
+
+            let timestamp = SystemTime::now();
+            let mut locked = false;
+
+            while !waiting_too_long(timestamp) {
+                if let Ok(mut locktbl) = self.locktbl.try_lock() {
+                    if locktbl.x_lock(txnum, blk).is_ok() {
+                        locked = true;
+                        break;
+                    }
+                }
+                println!(
+                    "{}| xlock waiting blk{} {:?} (start: {:?})",
+                    txnum,
+                    *blk,
+                    SystemTime::now().duration_since(timestamp).unwrap(),
+                    timestamp
+                );
+                thread::sleep(Duration::from_millis(1000));
+            }
+            if !locked {
+                return Err(From::from(ConcurrencyMgrError::LockAbort));
+            }
+
             self.locks.borrow_mut().insert(blk.clone(), "X".to_string());
         }
 
@@ -78,6 +143,13 @@ impl ConcurrencyMgr {
         }
         println!("{}: ----- {}", txnum, msg);
     }
+}
+
+fn waiting_too_long(starttime: SystemTime) -> bool {
+    let now = SystemTime::now();
+    let diff = now.duration_since(starttime).unwrap();
+
+    diff.as_millis() as i64 > MAX_TIME
 }
 
 #[cfg(test)]

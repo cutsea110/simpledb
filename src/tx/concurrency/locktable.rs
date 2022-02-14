@@ -4,12 +4,10 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex, MutexGuard},
     thread,
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use crate::file::block_id::BlockId;
-
-const MAX_TIME: i64 = 10_000; // 10 sec
 
 #[derive(Debug)]
 enum LockTableError {
@@ -39,64 +37,42 @@ impl LockTable {
         }
     }
     // synchronized
-    pub fn s_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
-        let timestamp = SystemTime::now();
-        println!("{}| slock start at {:?}", txnum, timestamp);
-
-        while !waiting_too_long(timestamp) {
-            if let Ok(mut locks) = self.locks.try_lock() {
-                if !has_x_lock(&locks, blk) {
-                    *locks.entry(blk.clone()).or_insert(0) += 1; // will not be negative
-                    return Ok(());
-                }
+    pub fn s_lock(&mut self, _txnum: i32, blk: &BlockId) -> Result<()> {
+        if let Ok(mut locks) = self.locks.try_lock() {
+            if !has_x_lock(&locks, blk) {
+                *locks.entry(blk.clone()).or_insert(0) += 1; // will not be negative
+                return Ok(());
             }
-            println!(
-                "{}| slock waiting {:?} (start: {:?})",
-                txnum,
-                SystemTime::now().duration_since(timestamp).unwrap(),
-                timestamp
-            );
-            thread::sleep(Duration::new(1, 0));
         }
 
         Err(From::from(LockTableError::LockAbort))
     }
     // synchronized
-    pub fn x_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
-        let timestamp = SystemTime::now();
-        println!("{}| xlock start at {:?}", txnum, timestamp);
-
-        while !waiting_too_long(timestamp) {
-            if let Ok(mut locks) = self.locks.try_lock() {
-                if !has_other_s_locks(&locks, blk) {
-                    *locks.entry(blk.clone()).or_insert(-1) = -1; // means eXclusive lock
-                    return Ok(());
-                }
+    pub fn x_lock(&mut self, _txnum: i32, blk: &BlockId) -> Result<()> {
+        if let Ok(mut locks) = self.locks.try_lock() {
+            if !has_other_s_locks(&locks, blk) {
+                *locks.entry(blk.clone()).or_insert(-1) = -1; // means eXclusive lock
+                return Ok(());
             }
-            println!(
-                "{}| xlock waiting {:?} (start: {:?})",
-                txnum,
-                SystemTime::now().duration_since(timestamp).unwrap(),
-                timestamp
-            );
-            thread::sleep(Duration::new(1, 0));
         }
+        thread::sleep(Duration::new(1, 0));
 
         Err(From::from(LockTableError::LockAbort))
     }
     // synchronized
     pub fn unlock(&mut self, blk: &BlockId) -> Result<()> {
-        let mut locks = self.locks.lock().unwrap();
-
-        let val = get_lock_val(&locks, &blk);
-        if val > 1 {
-            locks.entry(blk.clone()).or_insert(val - 1);
-        } else {
-            locks.remove(&blk);
-            // means notify_all
+        if let Ok(mut locks) = self.locks.lock() {
+            let val = get_lock_val(&locks, &blk);
+            if val > 1 {
+                locks.entry(blk.clone()).and_modify(|e| *e -= 1);
+            } else {
+                locks.remove(&blk);
+                // means notify_all
+            }
+            return Ok(());
         }
 
-        return Ok(());
+        Err(From::from(LockTableError::LockAbort))
     }
     // for DEBUG
     pub fn dump(&self, txnum: i32, _msg: &str) {
@@ -118,11 +94,4 @@ fn get_lock_val(locks: &MutexGuard<HashMap<BlockId, i32>>, blk: &BlockId) -> i32
         Some(&ival) => ival,
         None => 0,
     }
-}
-
-fn waiting_too_long(starttime: SystemTime) -> bool {
-    let now = SystemTime::now();
-    let diff = now.duration_since(starttime).unwrap();
-
-    diff.as_millis() as i64 > MAX_TIME
 }

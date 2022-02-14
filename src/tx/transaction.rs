@@ -69,6 +69,7 @@ impl Transaction {
         self.concur_mgr.release()?;
         self.mybuffers.unpin_all()?;
         println!("transaction {} committed", self.txnum);
+        self.dump(self.txnum, "COMMITTED!!");
 
         Ok(())
     }
