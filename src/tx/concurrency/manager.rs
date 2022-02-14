@@ -13,7 +13,7 @@ use std::{
 use super::locktable::LockTable;
 use crate::file::block_id::BlockId;
 
-const MAX_TIME: i64 = 20_000; // 20 sec
+const MAX_TIME: i64 = 10_000; // 10 sec
 
 #[derive(Debug)]
 enum ConcurrencyMgrError {
@@ -59,25 +59,18 @@ impl ConcurrencyMgr {
             }
         }
     }
-    pub fn s_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
+    pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
         if self.locks.borrow().get(blk).is_none() {
             let timestamp = SystemTime::now();
             let mut locked = false;
 
             while !waiting_too_long(timestamp) {
                 if let Ok(mut locktbl) = self.locktbl.try_lock() {
-                    if locktbl.s_lock(txnum, blk).is_ok() {
+                    if locktbl.s_lock(blk).is_ok() {
                         locked = true;
                         break;
                     }
                 }
-                println!(
-                    "{}| slock waiting blk{} {:?} (start: {:?})",
-                    txnum,
-                    *blk,
-                    SystemTime::now().duration_since(timestamp).unwrap(),
-                    timestamp
-                );
                 thread::sleep(Duration::from_millis(1000));
             }
             if !locked {
@@ -88,27 +81,20 @@ impl ConcurrencyMgr {
 
         Ok(())
     }
-    pub fn x_lock(&mut self, txnum: i32, blk: &BlockId) -> Result<()> {
+    pub fn x_lock(&mut self, blk: &BlockId) -> Result<()> {
         if !self.has_x_lock(blk) {
-            self.s_lock(txnum, blk)?;
+            self.s_lock(blk)?;
 
             let timestamp = SystemTime::now();
             let mut locked = false;
 
             while !waiting_too_long(timestamp) {
                 if let Ok(mut locktbl) = self.locktbl.try_lock() {
-                    if locktbl.x_lock(txnum, blk).is_ok() {
+                    if locktbl.x_lock(blk).is_ok() {
                         locked = true;
                         break;
                     }
                 }
-                println!(
-                    "{}| xlock waiting blk{} {:?} (start: {:?})",
-                    txnum,
-                    *blk,
-                    SystemTime::now().duration_since(timestamp).unwrap(),
-                    timestamp
-                );
                 thread::sleep(Duration::from_millis(1000));
             }
             if !locked {
@@ -133,15 +119,6 @@ impl ConcurrencyMgr {
             return locktype.eq("X");
         }
         false
-    }
-    pub fn dump(&self, txnum: i32, msg: &str) {
-        println!("{}: ===== {}", txnum, msg);
-        self.locktbl.lock().unwrap().dump(txnum, msg);
-        println!("{}| Concurrency Mgr", txnum);
-        for (k, v) in self.locks.borrow().iter() {
-            println!("{}| [{} : {}]", txnum, k, v);
-        }
-        println!("{}: ----- {}", txnum, msg);
     }
 }
 
@@ -188,13 +165,13 @@ mod tests {
             let blk2 = BlockId::new("testfile", 2);
             tx_a.pin(&blk1).unwrap();
             tx_a.pin(&blk2).unwrap();
-            println!("{}: Tx A: request slock 1", tx_a.tx_num());
+            println!("Tx A: request slock 1");
             tx_a.get_i32(&blk1, 0).unwrap();
-            println!("{}: Tx A: receive slock 1", tx_a.tx_num());
+            println!("Tx A: receive slock 1");
             thread::sleep(Duration::new(1, 0));
-            println!("{}: Tx A: request slock 2", tx_a.tx_num());
+            println!("Tx A: request slock 2");
             tx_a.get_i32(&blk2, 0).unwrap();
-            println!("{}: Tx A: receive slock 2", tx_a.tx_num());
+            println!("Tx A: receive slock 2");
             tx_a.commit().unwrap();
         });
 
@@ -207,13 +184,13 @@ mod tests {
             let blk2 = BlockId::new("testfile", 2);
             tx_b.pin(&blk1).unwrap();
             tx_b.pin(&blk2).unwrap();
-            println!("{}: Tx B: request xlock 2", tx_b.tx_num());
+            println!("Tx B: request xlock 2");
             tx_b.set_i32(&blk2, 0, 0, false).unwrap();
-            println!("{}: Tx B: receive xlock 2", tx_b.tx_num());
+            println!("Tx B: receive xlock 2");
             thread::sleep(Duration::new(1, 0));
-            println!("{}: Tx B: request slock 1", tx_b.tx_num());
+            println!("Tx B: request slock 1");
             tx_b.get_i32(&blk1, 0).unwrap();
-            println!("{}: Tx B: receive slock 1", tx_b.tx_num());
+            println!("Tx B: receive slock 1");
             tx_b.commit().unwrap();
         });
 
@@ -221,18 +198,21 @@ mod tests {
         let lm_c = Arc::clone(&lm);
         let bm_c = Arc::clone(&bm);
         let handle3 = thread::spawn(|| {
+            // Tx B and Tx C can be deadlocked.
+            // Letting Tx B go first, prevent deadlock.
+            thread::sleep(Duration::new(1, 0));
             let mut tx_c = Transaction::new(fm_c, lm_c, bm_c);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_c.pin(&blk1).unwrap();
             tx_c.pin(&blk2).unwrap();
-            println!("{}: Tx C: request xlock 1", tx_c.tx_num());
+            println!("Tx C: request xlock 1");
             tx_c.set_i32(&blk1, 0, 0, false).unwrap();
-            println!("{}: Tx C: receive xlock 1", tx_c.tx_num());
+            println!("Tx C: receive xlock 1");
             thread::sleep(Duration::new(1, 0));
-            println!("{}: Tx C: request slock 2", tx_c.tx_num());
+            println!("Tx C: request slock 2");
             tx_c.get_i32(&blk2, 0).unwrap();
-            println!("{}: Tx C: receive slock 2", tx_c.tx_num());
+            println!("Tx C: receive slock 2");
             tx_c.commit().unwrap();
         });
 

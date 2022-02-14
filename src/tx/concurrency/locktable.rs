@@ -37,7 +37,7 @@ impl LockTable {
         }
     }
     // synchronized
-    pub fn s_lock(&mut self, _txnum: i32, blk: &BlockId) -> Result<()> {
+    pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
         if let Ok(mut locks) = self.locks.try_lock() {
             if !has_x_lock(&locks, blk) {
                 *locks.entry(blk.clone()).or_insert(0) += 1; // will not be negative
@@ -48,7 +48,7 @@ impl LockTable {
         Err(From::from(LockTableError::LockAbort))
     }
     // synchronized
-    pub fn x_lock(&mut self, _txnum: i32, blk: &BlockId) -> Result<()> {
+    pub fn x_lock(&mut self, blk: &BlockId) -> Result<()> {
         if let Ok(mut locks) = self.locks.try_lock() {
             if !has_other_s_locks(&locks, blk) {
                 *locks.entry(blk.clone()).or_insert(-1) = -1; // means eXclusive lock
@@ -73,13 +73,6 @@ impl LockTable {
         }
 
         Err(From::from(LockTableError::LockAbort))
-    }
-    // for DEBUG
-    pub fn dump(&self, txnum: i32, _msg: &str) {
-        println!("{}| LockTable", txnum);
-        for (k, v) in self.locks.lock().unwrap().iter() {
-            println!("{}| [{} : {}]", txnum, k, v);
-        }
     }
 }
 
