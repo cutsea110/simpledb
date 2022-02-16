@@ -13,7 +13,7 @@ pub struct Layout {
 impl Layout {
     pub fn new(schema: Schema) -> Self {
         let mut offsets = HashMap::new();
-        let mut pos = mem::size_of::<u8>(); // space for the empty/inuse flag
+        let mut pos = mem::size_of::<i32>(); // space for the empty/inuse flag
         for fldname in schema.fields() {
             offsets.insert(fldname.to_string(), pos);
             pos += lengthin_bytes(&schema, fldname.to_string())
@@ -47,7 +47,7 @@ impl Layout {
 fn lengthin_bytes(schema: &Schema, fldname: String) -> usize {
     let fldtype = schema.field_type(&fldname);
     match fldtype {
-        FieldType::INTEGER => mem::size_of::<u8>(),
+        FieldType::INTEGER => mem::size_of::<i32>(),
         FieldType::VARCHAR => Page::max_length(schema.length(&fldname)),
     }
 }
