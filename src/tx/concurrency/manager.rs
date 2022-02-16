@@ -142,6 +142,7 @@ mod tests {
     use std::time::Duration;
     use std::{fs, thread};
 
+    // FIXME: this test is flaky. Tx B and Tx C can gone to deadlock.
     #[test]
     fn unit_test() -> Result<()> {
         if Path::new("_concurrencytest").exists() {
