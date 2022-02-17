@@ -12,7 +12,7 @@ impl std::error::Error for PageError {}
 impl fmt::Display for PageError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &PageError::BufferSizeExceeded => write!(f, "buffer size exceeded"),
+            PageError::BufferSizeExceeded => write!(f, "buffer size exceeded"),
         }
     }
 }
@@ -38,7 +38,7 @@ impl Page {
             let bytes = &self.bb[offset..offset + i32_size];
             Ok(i32::from_be_bytes((*bytes).try_into()?))
         } else {
-            Err(PageError::BufferSizeExceeded.into())
+            Err(From::from(PageError::BufferSizeExceeded))
         }
     }
     pub fn set_i32(&mut self, offset: usize, n: i32) -> Result<usize> {
@@ -51,7 +51,7 @@ impl Page {
 
             Ok(offset + bytes.len())
         } else {
-            Err(PageError::BufferSizeExceeded.into())
+            Err(From::from(PageError::BufferSizeExceeded))
         }
     }
     pub fn get_bytes(&self, offset: usize) -> Result<&[u8]> {
@@ -61,7 +61,7 @@ impl Page {
         if new_offset + len - 1 < self.bb.len() {
             Ok(&self.bb[new_offset..new_offset + len])
         } else {
-            Err(PageError::BufferSizeExceeded.into())
+            Err(From::from(PageError::BufferSizeExceeded))
         }
     }
     pub fn set_bytes(&mut self, offset: usize, b: &[u8]) -> Result<usize> {
@@ -73,7 +73,7 @@ impl Page {
 
             Ok(new_offset + b.len())
         } else {
-            Err(PageError::BufferSizeExceeded.into())
+            Err(From::from(PageError::BufferSizeExceeded))
         }
     }
     pub fn get_string(&self, offset: usize) -> Result<String> {
@@ -98,7 +98,7 @@ impl Page {
         if new_offset + len - 1 < self.bb.len() {
             Ok(self.bb[new_offset..new_offset + len].try_into()?)
         } else {
-            Err(PageError::BufferSizeExceeded.into())
+            Err(From::from(PageError::BufferSizeExceeded))
         }
     }
 }
