@@ -105,6 +105,8 @@ impl LogMgr {
 
 #[cfg(test)]
 mod tests {
+    use crate::server::simpledb::SimpleDB;
+
     use super::*;
 
     use std::fs;
@@ -117,8 +119,11 @@ mod tests {
             fs::remove_dir_all("_logtest").expect("cleanup");
         }
 
-        let fm = FileMgr::new("_logtest", 400).expect("create FileMgr");
-        let mut lm = LogMgr::new(Arc::new(Mutex::new(fm)), "testfile").expect("create LogMgr");
+        let simpledb = SimpleDB::new("_logtest", "simpledb.log", 400, 8);
+
+        let lm = simpledb.log_mgr();
+        let mut lm = lm.lock().unwrap();
+
         create_records(&mut lm, 1, 35);
         print_log_records(&mut lm, "The log file now has these records:");
         create_records(&mut lm, 35, 70);
