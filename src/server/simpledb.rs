@@ -59,6 +59,7 @@ impl SimpleDB {
     pub fn new_tx(&self) -> Transaction {
         Transaction::new(
             Arc::clone(&self.next_tx_num),
+            Arc::clone(&self.locktbl),
             Arc::clone(&self.fm),
             Arc::clone(&self.lm),
             Arc::clone(&self.bm),

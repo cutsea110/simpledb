@@ -14,7 +14,9 @@ use crate::{
 };
 
 use super::{
-    bufferlist::BufferList, concurrency::manager::ConcurrencyMgr, recovery::manager::RecoveryMgr,
+    bufferlist::BufferList,
+    concurrency::{locktable::LockTable, manager::ConcurrencyMgr},
+    recovery::manager::RecoveryMgr,
 };
 
 static END_OF_FILE: i32 = -1;
@@ -35,6 +37,8 @@ pub struct Transaction {
 impl Transaction {
     pub fn new(
         next_tx_num: Arc<Mutex<i32>>,
+        locktbl: Arc<Mutex<LockTable>>,
+
         fm: Arc<Mutex<FileMgr>>,
         lm: Arc<Mutex<LogMgr>>,
         bm: Arc<Mutex<BufferMgr>>,
@@ -42,7 +46,7 @@ impl Transaction {
         let mut tran = Self {
             next_tx_num,
             recovery_mgr: None, // dummy
-            concur_mgr: ConcurrencyMgr::new(),
+            concur_mgr: ConcurrencyMgr::new(locktbl),
             bm: Arc::clone(&bm),
             fm,
             txnum: 0, // dummy
@@ -171,6 +175,7 @@ mod tests {
         }
 
         let next_tx_num = Arc::new(Mutex::new(0));
+        let locktbl = Arc::new(Mutex::new(LockTable::new()));
         let fm = Arc::new(Mutex::new(FileMgr::new("_txtest", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
         let bm = Arc::new(Mutex::new(BufferMgr::new(
@@ -181,6 +186,7 @@ mod tests {
 
         let mut tx1 = Transaction::new(
             Arc::clone(&next_tx_num),
+            Arc::clone(&locktbl),
             Arc::clone(&fm),
             Arc::clone(&lm),
             Arc::clone(&bm),
@@ -194,6 +200,7 @@ mod tests {
 
         let mut tx2 = Transaction::new(
             Arc::clone(&next_tx_num),
+            Arc::clone(&locktbl),
             Arc::clone(&fm),
             Arc::clone(&lm),
             Arc::clone(&bm),
@@ -211,6 +218,7 @@ mod tests {
 
         let mut tx3 = Transaction::new(
             Arc::clone(&next_tx_num),
+            Arc::clone(&locktbl),
             Arc::clone(&fm),
             Arc::clone(&lm),
             Arc::clone(&bm),
@@ -227,6 +235,7 @@ mod tests {
 
         let mut tx4 = Transaction::new(
             Arc::clone(&next_tx_num),
+            Arc::clone(&locktbl),
             Arc::clone(&fm),
             Arc::clone(&lm),
             Arc::clone(&bm),

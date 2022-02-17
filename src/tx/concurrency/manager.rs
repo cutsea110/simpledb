@@ -5,7 +5,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     rc::Rc,
-    sync::{Arc, Mutex, Once},
+    sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
 };
@@ -40,23 +40,10 @@ pub struct ConcurrencyMgr {
 }
 
 impl ConcurrencyMgr {
-    // emulate for static member locktbl
-    pub fn new() -> Self {
-        // make locktbl a static member by singleton pattern
-        // ref.) https://stackoverflow.com/questions/27791532/how-do-i-create-a-global-mutable-singleton
-        static mut LOCKTBL: Option<Arc<Mutex<LockTable>>> = None;
-        static ONCE: Once = Once::new();
-
-        unsafe {
-            ONCE.call_once(|| {
-                let locktbl = Arc::new(Mutex::new(LockTable::new()));
-                LOCKTBL = Some(locktbl);
-            });
-
-            Self {
-                locktbl: LOCKTBL.clone().unwrap(),
-                locks: Rc::new(RefCell::new(HashMap::new())),
-            }
+    pub fn new(locktbl: Arc<Mutex<LockTable>>) -> Self {
+        Self {
+            locktbl,
+            locks: Rc::new(RefCell::new(HashMap::new())),
         }
     }
     pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
@@ -150,6 +137,7 @@ mod tests {
         }
 
         let next_tx_num = Arc::new(Mutex::new(0));
+        let locktbl = Arc::new(Mutex::new(LockTable::new()));
         let fm = Arc::new(Mutex::new(FileMgr::new("_concurrencytest", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
         let bm = Arc::new(Mutex::new(BufferMgr::new(
@@ -159,11 +147,12 @@ mod tests {
         )));
 
         let next_tx_num_a = Arc::clone(&next_tx_num);
+        let locktbl_a = Arc::clone(&locktbl);
         let fm_a = Arc::clone(&fm);
         let lm_a = Arc::clone(&lm);
         let bm_a = Arc::clone(&bm);
         let handle1 = thread::spawn(|| {
-            let mut tx_a = Transaction::new(next_tx_num_a, fm_a, lm_a, bm_a);
+            let mut tx_a = Transaction::new(next_tx_num_a, locktbl_a, fm_a, lm_a, bm_a);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_a.pin(&blk1).unwrap();
@@ -179,11 +168,12 @@ mod tests {
         });
 
         let next_tx_num_b = Arc::clone(&next_tx_num);
+        let locktbl_b = Arc::clone(&locktbl);
         let fm_b = Arc::clone(&fm);
         let lm_b = Arc::clone(&lm);
         let bm_b = Arc::clone(&bm);
         let handle2 = thread::spawn(|| {
-            let mut tx_b = Transaction::new(next_tx_num_b, fm_b, lm_b, bm_b);
+            let mut tx_b = Transaction::new(next_tx_num_b, locktbl_b, fm_b, lm_b, bm_b);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_b.pin(&blk1).unwrap();
@@ -199,6 +189,7 @@ mod tests {
         });
 
         let next_tx_num_c = Arc::clone(&next_tx_num);
+        let locktbl_c = Arc::clone(&locktbl);
         let fm_c = Arc::clone(&fm);
         let lm_c = Arc::clone(&lm);
         let bm_c = Arc::clone(&bm);
@@ -206,7 +197,7 @@ mod tests {
             // Tx B and Tx C can be deadlocked.
             // Letting Tx B go first, prevent deadlock.
             thread::sleep(Duration::new(1, 0));
-            let mut tx_c = Transaction::new(next_tx_num_c, fm_c, lm_c, bm_c);
+            let mut tx_c = Transaction::new(next_tx_num_c, locktbl_c, fm_c, lm_c, bm_c);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_c.pin(&blk1).unwrap();

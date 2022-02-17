@@ -119,7 +119,7 @@ mod tests {
     use super::*;
     use crate::{
         buffer::manager::BufferMgr, file::manager::FileMgr, log::manager::LogMgr,
-        record::schema::Schema,
+        record::schema::Schema, tx::concurrency::locktable::LockTable,
     };
 
     #[test]
@@ -129,6 +129,7 @@ mod tests {
         }
 
         let next_tx_num = Arc::new(Mutex::new(0));
+        let locktbl = Arc::new(Mutex::new(LockTable::new()));
         let fm = Arc::new(Mutex::new(FileMgr::new("_recordpage", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
         let bm = Arc::new(Mutex::new(BufferMgr::new(
@@ -137,7 +138,13 @@ mod tests {
             8,
         )));
 
-        let tx = Arc::new(Mutex::new(Transaction::new(next_tx_num, fm, lm, bm)));
+        let tx = Arc::new(Mutex::new(Transaction::new(
+            next_tx_num,
+            locktbl,
+            fm,
+            lm,
+            bm,
+        )));
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);
