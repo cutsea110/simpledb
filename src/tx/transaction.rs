@@ -1,7 +1,7 @@
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{Arc, Mutex, Once},
+    sync::{Arc, Mutex},
     usize,
 };
 
@@ -33,36 +33,30 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, bm: Arc<Mutex<BufferMgr>>) -> Self {
-        static mut NEXT_TX_NUM: Option<Arc<Mutex<i32>>> = None;
-        static ONCE: Once = Once::new();
+    pub fn new(
+        next_tx_num: Arc<Mutex<i32>>,
+        fm: Arc<Mutex<FileMgr>>,
+        lm: Arc<Mutex<LogMgr>>,
+        bm: Arc<Mutex<BufferMgr>>,
+    ) -> Self {
+        let mut tran = Self {
+            next_tx_num,
+            recovery_mgr: None, // dummy
+            concur_mgr: ConcurrencyMgr::new(),
+            bm: Arc::clone(&bm),
+            fm,
+            txnum: 0, // dummy
+            mybuffers: BufferList::new(Arc::clone(&bm)),
+        };
 
-        unsafe {
-            ONCE.call_once(|| {
-                let next_tx_num = Arc::new(Mutex::new(0));
-                NEXT_TX_NUM = Some(next_tx_num);
-            });
+        // update txnum
+        let next_tx_num = tran.next_tx_number();
+        tran.txnum = next_tx_num;
+        // update recovery_mgr field (cyclic reference)
+        let tx = Rc::new(RefCell::new(tran.clone()));
+        tran.recovery_mgr = Rc::new(RefCell::new(RecoveryMgr::new(tx, next_tx_num, lm, bm))).into();
 
-            let mut tran = Self {
-                next_tx_num: NEXT_TX_NUM.clone().unwrap(),
-                recovery_mgr: None, // dummy
-                concur_mgr: ConcurrencyMgr::new(),
-                bm: Arc::clone(&bm),
-                fm,
-                txnum: 0, // dummy
-                mybuffers: BufferList::new(Arc::clone(&bm)),
-            };
-
-            // update txnum
-            let next_tx_num = tran.next_tx_number();
-            tran.txnum = next_tx_num;
-            // update recovery_mgr field (cyclic reference)
-            let tx = Rc::new(RefCell::new(tran.clone()));
-            tran.recovery_mgr =
-                Rc::new(RefCell::new(RecoveryMgr::new(tx, next_tx_num, lm, bm))).into();
-
-            tran
-        }
+        tran
     }
     pub fn commit(&mut self) -> Result<()> {
         self.recovery_mgr.as_ref().unwrap().borrow_mut().commit()?;
@@ -176,6 +170,7 @@ mod tests {
             fs::remove_dir_all("_txtest")?;
         }
 
+        let next_tx_num = Arc::new(Mutex::new(0));
         let fm = Arc::new(Mutex::new(FileMgr::new("_txtest", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
         let bm = Arc::new(Mutex::new(BufferMgr::new(
@@ -184,7 +179,12 @@ mod tests {
             8,
         )));
 
-        let mut tx1 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        let mut tx1 = Transaction::new(
+            Arc::clone(&next_tx_num),
+            Arc::clone(&fm),
+            Arc::clone(&lm),
+            Arc::clone(&bm),
+        );
         let blk = BlockId::new("testfile", 1);
         tx1.pin(&blk)?;
         // Don't log initial block values.
@@ -192,7 +192,12 @@ mod tests {
         tx1.set_string(&blk, 40, "one", false)?;
         tx1.commit()?;
 
-        let mut tx2 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        let mut tx2 = Transaction::new(
+            Arc::clone(&next_tx_num),
+            Arc::clone(&fm),
+            Arc::clone(&lm),
+            Arc::clone(&bm),
+        );
         tx2.pin(&blk)?;
         let ival = tx2.get_i32(&blk, 80)?;
         let sval = tx2.get_string(&blk, 40)?;
@@ -204,7 +209,12 @@ mod tests {
         tx2.set_string(&blk, 40, &newsval, true)?;
         tx2.commit()?;
 
-        let mut tx3 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        let mut tx3 = Transaction::new(
+            Arc::clone(&next_tx_num),
+            Arc::clone(&fm),
+            Arc::clone(&lm),
+            Arc::clone(&bm),
+        );
         tx3.pin(&blk)?;
         println!("new value at location 80 = {}", tx3.get_i32(&blk, 80)?);
         println!("new value at location 40 = {}", tx3.get_string(&blk, 40)?);
@@ -215,7 +225,12 @@ mod tests {
         );
         tx3.rollback()?;
 
-        let mut tx4 = Transaction::new(Arc::clone(&fm), Arc::clone(&lm), Arc::clone(&bm));
+        let mut tx4 = Transaction::new(
+            Arc::clone(&next_tx_num),
+            Arc::clone(&fm),
+            Arc::clone(&lm),
+            Arc::clone(&bm),
+        );
         tx4.pin(&blk)?;
         println!("post-rollback at location 80 = {}", tx4.get_i32(&blk, 80)?);
         tx4.commit()?;

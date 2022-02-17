@@ -149,6 +149,7 @@ mod tests {
             fs::remove_dir_all("_concurrencytest")?;
         }
 
+        let next_tx_num = Arc::new(Mutex::new(0));
         let fm = Arc::new(Mutex::new(FileMgr::new("_concurrencytest", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
         let bm = Arc::new(Mutex::new(BufferMgr::new(
@@ -157,11 +158,12 @@ mod tests {
             8,
         )));
 
+        let next_tx_num_a = Arc::clone(&next_tx_num);
         let fm_a = Arc::clone(&fm);
         let lm_a = Arc::clone(&lm);
         let bm_a = Arc::clone(&bm);
         let handle1 = thread::spawn(|| {
-            let mut tx_a = Transaction::new(fm_a, lm_a, bm_a);
+            let mut tx_a = Transaction::new(next_tx_num_a, fm_a, lm_a, bm_a);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_a.pin(&blk1).unwrap();
@@ -176,11 +178,12 @@ mod tests {
             tx_a.commit().unwrap();
         });
 
+        let next_tx_num_b = Arc::clone(&next_tx_num);
         let fm_b = Arc::clone(&fm);
         let lm_b = Arc::clone(&lm);
         let bm_b = Arc::clone(&bm);
         let handle2 = thread::spawn(|| {
-            let mut tx_b = Transaction::new(fm_b, lm_b, bm_b);
+            let mut tx_b = Transaction::new(next_tx_num_b, fm_b, lm_b, bm_b);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_b.pin(&blk1).unwrap();
@@ -195,6 +198,7 @@ mod tests {
             tx_b.commit().unwrap();
         });
 
+        let next_tx_num_c = Arc::clone(&next_tx_num);
         let fm_c = Arc::clone(&fm);
         let lm_c = Arc::clone(&lm);
         let bm_c = Arc::clone(&bm);
@@ -202,7 +206,7 @@ mod tests {
             // Tx B and Tx C can be deadlocked.
             // Letting Tx B go first, prevent deadlock.
             thread::sleep(Duration::new(1, 0));
-            let mut tx_c = Transaction::new(fm_c, lm_c, bm_c);
+            let mut tx_c = Transaction::new(next_tx_num_c, fm_c, lm_c, bm_c);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_c.pin(&blk1).unwrap();
