@@ -117,10 +117,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::{
-        buffer::manager::BufferMgr, file::manager::FileMgr, log::manager::LogMgr,
-        record::schema::Schema, tx::concurrency::locktable::LockTable,
-    };
+    use crate::{record::schema::Schema, server::simpledb::SimpleDB};
 
     #[test]
     fn unit_test() -> Result<()> {
@@ -128,23 +125,9 @@ mod tests {
             fs::remove_dir_all("_recordpage")?;
         }
 
-        let next_tx_num = Arc::new(Mutex::new(0));
-        let locktbl = Arc::new(Mutex::new(LockTable::new()));
-        let fm = Arc::new(Mutex::new(FileMgr::new("_recordpage", 400)?));
-        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
-        let bm = Arc::new(Mutex::new(BufferMgr::new(
-            Arc::clone(&fm),
-            Arc::clone(&lm),
-            8,
-        )));
+        let simpledb = SimpleDB::new("_recordpage", "simpledb.log", 400, 8);
 
-        let tx = Arc::new(Mutex::new(Transaction::new(
-            next_tx_num,
-            locktbl,
-            fm,
-            lm,
-            bm,
-        )));
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()));
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);

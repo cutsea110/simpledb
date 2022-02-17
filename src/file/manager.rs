@@ -156,9 +156,10 @@ impl FileMgr {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::fs;
+
+    use super::*;
+    use crate::server::simpledb::SimpleDB;
 
     #[test]
     fn unit_test() {
@@ -166,19 +167,27 @@ mod tests {
             fs::remove_dir_all("_filetest").expect("cleanup");
         }
 
-        let mut fm = FileMgr::new("_filetest", 400).expect("create FileMgr");
+        let simpledb = SimpleDB::new("_filetest", "simpledb.log", 400, 8);
+        let fm = simpledb.file_mgr();
+
         let blk = BlockId::new("testfile", 2);
-        let mut p1 = Page::new_from_size(fm.block_size() as usize);
+        let mut p1 = Page::new_from_size(fm.lock().unwrap().block_size() as usize);
         let pos1 = 0; // 88;
         p1.set_string(pos1, "abcdefghijklm".to_string())
             .expect("set string");
         let size = Page::max_length("abcdefghijjklm".len());
         let pos2 = pos1 + size;
         p1.set_i32(pos2, 345).expect("set i32");
-        fm.write(&blk, &mut p1).expect("write p1 to blk");
+        fm.lock()
+            .unwrap()
+            .write(&blk, &mut p1)
+            .expect("write p1 to blk");
 
-        let mut p2 = Page::new_from_size(fm.block_size() as usize);
-        fm.read(&blk, &mut p2).expect("read blk to p2");
+        let mut p2 = Page::new_from_size(fm.lock().unwrap().block_size() as usize);
+        fm.lock()
+            .unwrap()
+            .read(&blk, &mut p2)
+            .expect("read blk to p2");
 
         assert_eq!(345, p2.get_i32(pos2).expect("get i32"));
         assert_eq!(
