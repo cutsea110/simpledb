@@ -1,9 +1,7 @@
 use anyhow::Result;
 use core::fmt;
 use std::{
-    cell::RefCell,
     mem,
-    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -26,7 +24,7 @@ impl LogRecord for CheckpointRecord {
     fn tx_number(&self) -> i32 {
         -1 // dummy
     }
-    fn undo(&mut self, _tx: Rc<RefCell<Transaction>>) -> Result<()> {
+    fn undo(&mut self, _tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // nop
         Ok(())
     }
