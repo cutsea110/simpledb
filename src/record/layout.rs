@@ -1,9 +1,9 @@
 use std::{collections::HashMap, mem};
 
+use super::schema::{FieldType, Schema};
 use crate::file::page::Page;
 
-use super::schema::{FieldType, Schema};
-
+#[derive(Debug, Clone)]
 pub struct Layout {
     schema: Schema,
     offsets: HashMap<String, usize>,
