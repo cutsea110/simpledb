@@ -2,10 +2,8 @@ use anyhow::Result;
 
 use core::fmt;
 use std::{
-    cell::RefCell,
     collections::HashMap,
-    rc::Rc,
-    sync::{Arc, Mutex, Once},
+    sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
 };
@@ -36,33 +34,23 @@ pub struct ConcurrencyMgr {
     // static member (shared by all ConcurrentMgr)
     locktbl: Arc<Mutex<LockTable>>,
 
-    locks: Rc<RefCell<HashMap<BlockId, String>>>,
+    locks: Arc<Mutex<HashMap<BlockId, String>>>,
 }
 
 impl ConcurrencyMgr {
-    // emulate for static member locktbl
-    pub fn new() -> Self {
-        // make locktbl a static member by singleton pattern
-        // ref.) https://stackoverflow.com/questions/27791532/how-do-i-create-a-global-mutable-singleton
-        static mut LOCKTBL: Option<Arc<Mutex<LockTable>>> = None;
-        static ONCE: Once = Once::new();
-
-        unsafe {
-            ONCE.call_once(|| {
-                let locktbl = Arc::new(Mutex::new(LockTable::new()));
-                LOCKTBL = Some(locktbl);
-            });
-
-            Self {
-                locktbl: LOCKTBL.clone().unwrap(),
-                locks: Rc::new(RefCell::new(HashMap::new())),
-            }
+    pub fn new(locktbl: Arc<Mutex<LockTable>>) -> Self {
+        Self {
+            locktbl,
+            locks: Arc::new(Mutex::new(HashMap::new())),
         }
     }
     pub fn s_lock(&mut self, blk: &BlockId) -> Result<()> {
-        if self.locks.borrow().get(blk).is_none() {
+        if self.locks.lock().unwrap().get(blk).is_none() {
             self.try_s_lock(blk)?;
-            self.locks.borrow_mut().insert(blk.clone(), "S".to_string());
+            self.locks
+                .lock()
+                .unwrap()
+                .insert(blk.clone(), "S".to_string());
         }
 
         Ok(())
@@ -71,21 +59,24 @@ impl ConcurrencyMgr {
         if !self.has_x_lock(blk) {
             self.s_lock(blk)?;
             self.try_x_lock(blk)?;
-            self.locks.borrow_mut().insert(blk.clone(), "X".to_string());
+            self.locks
+                .lock()
+                .unwrap()
+                .insert(blk.clone(), "X".to_string());
         }
 
         Ok(())
     }
     pub fn release(&mut self) -> Result<()> {
-        for blk in self.locks.borrow().keys() {
+        for blk in self.locks.lock().unwrap().keys() {
             self.locktbl.lock().unwrap().unlock(blk)?;
         }
-        self.locks.borrow_mut().clear();
+        self.locks.lock().unwrap().clear();
 
         Ok(())
     }
     fn has_x_lock(&self, blk: &BlockId) -> bool {
-        if let Some(locktype) = self.locks.borrow().get(blk) {
+        if let Some(locktype) = self.locks.lock().unwrap().get(blk) {
             return locktype.eq("X");
         }
         false
@@ -132,10 +123,7 @@ fn waiting_too_long(starttime: SystemTime) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::buffer::manager::BufferMgr;
-    use crate::file::manager::FileMgr;
-    use crate::log::manager::LogMgr;
-    use crate::tx::transaction::Transaction;
+    use crate::server::simpledb::SimpleDB;
 
     use anyhow::Result;
     use std::path::Path;
@@ -149,19 +137,10 @@ mod tests {
             fs::remove_dir_all("_concurrencytest")?;
         }
 
-        let fm = Arc::new(Mutex::new(FileMgr::new("_concurrencytest", 400)?));
-        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
-        let bm = Arc::new(Mutex::new(BufferMgr::new(
-            Arc::clone(&fm),
-            Arc::clone(&lm),
-            8,
-        )));
+        let simpledb = SimpleDB::new("_concurrencytest", "simpledb.log", 400, 8);
 
-        let fm_a = Arc::clone(&fm);
-        let lm_a = Arc::clone(&lm);
-        let bm_a = Arc::clone(&bm);
-        let handle1 = thread::spawn(|| {
-            let mut tx_a = Transaction::new(fm_a, lm_a, bm_a);
+        let mut tx_a = simpledb.new_tx();
+        let handle1 = thread::spawn(move || {
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_a.pin(&blk1).unwrap();
@@ -176,11 +155,8 @@ mod tests {
             tx_a.commit().unwrap();
         });
 
-        let fm_b = Arc::clone(&fm);
-        let lm_b = Arc::clone(&lm);
-        let bm_b = Arc::clone(&bm);
-        let handle2 = thread::spawn(|| {
-            let mut tx_b = Transaction::new(fm_b, lm_b, bm_b);
+        let mut tx_b = simpledb.new_tx();
+        let handle2 = thread::spawn(move || {
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_b.pin(&blk1).unwrap();
@@ -195,14 +171,11 @@ mod tests {
             tx_b.commit().unwrap();
         });
 
-        let fm_c = Arc::clone(&fm);
-        let lm_c = Arc::clone(&lm);
-        let bm_c = Arc::clone(&bm);
-        let handle3 = thread::spawn(|| {
+        let mut tx_c = simpledb.new_tx();
+        let handle3 = thread::spawn(move || {
             // Tx B and Tx C can be deadlocked.
             // Letting Tx B go first, prevent deadlock.
             thread::sleep(Duration::new(1, 0));
-            let mut tx_c = Transaction::new(fm_c, lm_c, bm_c);
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
             tx_c.pin(&blk1).unwrap();

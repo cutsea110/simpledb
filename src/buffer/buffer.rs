@@ -105,7 +105,7 @@ impl Buffer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::buffer::manager::BufferMgr;
+    use crate::server::simpledb::SimpleDB;
 
     use std::fs;
     use std::path::Path;
@@ -116,14 +116,11 @@ mod tests {
             fs::remove_dir_all("_buffertest").expect("cleanup");
         }
 
-        let fm = Arc::new(Mutex::new(
-            FileMgr::new("_buffertest", 400).expect("create FileMgr"),
-        ));
-        let lm = Arc::new(Mutex::new(
-            LogMgr::new(Arc::clone(&fm), "testfile").expect("create LogMgr"),
-        ));
+        let simpledb = SimpleDB::new("_buffertest", "simpledb.log", 400, 3);
 
-        let mut bm = BufferMgr::new(Arc::clone(&fm), Arc::clone(&lm), 3);
+        let bm = simpledb.buffer_mgr();
+        let mut bm = bm.lock().unwrap();
+
         let buff1 = bm.pin(&BlockId::new("testfile", 1)).unwrap();
         {
             let mut b1 = buff1.lock().unwrap();

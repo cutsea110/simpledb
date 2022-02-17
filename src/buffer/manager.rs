@@ -144,6 +144,8 @@ fn waiting_too_long(starttime: SystemTime) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use crate::server::simpledb::SimpleDB;
+
     use super::*;
 
     use anyhow::Result;
@@ -156,9 +158,10 @@ mod tests {
             fs::remove_dir_all("_buffermgrtest")?;
         }
 
-        let fm = Arc::new(Mutex::new(FileMgr::new("_buffermgrtest", 400)?));
-        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
-        let mut bm = BufferMgr::new(Arc::clone(&fm), Arc::clone(&lm), 3);
+        let simpledb = SimpleDB::new("_buffermgrtest", "simpledb.log", 400, 3);
+
+        let bm = simpledb.buffer_mgr();
+        let mut bm = bm.lock().unwrap();
 
         let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 6];
         buff[0] = bm.pin(&BlockId::new("testfile", 0))?.into();

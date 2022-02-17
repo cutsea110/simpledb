@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{cell::RefCell, rc::Rc};
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use num_derive::FromPrimitive;
@@ -43,7 +43,7 @@ pub enum TxType {
 pub trait LogRecord {
     fn op(&self) -> TxType;
     fn tx_number(&self) -> i32;
-    fn undo(&mut self, tx: Rc<RefCell<Transaction>>) -> Result<()>;
+    fn undo(&mut self, tx: Arc<Mutex<Transaction>>) -> Result<()>;
 }
 
 pub fn create_log_record(bytes: Vec<u8>) -> Result<Box<dyn LogRecord>> {

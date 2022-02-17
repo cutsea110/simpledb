@@ -1,9 +1,7 @@
 use anyhow::Result;
 use core::fmt;
 use std::{
-    cell::RefCell,
     mem,
-    rc::Rc,
     sync::{Arc, Mutex},
 };
 
@@ -37,11 +35,12 @@ impl LogRecord for SetStringRecord {
     fn tx_number(&self) -> i32 {
         self.txnum
     }
-    fn undo(&mut self, tx: Rc<RefCell<Transaction>>) -> Result<()> {
-        tx.borrow_mut().pin(&self.blk)?;
-        tx.borrow_mut()
+    fn undo(&mut self, tx: Arc<Mutex<Transaction>>) -> Result<()> {
+        tx.lock().unwrap().pin(&self.blk)?;
+        tx.lock()
+            .unwrap()
             .set_string(&self.blk, self.offset, self.val.as_str(), false)?; // don't log the undo!
-        tx.borrow_mut().unpin(&self.blk)
+        tx.lock().unwrap().unpin(&self.blk)
     }
 }
 impl SetStringRecord {
