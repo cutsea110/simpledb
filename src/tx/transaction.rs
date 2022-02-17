@@ -171,6 +171,8 @@ impl Transaction {
 
 #[cfg(test)]
 mod tests {
+    use crate::server::simpledb::SimpleDB;
+
     use super::*;
 
     use anyhow::Result;
@@ -183,23 +185,9 @@ mod tests {
             fs::remove_dir_all("_txtest")?;
         }
 
-        let next_tx_num = Arc::new(Mutex::new(0));
-        let locktbl = Arc::new(Mutex::new(LockTable::new()));
-        let fm = Arc::new(Mutex::new(FileMgr::new("_txtest", 400)?));
-        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
-        let bm = Arc::new(Mutex::new(BufferMgr::new(
-            Arc::clone(&fm),
-            Arc::clone(&lm),
-            8,
-        )));
+        let simpledb = SimpleDB::new("_txtest", "simpledb.log", 400, 8);
 
-        let mut tx1 = Transaction::new(
-            Arc::clone(&next_tx_num),
-            Arc::clone(&locktbl),
-            Arc::clone(&fm),
-            Arc::clone(&lm),
-            Arc::clone(&bm),
-        );
+        let mut tx1 = simpledb.new_tx();
         let blk = BlockId::new("testfile", 1);
         tx1.pin(&blk)?;
         // Don't log initial block values.
@@ -207,13 +195,7 @@ mod tests {
         tx1.set_string(&blk, 40, "one", false)?;
         tx1.commit()?;
 
-        let mut tx2 = Transaction::new(
-            Arc::clone(&next_tx_num),
-            Arc::clone(&locktbl),
-            Arc::clone(&fm),
-            Arc::clone(&lm),
-            Arc::clone(&bm),
-        );
+        let mut tx2 = simpledb.new_tx();
         tx2.pin(&blk)?;
         let ival = tx2.get_i32(&blk, 80)?;
         let sval = tx2.get_string(&blk, 40)?;
@@ -225,13 +207,7 @@ mod tests {
         tx2.set_string(&blk, 40, &newsval, true)?;
         tx2.commit()?;
 
-        let mut tx3 = Transaction::new(
-            Arc::clone(&next_tx_num),
-            Arc::clone(&locktbl),
-            Arc::clone(&fm),
-            Arc::clone(&lm),
-            Arc::clone(&bm),
-        );
+        let mut tx3 = simpledb.new_tx();
         tx3.pin(&blk)?;
         println!("new value at location 80 = {}", tx3.get_i32(&blk, 80)?);
         println!("new value at location 40 = {}", tx3.get_string(&blk, 40)?);
@@ -242,13 +218,7 @@ mod tests {
         );
         tx3.rollback()?;
 
-        let mut tx4 = Transaction::new(
-            Arc::clone(&next_tx_num),
-            Arc::clone(&locktbl),
-            Arc::clone(&fm),
-            Arc::clone(&lm),
-            Arc::clone(&bm),
-        );
+        let mut tx4 = simpledb.new_tx();
         tx4.pin(&blk)?;
         println!("post-rollback at location 80 = {}", tx4.get_i32(&blk, 80)?);
         tx4.commit()?;
