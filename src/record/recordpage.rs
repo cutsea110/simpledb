@@ -65,16 +65,16 @@ impl RecordPage {
         }
         Ok(())
     }
-    pub fn next_after(&mut self, slot: i32) -> i32 {
+    pub fn next_after(&mut self, slot: i32) -> Option<i32> {
         self.search_after(slot, USED)
     }
-    pub fn insert_after(&mut self, slot: i32) -> i32 {
-        let newslot = self.search_after(slot, EMPTY);
-        if newslot >= 0 {
+    pub fn insert_after(&mut self, slot: i32) -> Option<i32> {
+        if let Some(newslot) = self.search_after(slot, EMPTY) {
             self.set_flag(newslot, USED).unwrap();
+            return Some(newslot);
         }
 
-        return newslot;
+        None
     }
     pub fn block(&self) -> &BlockId {
         &self.blk
@@ -85,18 +85,18 @@ impl RecordPage {
 
         tx.set_i32(&self.blk, offset, flag as i32, true)
     }
-    fn search_after(&mut self, mut slot: i32, flag: Flag) -> i32 {
+    fn search_after(&mut self, mut slot: i32, flag: Flag) -> Option<i32> {
         slot += 1;
         while self.is_valid_slot(slot) {
             let mut tx = self.tx.lock().unwrap();
 
             if tx.get_i32(&self.blk, self.offset(slot)).unwrap() as Flag == flag {
-                return slot;
+                return Some(slot);
             }
             slot += 1;
         }
 
-        -1
+        None
     }
     fn is_valid_slot(&self, slot: i32) -> bool {
         self.offset(slot + 1) as i32 <= self.tx.lock().unwrap().block_size()
@@ -154,19 +154,20 @@ mod tests {
         println!("Filling the page with random records.");
 
         let mut rng = rand::thread_rng();
-        let mut slot = rp.insert_after(-1);
-        while slot >= 0 {
+        let mut next_slot = rp.insert_after(-1);
+        while let Some(slot) = next_slot {
             let n: i32 = rng.gen_range(1..50);
             rp.set_i32(slot, "A", n)?;
             rp.set_string(slot, "B", format!("rec{}", n))?;
             println!("inserting into slot {}: {{{}, rec{}}}", slot, n, n);
-            slot = rp.insert_after(slot);
+
+            next_slot = rp.insert_after(slot)
         }
         println!("Deleted these records with A-value < 25.");
 
         let mut count = 0;
-        slot = rp.next_after(-1);
-        while slot >= 0 {
+        next_slot = rp.next_after(-1);
+        while let Some(slot) = next_slot {
             let a = rp.get_i32(slot, "A")?;
             let b = rp.get_string(slot, "B")?;
             if a < 25 {
@@ -174,17 +175,19 @@ mod tests {
                 println!("slot {} : {{{}, {}}}", slot, a, b);
                 rp.delete(slot)?;
             }
-            slot = rp.next_after(slot);
+
+            next_slot = rp.next_after(slot);
         }
         println!("{} values under 25 were deleted.\n", count);
         println!("Here are the remaining records.");
 
-        slot = rp.next_after(-1);
-        while slot >= 0 {
+        next_slot = rp.next_after(-1);
+        while let Some(slot) = next_slot {
             let a = rp.get_i32(slot, "A")?;
             let b = rp.get_string(slot, "B")?;
             println!("slot {}: {{{}, {}}}", slot, a, b);
-            slot = rp.next_after(slot);
+
+            next_slot = rp.next_after(slot);
         }
 
         tx.lock().unwrap().unpin(&blk)?;
