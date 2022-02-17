@@ -1,12 +1,16 @@
 use anyhow::Result;
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use std::sync::{Arc, Mutex};
 
 use super::{layout::Layout, schema::FieldType};
 use crate::{file::block_id::BlockId, tx::transaction::Transaction};
 
-type Flag = i32;
-pub const EMPTY: Flag = 0;
-pub const USED: Flag = 1;
+#[derive(FromPrimitive, Debug, Eq, PartialEq, Clone, Copy)]
+pub enum SlotFlag {
+    EMPTY = 0,
+    USED = 1,
+}
 
 pub struct RecordPage {
     tx: Arc<Mutex<Transaction>>,
@@ -41,14 +45,14 @@ impl RecordPage {
         tx.set_string(&self.blk, fldpos, &val, true)
     }
     pub fn delete(&mut self, slot: i32) -> Result<()> {
-        self.set_flag(slot, EMPTY)
+        self.set_flag(slot, SlotFlag::EMPTY)
     }
     pub fn format(&mut self) -> Result<()> {
         let mut slot: i32 = 0;
         while self.is_valid_slot(slot) {
             let mut tx = self.tx.lock().unwrap();
 
-            tx.set_i32(&self.blk, self.offset(slot), EMPTY, false)?;
+            tx.set_i32(&self.blk, self.offset(slot), SlotFlag::EMPTY as i32, false)?;
             let sch = self.layout.schema();
             for fldname in sch.fields() {
                 let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
@@ -66,11 +70,11 @@ impl RecordPage {
         Ok(())
     }
     pub fn next_after(&mut self, slot: i32) -> Option<i32> {
-        self.search_after(slot, USED)
+        self.search_after(slot, SlotFlag::USED)
     }
     pub fn insert_after(&mut self, slot: i32) -> Option<i32> {
-        if let Some(newslot) = self.search_after(slot, EMPTY) {
-            self.set_flag(newslot, USED).unwrap();
+        if let Some(newslot) = self.search_after(slot, SlotFlag::EMPTY) {
+            self.set_flag(newslot, SlotFlag::USED).unwrap();
             return Some(newslot);
         }
 
@@ -79,18 +83,18 @@ impl RecordPage {
     pub fn block(&self) -> &BlockId {
         &self.blk
     }
-    fn set_flag(&mut self, slot: i32, flag: Flag) -> Result<()> {
+    fn set_flag(&mut self, slot: i32, flag: SlotFlag) -> Result<()> {
         let offset = self.offset(slot);
         let mut tx = self.tx.lock().unwrap();
 
         tx.set_i32(&self.blk, offset, flag as i32, true)
     }
-    fn search_after(&mut self, mut slot: i32, flag: Flag) -> Option<i32> {
+    fn search_after(&mut self, mut slot: i32, flag: SlotFlag) -> Option<i32> {
         slot += 1;
         while self.is_valid_slot(slot) {
             let mut tx = self.tx.lock().unwrap();
-
-            if tx.get_i32(&self.blk, self.offset(slot)).unwrap() as Flag == flag {
+            let flg = tx.get_i32(&self.blk, self.offset(slot)).unwrap();
+            if FromPrimitive::from_i32(flg) == Some(flag) {
                 return Some(slot);
             }
             slot += 1;

@@ -1,9 +1,8 @@
-use core::fmt;
-use std::sync::{Arc, Mutex};
-
 use anyhow::Result;
+use core::fmt;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use std::sync::{Arc, Mutex};
 
 use crate::{file::page::Page, tx::transaction::Transaction};
 
