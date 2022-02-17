@@ -115,3 +115,84 @@ impl RecordPage {
         slot * self.layout.slot_size() as i32
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use rand::Rng;
+    use std::{
+        fs,
+        path::Path,
+        sync::{Arc, Mutex},
+    };
+
+    use super::*;
+    use crate::{
+        buffer::manager::BufferMgr, file::manager::FileMgr, log::manager::LogMgr,
+        record::schema::Schema,
+    };
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_recordpage").exists() {
+            fs::remove_dir_all("_recordpage")?;
+        }
+
+        let fm = Arc::new(Mutex::new(FileMgr::new("_recordpage", 400)?));
+        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "testfile")?));
+        let bm = Arc::new(Mutex::new(BufferMgr::new(
+            Arc::clone(&fm),
+            Arc::clone(&lm),
+            8,
+        )));
+
+        let mut tx = Transaction::new(fm, lm, bm);
+        let mut sch = Schema::new();
+        sch.add_i32_field("A");
+        sch.add_string_field("B", 9);
+        let layout = Layout::new(sch);
+        for fldname in layout.schema().fields().iter() {
+            let offset = layout.offset(fldname);
+            println!("{} has offset {}", fldname, offset);
+        }
+        let blk = tx.append("testfile")?;
+        tx.pin(&blk)?;
+        let mut rp = RecordPage::new(tx, blk.clone(), layout);
+        rp.format()?;
+
+        println!("Filling the page with random records.");
+
+        let mut slot = -1;
+        while let Some(slot) = rp.next_after(slot) {
+            let n: i32 = rand::thread_rng().gen_range(1..50);
+            rp.set_i32(slot, "A", n)?;
+            rp.set_string(slot, "B", format!("rec{}", n))?;
+            println!("inserting into slot {}: {{{}, rec{}}}", slot, n, n);
+        }
+        println!("Deleted these records with A-value < 25.");
+        let mut count = 0;
+
+        slot = -1;
+        while let Some(slot) = rp.next_after(slot) {
+            let a = rp.get_i32(slot, "A")?;
+            let b = rp.get_string(slot, "B")?;
+            if a < 25 {
+                count += 1;
+                println!("slot {} : {{{}, {}}}", slot, a, b);
+                rp.delete(slot)?;
+            }
+        }
+        println!("{} values under 25 were deleted.\n", count);
+        println!("Here are the remaining records.");
+
+        slot = -1;
+        while let Some(slot) = rp.next_after(slot) {
+            let a = rp.get_i32(slot, "A")?;
+            let b = rp.get_string(slot, "B")?;
+            println!("slot {}: {{{}, {}}}", slot, a, b);
+        }
+        // tx.unpin(&blk)?;
+        // tx.commit()
+        Ok(())
+    }
+}
