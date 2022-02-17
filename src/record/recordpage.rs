@@ -99,8 +99,7 @@ impl RecordPage {
         -1
     }
     fn is_valid_slot(&self, slot: i32) -> bool {
-        println!("slot {} has offset {}", slot, self.offset(slot));
-        self.offset(slot) as i32 <= self.tx.lock().unwrap().block_size()
+        self.offset(slot + 1) as i32 <= self.tx.lock().unwrap().block_size()
     }
     fn offset(&self, slot: i32) -> i32 {
         slot * self.layout.slot_size() as i32
@@ -146,6 +145,7 @@ mod tests {
             let offset = layout.offset(fldname);
             println!("{} has offset {}", fldname, offset);
         }
+
         let blk = tx.lock().unwrap().append("testfile")?;
         tx.lock().unwrap().pin(&blk)?;
         let mut rp = RecordPage::new(Arc::clone(&tx), blk.clone(), layout);
