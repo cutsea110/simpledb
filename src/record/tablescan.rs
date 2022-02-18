@@ -1,11 +1,11 @@
 use anyhow::Result;
-use std::alloc::Layout;
+use std::sync::{Arc, Mutex};
 
-use super::{recordpage::RecordPage, rid::RID};
+use super::{layout::Layout, recordpage::RecordPage, rid::RID};
 use crate::{query::constant::Constant, tx::transaction::Transaction};
 
 pub struct TableScan {
-    tx: Transaction,
+    tx: Arc<Mutex<Transaction>>,
     layout: Layout,
     rp: RecordPage,
     filename: String,
@@ -13,7 +13,7 @@ pub struct TableScan {
 }
 
 impl TableScan {
-    pub fn new(tx: Transaction, tblname: String, layout: Layout) -> Self {
+    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: String, layout: Layout) -> Self {
         panic!("TODO")
     }
     // TODO: Methods that implement Scan trait
