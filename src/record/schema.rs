@@ -50,8 +50,8 @@ impl Schema {
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FieldType {
-    INTEGER = 0,
-    VARCHAR = 1,
+    INTEGER = 4,
+    VARCHAR = 12,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
