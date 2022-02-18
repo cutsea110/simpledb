@@ -12,6 +12,7 @@ pub enum SlotFlag {
     USED = 1,
 }
 
+#[derive(Debug, Clone)]
 pub struct RecordPage {
     tx: Arc<Mutex<Transaction>>,
     blk: BlockId,
