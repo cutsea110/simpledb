@@ -1,3 +1,4 @@
+use num_derive::FromPrimitive;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -48,7 +49,7 @@ impl Schema {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(FromPrimitive, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FieldType {
     INTEGER = 4,
     VARCHAR = 12,

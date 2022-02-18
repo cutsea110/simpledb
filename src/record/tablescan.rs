@@ -31,7 +31,7 @@ pub struct TableScan {
 }
 
 impl TableScan {
-    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: String, layout: Layout) -> Self {
+    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: &str, layout: Layout) -> Self {
         let filename = format!("{}.tbl", tblname);
         let mut scan = Self {
             tx,
@@ -219,7 +219,7 @@ mod tests {
             println!("{} has offset {}", fldname, offset);
         }
 
-        let mut ts = TableScan::new(Arc::clone(&tx), "T".to_string(), layout);
+        let mut ts = TableScan::new(Arc::clone(&tx), "T", layout);
         println!("Filling the table with 50 random records.");
         ts.before_first()?;
         let mut rng = rand::thread_rng();
