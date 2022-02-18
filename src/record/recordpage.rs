@@ -159,7 +159,7 @@ mod tests {
 
             next_slot = rp.insert_after(slot)
         }
-        println!("Deleted these records with A-value < 25.");
+        println!("Deleted these records with A-values < 25.");
 
         let mut count = 0;
         next_slot = rp.next_after(-1);

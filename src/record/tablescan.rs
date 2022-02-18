@@ -56,11 +56,9 @@ impl TableScan {
                 .lock()
                 .unwrap()
                 .unpin(self.rp.as_ref().unwrap().block())?;
-
-            return Ok(());
         }
 
-        Err(From::from(TableScanError::NoRecordPage))
+        Ok(())
     }
     pub fn before_first(&mut self) -> Result<()> {
         self.move_to_block(0)
@@ -190,6 +188,71 @@ impl TableScan {
     }
     fn at_last_block(&self) -> bool {
         self.rp.as_ref().unwrap().block().number()
-            == self.tx.lock().unwrap().size(&self.filename).unwrap()
+            == self.tx.lock().unwrap().size(&self.filename).unwrap() - 1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use rand::Rng;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::{record::schema::Schema, server::simpledb::SimpleDB};
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_tablescan").exists() {
+            fs::remove_dir_all("_tablescan")?;
+        }
+
+        let simpledb = SimpleDB::new("_tablescan", "simpledb.log", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()));
+        let mut sch = Schema::new();
+        sch.add_i32_field("A");
+        sch.add_string_field("B", 9);
+        let layout = Layout::new(sch);
+        for fldname in layout.schema().fields() {
+            let offset = layout.offset(fldname);
+            println!("{} has offset {}", fldname, offset);
+        }
+
+        let mut ts = TableScan::new(Arc::clone(&tx), "T".to_string(), layout);
+        println!("Filling the table with 50 random records.");
+        ts.before_first()?;
+        let mut rng = rand::thread_rng();
+        for _ in 0..50 {
+            ts.insert()?;
+            let n: i32 = rng.gen_range(1..50);
+            ts.set_i32("A", n)?;
+            ts.set_string("B", format!("rec{}", n))?;
+            println!("inserting into slot {}: {{{}, rec{}}}", ts.get_rid(), n, n);
+        }
+        println!("Deleting records with A-values < 25.");
+        let mut count = 0;
+        ts.before_first()?;
+        while ts.next() {
+            let a = ts.get_i32("A")?;
+            let b = ts.get_string("B")?;
+            if a < 25 {
+                count += 1;
+                println!("slot {}: {{{}, {}}}", ts.get_rid(), a, b);
+                ts.delete()?;
+            }
+        }
+        println!("{} values under 25 where deleted.\n", count);
+        println!("Here are the remaining records.");
+        ts.before_first()?;
+        while ts.next() {
+            let a = ts.get_i32("A")?;
+            let b = ts.get_string("B")?;
+            println!("slot {}: {{{}, {}}}", ts.get_rid(), a, b);
+        }
+        ts.close()?;
+        tx.lock().unwrap().commit()?;
+
+        Ok(())
     }
 }
