@@ -86,7 +86,7 @@ impl TableMgr {
         tcat.close()?;
 
         let mut sch = Schema::new();
-        let mut offsets = HashMap::<String, usize>::new();
+        let mut offsets = HashMap::new();
         let mut fcat = TableScan::new(tx, "fldcat", self.fcat_layout.clone());
         while fcat.next() {
             if fcat.get_string("tblname")? == tblname {
@@ -94,7 +94,7 @@ impl TableMgr {
                 let fldtype = FromPrimitive::from_i32(fcat.get_i32("type")?).unwrap();
                 let fldlen = fcat.get_i32("length")? as usize;
                 let offset = fcat.get_i32("offset")? as usize;
-                offsets.insert("fldname".to_string(), offset);
+                offsets.insert(fldname.to_string(), offset);
                 sch.add_field(&fldname, fldtype, fldlen);
             }
         }
@@ -149,6 +149,46 @@ mod tests {
             println!("{}: {}", fldname, fld_type);
         }
         tx.lock().unwrap().commit()?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn catalog_test() -> Result<()> {
+        if Path::new("_catalogtest").exists() {
+            fs::remove_dir_all("_catalogtest")?;
+        }
+
+        let simpledb = SimpleDB::new("_catalogtest", "simpledb.log", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()));
+        let tm = TableMgr::new(true, Arc::clone(&tx));
+
+        let mut sch = Schema::new();
+        sch.add_i32_field("A");
+        sch.add_string_field("B", 9);
+        tm.create_table("MyTable", sch, Arc::clone(&tx))?;
+
+        println!("All tables and their lengths:");
+        let layout = tm.get_layout("tblcat", Arc::clone(&tx))?;
+        let mut ts = TableScan::new(Arc::clone(&tx), "tblcat", layout);
+        while ts.next() {
+            let tname = ts.get_string("tblname")?;
+            let size = ts.get_i32("slotsize")?;
+            println!("{} {}", tname, size);
+        }
+        ts.close()?;
+
+        println!("All fields and their offsets:");
+        let layout = tm.get_layout("fldcat", Arc::clone(&tx))?;
+        let mut ts = TableScan::new(Arc::clone(&tx), "fldcat", layout);
+        while ts.next() {
+            let tname = ts.get_string("tblname")?;
+            let fname = ts.get_string("fldname")?;
+            let offset = ts.get_i32("offset")?;
+            println!("{} {} {}", tname, fname, offset);
+        }
+        ts.close()?;
 
         Ok(())
     }
