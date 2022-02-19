@@ -31,7 +31,7 @@ pub struct TableScan {
 }
 
 impl TableScan {
-    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: &str, layout: Layout) -> Self {
+    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: &str, layout: Layout) -> Result<Self> {
         let filename = format!("{}.tbl", tblname);
         let mut scan = Self {
             tx,
@@ -41,13 +41,13 @@ impl TableScan {
             currentslot: -1, // dummy
         };
 
-        if scan.tx.lock().unwrap().size(&scan.filename).unwrap() == 0 {
-            scan.move_to_new_block().unwrap();
+        if scan.tx.lock().unwrap().size(&scan.filename)? == 0 {
+            scan.move_to_new_block()?;
         } else {
-            scan.move_to_block(0).unwrap();
+            scan.move_to_block(0)?;
         }
 
-        scan
+        Ok(scan)
     }
     // TODO: Methods that implement Scan trait
     pub fn close(&mut self) -> Result<()> {
@@ -219,7 +219,7 @@ mod tests {
             println!("{} has offset {}", fldname, offset);
         }
 
-        let mut ts = TableScan::new(Arc::clone(&tx), "T", layout);
+        let mut ts = TableScan::new(Arc::clone(&tx), "T", layout)?;
         println!("Filling the table with 50 random records.");
         ts.before_first()?;
         let mut rng = rand::thread_rng();

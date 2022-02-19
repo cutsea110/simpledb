@@ -29,7 +29,7 @@ impl ViewMgr {
     }
     pub fn create_view(&self, vname: &str, vdef: &str, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         let layout = self.tbl_mgr.get_layout("viewcat", Arc::clone(&tx))?;
-        let mut ts = TableScan::new(tx, "viewcat", layout);
+        let mut ts = TableScan::new(tx, "viewcat", layout)?;
         ts.set_string("viewname", vname.to_string())?;
         ts.set_string("viewdef", vdef.to_string())?;
         ts.close()?;
@@ -40,7 +40,7 @@ impl ViewMgr {
         let mut result = "".to_string();
 
         let layout = self.tbl_mgr.get_layout("viewcat", Arc::clone(&tx))?;
-        let mut ts = TableScan::new(tx, "viewcat", layout);
+        let mut ts = TableScan::new(tx, "viewcat", layout)?;
         while ts.next() {
             if ts.get_string("viewname")? == vname {
                 result = ts.get_string("viewdef").unwrap_or("".to_string());

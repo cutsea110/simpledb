@@ -53,13 +53,13 @@ impl TableMgr {
     ) -> Result<()> {
         let layout = Layout::new(sch);
         // insert one record into tblcat
-        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", self.tcat_layout.clone());
+        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", self.tcat_layout.clone())?;
         tcat.insert()?;
         tcat.set_string("tblname", tblname.to_string())?;
         tcat.set_i32("slotsize", layout.slot_size() as i32)?;
         tcat.close()?;
         // insert a record into fldcat for each field
-        let mut fcat = TableScan::new(tx, "fldcat", self.fcat_layout.clone());
+        let mut fcat = TableScan::new(tx, "fldcat", self.fcat_layout.clone())?;
         for fldname in layout.schema().fields() {
             fcat.insert()?;
             fcat.set_string("tblname", tblname.to_string())?;
@@ -74,7 +74,7 @@ impl TableMgr {
     }
     pub fn get_layout(&self, tblname: &str, tx: Arc<Mutex<Transaction>>) -> Result<Layout> {
         let mut size = -1;
-        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", self.tcat_layout.clone());
+        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", self.tcat_layout.clone())?;
         while tcat.next() {
             if tcat.get_string("tblname")? == tblname {
                 size = tcat.get_i32("slotsize")?;
@@ -85,7 +85,7 @@ impl TableMgr {
 
         let mut sch = Schema::new();
         let mut offsets = HashMap::new();
-        let mut fcat = TableScan::new(tx, "fldcat", self.fcat_layout.clone());
+        let mut fcat = TableScan::new(tx, "fldcat", self.fcat_layout.clone())?;
         while fcat.next() {
             if fcat.get_string("tblname")? == tblname {
                 let fldname = fcat.get_string("fldname")?;
@@ -169,7 +169,7 @@ mod tests {
 
         println!("All tables and their lengths:");
         let layout = tm.get_layout("tblcat", Arc::clone(&tx))?;
-        let mut ts = TableScan::new(Arc::clone(&tx), "tblcat", layout);
+        let mut ts = TableScan::new(Arc::clone(&tx), "tblcat", layout)?;
         while ts.next() {
             let tname = ts.get_string("tblname")?;
             let size = ts.get_i32("slotsize")?;
@@ -179,7 +179,7 @@ mod tests {
 
         println!("All fields and their offsets:");
         let layout = tm.get_layout("fldcat", Arc::clone(&tx))?;
-        let mut ts = TableScan::new(Arc::clone(&tx), "fldcat", layout);
+        let mut ts = TableScan::new(Arc::clone(&tx), "fldcat", layout)?;
         while ts.next() {
             let tname = ts.get_string("tblname")?;
             let fname = ts.get_string("fldname")?;

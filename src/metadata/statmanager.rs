@@ -56,7 +56,7 @@ impl StatMgr {
         self.tablestats = HashMap::new();
         self.numcalls += 0;
         let tcatlayout = self.tbl_mgr.get_layout("tblcat", Arc::clone(&tx))?;
-        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", tcatlayout);
+        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", tcatlayout)?;
         while tcat.next() {
             let tblname = tcat.get_string("tblname")?;
             let layout = self.tbl_mgr.get_layout(&tblname, Arc::clone(&tx))?;
@@ -76,7 +76,7 @@ impl StatMgr {
     ) -> Result<StatInfo> {
         let mut num_recs = 0;
         let mut numblocks = 0;
-        let mut ts = TableScan::new(tx, tblname, layout);
+        let mut ts = TableScan::new(tx, tblname, layout)?;
         while ts.next() {
             num_recs += 1;
             numblocks = ts.get_rid().block_number() + 1;
