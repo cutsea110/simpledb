@@ -161,7 +161,7 @@ impl TableScan {
     pub fn move_to_rid(&mut self, rid: RID) -> Result<()> {
         self.close()?;
         let blk = BlockId::new(&self.filename, rid.block_number());
-        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone()).into();
+        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone())?.into();
         self.currentslot = rid.slot();
 
         Ok(())
@@ -172,7 +172,7 @@ impl TableScan {
     fn move_to_block(&mut self, blknum: i32) -> Result<()> {
         self.close()?;
         let blk = BlockId::new(&self.filename, blknum);
-        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone()).into();
+        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone())?.into();
         self.currentslot = -1;
 
         Ok(())
@@ -180,7 +180,7 @@ impl TableScan {
     fn move_to_new_block(&mut self) -> Result<()> {
         self.close()?;
         let blk = self.tx.lock().unwrap().append(&self.filename)?;
-        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone()).into();
+        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone())?.into();
         self.rp.as_mut().unwrap().format()?;
         self.currentslot = -1;
 

@@ -20,10 +20,10 @@ pub struct RecordPage {
 }
 
 impl RecordPage {
-    pub fn new(tx: Arc<Mutex<Transaction>>, blk: BlockId, layout: Layout) -> Self {
-        tx.lock().unwrap().pin(&blk).unwrap();
+    pub fn new(tx: Arc<Mutex<Transaction>>, blk: BlockId, layout: Layout) -> Result<Self> {
+        tx.lock().unwrap().pin(&blk)?;
 
-        Self { tx, blk, layout }
+        Ok(Self { tx, blk, layout })
     }
     pub fn get_i32(&mut self, slot: i32, fldname: &str) -> Result<i32> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
@@ -144,7 +144,7 @@ mod tests {
 
         let blk = tx.lock().unwrap().append("testfile")?;
         tx.lock().unwrap().pin(&blk)?;
-        let mut rp = RecordPage::new(Arc::clone(&tx), blk.clone(), layout);
+        let mut rp = RecordPage::new(Arc::clone(&tx), blk.clone(), layout)?;
         rp.format()?;
 
         println!("Filling the page with random records.");
