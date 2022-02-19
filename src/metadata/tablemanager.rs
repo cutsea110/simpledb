@@ -12,7 +12,7 @@ use crate::{
 };
 
 // table or field name
-const MAX_NAME: usize = 16;
+pub const MAX_NAME: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct TableMgr {
@@ -21,7 +21,7 @@ pub struct TableMgr {
 }
 
 impl TableMgr {
-    pub fn new(is_new: bool, tx: Arc<Mutex<Transaction>>) -> Self {
+    pub fn new(is_new: bool, tx: Arc<Mutex<Transaction>>) -> Result<Self> {
         let mut tcat_schema = Schema::new();
         tcat_schema.add_string_field("tblname", MAX_NAME);
         tcat_schema.add_i32_field("slotsize");
@@ -39,13 +39,11 @@ impl TableMgr {
         };
 
         if is_new {
-            mgr.create_table("tblcat", mgr.tcat_layout.schema().clone(), Arc::clone(&tx))
-                .unwrap();
-            mgr.create_table("fldcat", mgr.fcat_layout.schema().clone(), Arc::clone(&tx))
-                .unwrap();
+            mgr.create_table("tblcat", mgr.tcat_layout.schema().clone(), Arc::clone(&tx))?;
+            mgr.create_table("fldcat", mgr.fcat_layout.schema().clone(), Arc::clone(&tx))?;
         }
 
-        mgr
+        Ok(mgr)
     }
     pub fn create_table(
         &self,
@@ -94,7 +92,7 @@ impl TableMgr {
                 let fldtype = FromPrimitive::from_i32(fcat.get_i32("type")?).unwrap();
                 let fldlen = fcat.get_i32("length")? as usize;
                 let offset = fcat.get_i32("offset")? as usize;
-                offsets.insert(fldname.to_string(), offset);
+                offsets.insert(fldname.clone(), offset);
                 sch.add_field(&fldname, fldtype, fldlen);
             }
         }
@@ -126,7 +124,7 @@ mod tests {
         let simpledb = SimpleDB::new("_tblmgrtest", "simpledb.log", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()));
-        let tm = TableMgr::new(true, Arc::clone(&tx));
+        let tm = TableMgr::new(true, Arc::clone(&tx))?;
 
         let mut sch = Schema::new();
         sch.add_i32_field("A");
@@ -162,7 +160,7 @@ mod tests {
         let simpledb = SimpleDB::new("_catalogtest", "simpledb.log", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()));
-        let tm = TableMgr::new(true, Arc::clone(&tx));
+        let tm = TableMgr::new(true, Arc::clone(&tx))?;
 
         let mut sch = Schema::new();
         sch.add_i32_field("A");
