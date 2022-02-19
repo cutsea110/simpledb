@@ -1,5 +1,4 @@
 use anyhow::Result;
-use core::panic;
 use num_traits::FromPrimitive;
 use std::{
     collections::HashMap,
@@ -13,7 +12,7 @@ use crate::{
 };
 
 // table or field name
-const MAX_NAME: i32 = 16;
+const MAX_NAME: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct TableMgr {
@@ -23,10 +22,33 @@ pub struct TableMgr {
 
 impl TableMgr {
     pub fn new(is_new: bool, tx: Arc<Mutex<Transaction>>) -> Self {
-        panic!("TODO")
+        let mut tcat_schema = Schema::new();
+        tcat_schema.add_string_field("tblname", MAX_NAME);
+        tcat_schema.add_i32_field("slotsize");
+        let tcat_layout = Layout::new(tcat_schema);
+        let mut fcat_schema = Schema::new();
+        fcat_schema.add_string_field("tblname", MAX_NAME);
+        fcat_schema.add_string_field("fldname", MAX_NAME);
+        fcat_schema.add_i32_field("type");
+        fcat_schema.add_i32_field("length");
+        fcat_schema.add_i32_field("offset");
+        let fcat_layout = Layout::new(fcat_schema);
+        let mgr = Self {
+            tcat_layout,
+            fcat_layout,
+        };
+
+        if is_new {
+            mgr.create_table("tblcat", mgr.tcat_layout.schema().clone(), Arc::clone(&tx))
+                .unwrap();
+            mgr.create_table("fldcat", mgr.fcat_layout.schema().clone(), Arc::clone(&tx))
+                .unwrap();
+        }
+
+        mgr
     }
     pub fn create_table(
-        &mut self,
+        &self,
         tblname: &str,
         sch: Schema,
         tx: Arc<Mutex<Transaction>>,
@@ -79,5 +101,55 @@ impl TableMgr {
         fcat.close()?;
 
         Ok(Layout::new_with(sch, offsets, size as usize))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{
+        fs,
+        path::Path,
+        sync::{Arc, Mutex},
+    };
+
+    use super::*;
+    use crate::record::schema::FieldType;
+    use crate::server::simpledb::SimpleDB;
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_tblmgrtest").exists() {
+            fs::remove_dir_all("_tblmgrtest")?;
+        }
+
+        let simpledb = SimpleDB::new("_tblmgrtest", "simpledb.log", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()));
+        let tm = TableMgr::new(true, Arc::clone(&tx));
+
+        let mut sch = Schema::new();
+        sch.add_i32_field("A");
+        sch.add_string_field("B", 9);
+        tm.create_table("MyTable", sch, Arc::clone(&tx))?;
+
+        let layout = tm.get_layout("MyTable", Arc::clone(&tx))?;
+        let size = layout.slot_size();
+        let sch2 = layout.schema();
+        println!("MyTable has slot size {}", size);
+        println!("Its fields are:");
+        for fldname in sch2.fields() {
+            let fld_type = match sch2.field_type(fldname) {
+                FieldType::INTEGER => "int".to_string(),
+                FieldType::VARCHAR => {
+                    let strlen = sch2.length(fldname);
+                    format!("varchar({})", strlen)
+                }
+            };
+            println!("{}: {}", fldname, fld_type);
+        }
+        tx.lock().unwrap().commit()?;
+
+        Ok(())
     }
 }
