@@ -139,7 +139,7 @@ mod tests {
 
         let simpledb = SimpleDB::new("_concurrencytest", "simpledb.log", 400, 8);
 
-        let mut tx_a = simpledb.new_tx();
+        let mut tx_a = simpledb.new_tx()?;
         let handle1 = thread::spawn(move || {
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
@@ -155,7 +155,7 @@ mod tests {
             tx_a.commit().unwrap();
         });
 
-        let mut tx_b = simpledb.new_tx();
+        let mut tx_b = simpledb.new_tx()?;
         let handle2 = thread::spawn(move || {
             let blk1 = BlockId::new("testfile", 1);
             let blk2 = BlockId::new("testfile", 2);
@@ -171,7 +171,7 @@ mod tests {
             tx_b.commit().unwrap();
         });
 
-        let mut tx_c = simpledb.new_tx();
+        let mut tx_c = simpledb.new_tx()?;
         let handle3 = thread::spawn(move || {
             // Tx B and Tx C can be deadlocked.
             // Letting Tx B go first, prevent deadlock.

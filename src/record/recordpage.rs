@@ -132,7 +132,7 @@ mod tests {
 
         let simpledb = SimpleDB::new("_recordpage", "simpledb.log", 400, 8);
 
-        let tx = Arc::new(Mutex::new(simpledb.new_tx()));
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);

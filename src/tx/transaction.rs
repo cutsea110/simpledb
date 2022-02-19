@@ -40,7 +40,7 @@ impl Transaction {
         fm: Arc<Mutex<FileMgr>>,
         lm: Arc<Mutex<LogMgr>>,
         bm: Arc<Mutex<BufferMgr>>,
-    ) -> Self {
+    ) -> Result<Self> {
         let mut tran = Self {
             next_tx_num,
             recovery_mgr: None, // dummy
@@ -56,9 +56,9 @@ impl Transaction {
         tran.txnum = next_tx_num;
         // update recovery_mgr field (cyclic reference)
         let tx = Arc::new(Mutex::new(tran.clone()));
-        tran.recovery_mgr = Arc::new(Mutex::new(RecoveryMgr::new(tx, next_tx_num, lm, bm))).into();
+        tran.recovery_mgr = Arc::new(Mutex::new(RecoveryMgr::new(tx, next_tx_num, lm, bm)?)).into();
 
-        tran
+        Ok(tran)
     }
     pub fn commit(&mut self) -> Result<()> {
         self.recovery_mgr
@@ -187,7 +187,7 @@ mod tests {
 
         let simpledb = SimpleDB::new("_txtest", "simpledb.log", 400, 8);
 
-        let mut tx1 = simpledb.new_tx();
+        let mut tx1 = simpledb.new_tx()?;
         let blk = BlockId::new("testfile", 1);
         tx1.pin(&blk)?;
         // Don't log initial block values.
@@ -195,7 +195,7 @@ mod tests {
         tx1.set_string(&blk, 40, "one", false)?;
         tx1.commit()?;
 
-        let mut tx2 = simpledb.new_tx();
+        let mut tx2 = simpledb.new_tx()?;
         tx2.pin(&blk)?;
         let ival = tx2.get_i32(&blk, 80)?;
         let sval = tx2.get_string(&blk, 40)?;
@@ -207,7 +207,7 @@ mod tests {
         tx2.set_string(&blk, 40, &newsval, true)?;
         tx2.commit()?;
 
-        let mut tx3 = simpledb.new_tx();
+        let mut tx3 = simpledb.new_tx()?;
         tx3.pin(&blk)?;
         println!("new value at location 80 = {}", tx3.get_i32(&blk, 80)?);
         println!("new value at location 40 = {}", tx3.get_string(&blk, 40)?);
@@ -218,7 +218,7 @@ mod tests {
         );
         tx3.rollback()?;
 
-        let mut tx4 = simpledb.new_tx();
+        let mut tx4 = simpledb.new_tx()?;
         tx4.pin(&blk)?;
         println!("post-rollback at location 80 = {}", tx4.get_i32(&blk, 80)?);
         tx4.commit()?;

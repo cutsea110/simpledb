@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
 use crate::{
@@ -56,7 +57,7 @@ impl SimpleDB {
     pub fn buffer_mgr(&self) -> Arc<Mutex<BufferMgr>> {
         Arc::clone(&self.bm)
     }
-    pub fn new_tx(&self) -> Transaction {
+    pub fn new_tx(&self) -> Result<Transaction> {
         Transaction::new(
             Arc::clone(&self.next_tx_num),
             Arc::clone(&self.locktbl),

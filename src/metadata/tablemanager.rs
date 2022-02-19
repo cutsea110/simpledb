@@ -123,7 +123,7 @@ mod tests {
 
         let simpledb = SimpleDB::new("_tblmgrtest", "simpledb.log", 400, 8);
 
-        let tx = Arc::new(Mutex::new(simpledb.new_tx()));
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let tm = TableMgr::new(true, Arc::clone(&tx))?;
 
         let mut sch = Schema::new();
@@ -159,7 +159,7 @@ mod tests {
 
         let simpledb = SimpleDB::new("_catalogtest", "simpledb.log", 400, 8);
 
-        let tx = Arc::new(Mutex::new(simpledb.new_tx()));
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let tm = TableMgr::new(true, Arc::clone(&tx))?;
 
         let mut sch = Schema::new();
