@@ -41,7 +41,8 @@ impl SimpleDB {
             println!("recovering existing database");
             tx.lock().unwrap().recover()?;
         }
-        db.mdm = Arc::new(Mutex::new(MetadataMgr::new(isnew, Arc::clone(&tx))?)).into();
+        let meta = MetadataMgr::new(isnew, Arc::clone(&tx))?;
+        db.mdm = Arc::new(Mutex::new(meta)).into();
 
         Ok(db)
     }
