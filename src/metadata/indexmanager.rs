@@ -47,23 +47,23 @@ impl IndexMgr {
     }
     pub fn create_index(
         &self,
-        idxname: String,
-        tblname: String,
-        fldname: String,
+        idxname: &str,
+        tblname: &str,
+        fldname: &str,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<()> {
         let mut ts = TableScan::new(tx, "idxcat", self.layout.clone())?;
         ts.insert()?;
-        ts.set_string("indexname", idxname)?;
-        ts.set_string("tablename", tblname)?;
-        ts.set_string("fieldname", fldname)?;
+        ts.set_string("indexname", idxname.to_string())?;
+        ts.set_string("tablename", tblname.to_string())?;
+        ts.set_string("fieldname", fldname.to_string())?;
         ts.close()?;
 
         Ok(())
     }
     pub fn get_index_info(
         &mut self,
-        tblname: String,
+        tblname: &str,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<HashMap<String, IndexInfo>> {
         let mut result = HashMap::new();
@@ -72,7 +72,7 @@ impl IndexMgr {
             if ts.get_string("tablename")? == tblname {
                 let idxname = ts.get_string("indexname")?;
                 let fldname: String = ts.get_string("fieldname")?;
-                let tbl_layout = self.tblmgr.get_layout(&tblname, Arc::clone(&tx))?;
+                let tbl_layout = self.tblmgr.get_layout(tblname, Arc::clone(&tx))?;
                 let tblsi =
                     self.statmgr
                         .get_stat_info(&tblname, tbl_layout.clone(), Arc::clone(&tx))?;
