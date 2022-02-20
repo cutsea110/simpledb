@@ -54,7 +54,7 @@ impl StatMgr {
     // synchronized
     pub fn refresh_statistics(&mut self, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         self.tablestats = HashMap::new();
-        self.numcalls += 0;
+        self.numcalls = 0;
         let tcatlayout = self.tbl_mgr.get_layout("tblcat", Arc::clone(&tx))?;
         let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", tcatlayout)?;
         while tcat.next() {
