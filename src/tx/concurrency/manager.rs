@@ -137,7 +137,7 @@ mod tests {
             fs::remove_dir_all("_concurrencytest")?;
         }
 
-        let simpledb = SimpleDB::new("_concurrencytest", "simpledb.log", 400, 8);
+        let simpledb = SimpleDB::new_with("_concurrencytest", "simpledb.log", 400, 8);
 
         let mut tx_a = simpledb.new_tx()?;
         let handle1 = thread::spawn(move || {

@@ -119,7 +119,7 @@ mod tests {
             fs::remove_dir_all("_logtest").expect("cleanup");
         }
 
-        let simpledb = SimpleDB::new("_logtest", "simpledb.log", 400, 8);
+        let simpledb = SimpleDB::new_with("_logtest", "simpledb.log", 400, 8);
 
         let lm = simpledb.log_mgr();
         let mut lm = lm.lock().unwrap();

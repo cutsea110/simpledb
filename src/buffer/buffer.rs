@@ -116,7 +116,7 @@ mod tests {
             fs::remove_dir_all("_buffertest").expect("cleanup");
         }
 
-        let simpledb = SimpleDB::new("_buffertest", "simpledb.log", 400, 3);
+        let simpledb = SimpleDB::new_with("_buffertest", "simpledb.log", 400, 3);
 
         let bm = simpledb.buffer_mgr();
         let mut bm = bm.lock().unwrap();

@@ -5,11 +5,12 @@ use crate::{
     buffer::manager::BufferMgr,
     file::manager::FileMgr,
     log::manager::LogMgr,
+    metadata::manager::MetadataMgr,
     tx::{concurrency::locktable::LockTable, transaction::Transaction},
 };
 
 pub struct SimpleDB {
-    // setting
+    // configure
     db_directory: String,
     blocksize: i32,
     numbuffs: usize,
@@ -18,13 +19,15 @@ pub struct SimpleDB {
     next_tx_num: Arc<Mutex<i32>>,
     locktbl: Arc<Mutex<LockTable>>,
 
+    // managers
     fm: Arc<Mutex<FileMgr>>,
     lm: Arc<Mutex<LogMgr>>,
     bm: Arc<Mutex<BufferMgr>>,
+    mdm: Option<Arc<Mutex<MetadataMgr>>>,
 }
 
 impl SimpleDB {
-    pub fn new(db_directory: &str, logfile: &str, blocksize: i32, numbuffs: usize) -> Self {
+    pub fn new_with(db_directory: &str, logfile: &str, blocksize: i32, numbuffs: usize) -> Self {
         let next_tx_num = Arc::new(Mutex::new(0));
         let locktbl = Arc::new(Mutex::new(LockTable::new()));
         let fm = Arc::new(Mutex::new(
@@ -46,6 +49,7 @@ impl SimpleDB {
             fm,
             lm,
             bm,
+            mdm: None,
         }
     }
     pub fn file_mgr(&self) -> Arc<Mutex<FileMgr>> {

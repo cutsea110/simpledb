@@ -121,7 +121,7 @@ mod tests {
             fs::remove_dir_all("_tblmgrtest")?;
         }
 
-        let simpledb = SimpleDB::new("_tblmgrtest", "simpledb.log", 400, 8);
+        let simpledb = SimpleDB::new_with("_tblmgrtest", "simpledb.log", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let tm = TableMgr::new(true, Arc::clone(&tx))?;
@@ -157,7 +157,7 @@ mod tests {
             fs::remove_dir_all("_catalogtest")?;
         }
 
-        let simpledb = SimpleDB::new("_catalogtest", "simpledb.log", 400, 8);
+        let simpledb = SimpleDB::new_with("_catalogtest", "simpledb.log", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let tm = TableMgr::new(true, Arc::clone(&tx))?;

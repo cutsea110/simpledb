@@ -130,7 +130,7 @@ mod tests {
             fs::remove_dir_all("_recordpage")?;
         }
 
-        let simpledb = SimpleDB::new("_recordpage", "simpledb.log", 400, 8);
+        let simpledb = SimpleDB::new_with("_recordpage", "simpledb.log", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let mut sch = Schema::new();
