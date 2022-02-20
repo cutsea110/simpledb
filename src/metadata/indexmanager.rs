@@ -29,21 +29,19 @@ impl IndexMgr {
         statmgr: StatMgr,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<Self> {
-        let mgr = Self {
-            layout: tblmgr.get_layout("idxcat", Arc::clone(&tx))?,
-            tblmgr,
-            statmgr,
-        };
-
         if isnew {
             let mut sch = Schema::new();
             sch.add_string_field("indexname", MAX_NAME);
             sch.add_string_field("tablename", MAX_NAME);
             sch.add_string_field("fieldname", MAX_NAME);
-            mgr.tblmgr.create_table("idxcat", sch, tx)?;
+            tblmgr.create_table("idxcat", sch, Arc::clone(&tx))?;
         }
 
-        Ok(mgr)
+        Ok(Self {
+            layout: tblmgr.get_layout("idxcat", tx)?,
+            tblmgr,
+            statmgr,
+        })
     }
     pub fn create_index(
         &self,
