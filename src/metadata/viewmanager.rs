@@ -30,6 +30,7 @@ impl ViewMgr {
     pub fn create_view(&self, vname: &str, vdef: &str, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         let layout = self.tbl_mgr.get_layout("viewcat", Arc::clone(&tx))?;
         let mut ts = TableScan::new(tx, "viewcat", layout)?;
+        ts.insert()?;
         ts.set_string("viewname", vname.to_string())?;
         ts.set_string("viewdef", vdef.to_string())?;
         ts.close()?;
@@ -50,5 +51,35 @@ impl ViewMgr {
         ts.close()?;
 
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::server::simpledb::SimpleDB;
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_viewmgrtest").exists() {
+            fs::remove_dir_all("_viewmgrtest")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_viewmgrtest", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        let tm = TableMgr::new(true, Arc::clone(&tx))?;
+        let vm = ViewMgr::new(true, tm, Arc::clone(&tx))?;
+
+        let viewdef = "select B from MyTable where A = 1";
+        vm.create_view("viewA", viewdef, Arc::clone(&tx))?;
+
+        let def = vm.get_view_def("viewA", Arc::clone(&tx))?;
+        println!("viewA: {}", def);
+
+        Ok(())
     }
 }
