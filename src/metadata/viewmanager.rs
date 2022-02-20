@@ -43,7 +43,9 @@ impl ViewMgr {
         let mut ts = TableScan::new(tx, "viewcat", layout)?;
         while ts.next() {
             if ts.get_string("viewname")? == vname {
-                result = ts.get_string("viewdef").unwrap_or("".to_string());
+                if let Ok(viewdef) = ts.get_string("viewdef") {
+                    result = viewdef;
+                }
                 break;
             }
         }
