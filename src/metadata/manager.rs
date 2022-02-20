@@ -85,3 +85,91 @@ impl MetadataMgr {
         self.statmgr.get_stat_info(tblname, layout, tx)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use rand::Rng;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::record::schema::FieldType;
+    use crate::record::tablescan::TableScan;
+    use crate::server::simpledb::SimpleDB;
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_metadatamgrtest").exists() {
+            fs::remove_dir_all("_metadatamgrtest")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_metadatamgrtest", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        let mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+
+        // let mut sch = Schema::new();
+        // sch.add_i32_field("A");
+        // sch.add_string_field("B", 9);
+        /*
+                // Part 1: Table Metadata
+                mdm.create_table("MyTable", sch, Arc::clone(&tx))?;
+                let layout = mdm.get_layout("MyTable", Arc::clone(&tx))?;
+                let size = layout.slot_size();
+                let sch2 = layout.schema().clone();
+                println!("MyTable has slot size {}", size);
+                println!("Its fields are:");
+                for fldname in sch2.fields() {
+                    let fld_type = match sch2.field_type(fldname) {
+                        FieldType::INTEGER => "int".to_string(),
+                        FieldType::VARCHAR => {
+                            let strlen = sch2.length(fldname);
+                            format!("varchar({})", strlen)
+                        }
+                    };
+                    println!("fldname: {}", fld_type);
+                }
+        */
+        /*
+                // Part 2: Statistics Metadata
+                let mut ts = TableScan::new(Arc::clone(&tx), "MyTable", layout.clone())?;
+                let mut rng = rand::thread_rng();
+                for _ in 0..50 {
+                    ts.insert()?;
+                    let n = rng.gen_range(1..50);
+                    ts.set_i32("A", n)?;
+                    ts.set_string("B", format!("rec{}", n))?;
+                }
+                let si = mdm.get_stat_info("MyTable", layout.clone(), Arc::clone(&tx))?;
+                println!("B(MyTable) = {}", si.blocks_accessed());
+                println!("B(MyTable) = {}", si.records_output());
+                println!("V(MyTable,A) = {}", si.distinct_values("A"));
+                println!("V(MyTable,B) = {}", si.distinct_values("B"));
+
+                // Part 3: View Metadata
+                let viewdef = "select B from MyTable where A = 1";
+                mdm.create_view("viewA", viewdef, Arc::clone(&tx))?;
+                let v = mdm.get_view_def("viewA", Arc::clone(&tx))?;
+                println!("View def = {}", v);
+
+                // Part 4: Index Metadata
+                mdm.create_index("indexA", "MyTable", "A", Arc::clone(&tx))?;
+                mdm.create_index("indexB", "MyTable", "B", Arc::clone(&tx))?;
+                let idxmap = mdm.get_index_info("MyTable", Arc::clone(&tx))?;
+                if let Some(ii) = idxmap.get("A") {
+                    println!("B(indexA) = {}", ii.blocks_accessed());
+                    println!("R(indexA) = {}", ii.records_output());
+                    println!("V(indexA,A) = {}", ii.distinct_values("A"));
+                    println!("V(indexA,B) = {}", ii.distinct_values("B"));
+                }
+                if let Some(ii) = idxmap.get("B") {
+                    println!("B(indexB) = {}", ii.blocks_accessed());
+                    println!("R(indexB) = {}", ii.records_output());
+                    println!("V(indexB,A) = {}", ii.distinct_values("A"));
+                    println!("V(indexB,B) = {}", ii.distinct_values("B"));
+                }
+                tx.lock().unwrap().commit()?;
+        */
+        Ok(())
+    }
+}
