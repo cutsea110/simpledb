@@ -185,7 +185,7 @@ mod tests {
             fs::remove_dir_all("_txtest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_txtest", "simpledb.log", 400, 8);
+        let simpledb = SimpleDB::new_with("_txtest", 400, 8);
 
         let mut tx1 = simpledb.new_tx()?;
         let blk = BlockId::new("testfile", 1);

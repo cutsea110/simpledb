@@ -167,7 +167,7 @@ mod tests {
             fs::remove_dir_all("_filetest").expect("cleanup");
         }
 
-        let simpledb = SimpleDB::new_with("_filetest", "simpledb.log", 400, 8);
+        let simpledb = SimpleDB::new_with("_filetest", 400, 8);
         let fm = simpledb.file_mgr();
 
         let blk = BlockId::new("testfile", 2);
