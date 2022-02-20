@@ -9,6 +9,10 @@ use crate::{
     tx::{concurrency::locktable::LockTable, transaction::Transaction},
 };
 
+pub const LOG_FILE: &str = "simpledb.log";
+pub const BLOCK_SIZE: i32 = 400;
+pub const BUFFER_SIZE: usize = 8;
+
 pub struct SimpleDB {
     // configure
     db_directory: String,
@@ -27,6 +31,20 @@ pub struct SimpleDB {
 }
 
 impl SimpleDB {
+    pub fn new(db_directory: &str) -> Result<Self> {
+        let mut db = SimpleDB::new_with(db_directory, LOG_FILE, BLOCK_SIZE, BUFFER_SIZE);
+        let tx = Arc::new(Mutex::new(db.new_tx()?));
+        let isnew = db.file_mgr().lock().unwrap().is_new();
+        if isnew {
+            println!("creating new database");
+        } else {
+            println!("recovering existing database");
+            tx.lock().unwrap().recover()?;
+        }
+        db.mdm = Arc::new(Mutex::new(MetadataMgr::new(isnew, Arc::clone(&tx))?)).into();
+
+        Ok(db)
+    }
     pub fn new_with(db_directory: &str, logfile: &str, blocksize: i32, numbuffs: usize) -> Self {
         let next_tx_num = Arc::new(Mutex::new(0));
         let locktbl = Arc::new(Mutex::new(LockTable::new()));
