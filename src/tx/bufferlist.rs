@@ -36,7 +36,7 @@ impl BufferList {
     }
     pub fn unpin(&mut self, blk: &BlockId) -> Result<()> {
         if let Some(buff) = self.buffers.get(blk) {
-            self.bm.lock().unwrap().unpin(buff.clone())?;
+            self.bm.lock().unwrap().unpin(Arc::clone(buff))?;
             let idx = self.pins.iter().position(|e| e == blk).unwrap();
             self.pins.swap_remove(idx);
             if self.pins.contains(blk) {
