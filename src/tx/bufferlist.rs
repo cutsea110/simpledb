@@ -49,7 +49,7 @@ impl BufferList {
     pub fn unpin_all(&mut self) -> Result<()> {
         for blk in self.pins.iter() {
             if let Some(buff) = self.buffers.get(blk) {
-                self.bm.lock().unwrap().unpin(buff.clone())?;
+                self.bm.lock().unwrap().unpin(Arc::clone(buff))?;
             }
         }
         self.buffers.clear();
