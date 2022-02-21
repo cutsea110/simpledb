@@ -39,7 +39,7 @@ impl BufferList {
             self.bm.lock().unwrap().unpin(Arc::clone(buff))?;
             let idx = self.pins.iter().position(|e| e == blk).unwrap();
             self.pins.swap_remove(idx);
-            if self.pins.contains(blk) {
+            if !self.pins.contains(blk) {
                 self.buffers.remove(blk);
             }
         }
