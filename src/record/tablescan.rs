@@ -213,7 +213,7 @@ mod tests {
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);
-        let layout = Arc::new(Layout::new(sch));
+        let layout = Arc::new(Layout::new(Arc::new(sch)));
         for fldname in layout.schema().fields() {
             let offset = layout.offset(fldname);
             println!("{} has offset {}", fldname, offset);

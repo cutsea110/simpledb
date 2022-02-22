@@ -25,22 +25,22 @@ impl TableMgr {
         let mut tcat_schema = Schema::new();
         tcat_schema.add_string_field("tblname", MAX_NAME);
         tcat_schema.add_i32_field("slotsize");
-        let tcat_layout = Arc::new(Layout::new(tcat_schema));
+        let tcat_layout = Arc::new(Layout::new(Arc::new(tcat_schema)));
         let mut fcat_schema = Schema::new();
         fcat_schema.add_string_field("tblname", MAX_NAME);
         fcat_schema.add_string_field("fldname", MAX_NAME);
         fcat_schema.add_i32_field("type");
         fcat_schema.add_i32_field("length");
         fcat_schema.add_i32_field("offset");
-        let fcat_layout = Arc::new(Layout::new(fcat_schema));
+        let fcat_layout = Arc::new(Layout::new(Arc::new(fcat_schema)));
         let mgr = Self {
             tcat_layout,
             fcat_layout,
         };
 
         if is_new {
-            mgr.create_table("tblcat", mgr.tcat_layout.schema().clone(), Arc::clone(&tx))?;
-            mgr.create_table("fldcat", mgr.fcat_layout.schema().clone(), Arc::clone(&tx))?;
+            mgr.create_table("tblcat", mgr.tcat_layout.schema(), Arc::clone(&tx))?;
+            mgr.create_table("fldcat", mgr.fcat_layout.schema(), Arc::clone(&tx))?;
         }
 
         Ok(mgr)
@@ -48,7 +48,7 @@ impl TableMgr {
     pub fn create_table(
         &self,
         tblname: &str,
-        sch: Schema,
+        sch: Arc<Schema>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<()> {
         let layout = Layout::new(sch);
@@ -98,7 +98,7 @@ impl TableMgr {
         }
         fcat.close()?;
 
-        let layout = Arc::new(Layout::new_with(sch, offsets, size as usize));
+        let layout = Arc::new(Layout::new_with(Arc::new(sch), offsets, size as usize));
         Ok(layout)
     }
 }
@@ -130,7 +130,7 @@ mod tests {
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);
-        tm.create_table("MyTable", sch, Arc::clone(&tx))?;
+        tm.create_table("MyTable", Arc::new(sch), Arc::clone(&tx))?;
 
         let layout = tm.get_layout("MyTable", Arc::clone(&tx))?;
         let size = layout.slot_size();
@@ -166,7 +166,7 @@ mod tests {
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);
-        tm.create_table("MyTable", sch, Arc::clone(&tx))?;
+        tm.create_table("MyTable", Arc::new(sch), Arc::clone(&tx))?;
 
         println!("All tables and their lengths:");
         let layout = tm.get_layout("tblcat", Arc::clone(&tx))?;

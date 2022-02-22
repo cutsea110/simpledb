@@ -1,17 +1,17 @@
-use std::{collections::HashMap, mem};
+use std::{collections::HashMap, mem, sync::Arc};
 
 use super::schema::{FieldType, Schema};
 use crate::file::page::Page;
 
 #[derive(Debug, Clone)]
 pub struct Layout {
-    schema: Schema,
+    schema: Arc<Schema>,
     offsets: HashMap<String, usize>,
     slotsize: usize,
 }
 
 impl Layout {
-    pub fn new(schema: Schema) -> Self {
+    pub fn new(schema: Arc<Schema>) -> Self {
         let mut offsets = HashMap::new();
         let mut pos = mem::size_of::<i32>(); // space for the empty/inuse flag
         for fldname in schema.fields() {
@@ -26,15 +26,15 @@ impl Layout {
         }
     }
 
-    pub fn new_with(schema: Schema, offsets: HashMap<String, usize>, slotsize: usize) -> Self {
+    pub fn new_with(schema: Arc<Schema>, offsets: HashMap<String, usize>, slotsize: usize) -> Self {
         Self {
             schema,
             offsets,
             slotsize,
         }
     }
-    pub fn schema(&self) -> &Schema {
-        &self.schema
+    pub fn schema(&self) -> Arc<Schema> {
+        Arc::clone(&self.schema)
     }
     pub fn offset(&self, fldname: &str) -> usize {
         *self.offsets.get(fldname).unwrap()

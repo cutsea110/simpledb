@@ -22,7 +22,7 @@ impl ViewMgr {
             let mut sch = Schema::new();
             sch.add_string_field("viewname", MAX_NAME);
             sch.add_string_field("viewdef", MAX_VIEWDEF);
-            mgr.tbl_mgr.create_table("viewcat", sch, tx)?;
+            mgr.tbl_mgr.create_table("viewcat", Arc::new(sch), tx)?;
         }
 
         Ok(mgr)

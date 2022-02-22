@@ -34,7 +34,7 @@ impl IndexMgr {
             sch.add_string_field("indexname", MAX_NAME);
             sch.add_string_field("tablename", MAX_NAME);
             sch.add_string_field("fieldname", MAX_NAME);
-            tblmgr.create_table("idxcat", sch, Arc::clone(&tx))?;
+            tblmgr.create_table("idxcat", Arc::new(sch), Arc::clone(&tx))?;
         }
 
         Ok(Self {
@@ -77,7 +77,7 @@ impl IndexMgr {
                 let ii = IndexInfo::new(
                     idxname,
                     fldname.clone(),
-                    tbl_layout.schema().clone(),
+                    tbl_layout.schema(),
                     Arc::clone(&tx),
                     tblsi,
                 );
@@ -95,7 +95,7 @@ pub struct IndexInfo {
     idxname: String,
     fldname: String,
     tx: Arc<Mutex<Transaction>>,
-    tbl_schema: Schema,
+    tbl_schema: Arc<Schema>,
     idx_layout: Arc<Layout>,
     si: StatInfo,
 }
@@ -104,12 +104,12 @@ impl IndexInfo {
     pub fn new(
         idxname: String,
         fldname: String,
-        tbl_schema: Schema,
+        tbl_schema: Arc<Schema>,
         tx: Arc<Mutex<Transaction>>,
         si: StatInfo,
     ) -> Self {
         let sch = Schema::new();
-        let layout = Arc::new(Layout::new(sch));
+        let layout = Arc::new(Layout::new(Arc::new(sch)));
 
         let mut mgr = Self {
             idxname,
@@ -162,6 +162,6 @@ impl IndexInfo {
             }
         }
 
-        Arc::new(Layout::new(sch))
+        Arc::new(Layout::new(Arc::new(sch)))
     }
 }

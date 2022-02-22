@@ -41,7 +41,7 @@ impl MetadataMgr {
     pub fn create_table(
         &self,
         tblname: &str,
-        sch: Schema,
+        sch: Arc<Schema>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<()> {
         self.tblmgr.create_table(tblname, sch, tx)
@@ -113,10 +113,10 @@ mod tests {
         sch.add_string_field("B", 9);
 
         // Part 1: Table Metadata
-        mdm.create_table("MyTable", sch, Arc::clone(&tx))?;
+        mdm.create_table("MyTable", Arc::new(sch), Arc::clone(&tx))?;
         let layout = mdm.get_layout("MyTable", Arc::clone(&tx))?;
         let size = layout.slot_size();
-        let sch2 = layout.schema().clone();
+        let sch2 = layout.schema();
         println!("MyTable has slot size {}", size);
         println!("Its fields are:");
         for fldname in sch2.fields() {
@@ -131,7 +131,7 @@ mod tests {
         }
 
         // Part 2: Statistics Metadata
-        let mut ts = TableScan::new(Arc::clone(&tx), "MyTable", layout.clone())?;
+        let mut ts = TableScan::new(Arc::clone(&tx), "MyTable", Arc::clone(&layout))?;
         let mut rng = rand::thread_rng();
         for _ in 0..50 {
             ts.insert()?;
@@ -139,7 +139,7 @@ mod tests {
             ts.set_i32("A", n)?;
             ts.set_string("B", format!("rec{}", n))?;
         }
-        let si = mdm.get_stat_info("MyTable", layout.clone(), Arc::clone(&tx))?;
+        let si = mdm.get_stat_info("MyTable", Arc::clone(&layout), Arc::clone(&tx))?;
         println!("B(MyTable) = {}", si.blocks_accessed());
         println!("R(MyTable) = {}", si.records_output());
         println!("V(MyTable,A) = {}", si.distinct_values("A"));
