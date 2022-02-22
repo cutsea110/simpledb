@@ -36,9 +36,10 @@ impl IndexMgr {
             sch.add_string_field("fieldname", MAX_NAME);
             tblmgr.create_table("idxcat", Arc::new(sch), Arc::clone(&tx))?;
         }
+        let layout = tblmgr.get_layout("idxcat", tx)?;
 
         Ok(Self {
-            layout: tblmgr.get_layout("idxcat", tx)?,
+            layout,
             tblmgr,
             statmgr,
         })
