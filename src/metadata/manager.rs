@@ -93,6 +93,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::*;
+    use crate::query::updatescan::UpdateScan;
     use crate::record::schema::FieldType;
     use crate::record::tablescan::TableScan;
     use crate::server::simpledb::SimpleDB;

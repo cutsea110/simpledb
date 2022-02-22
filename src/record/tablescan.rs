@@ -3,7 +3,11 @@ use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use super::{layout::Layout, recordpage::RecordPage, rid::RID, schema::FieldType};
-use crate::{file::block_id::BlockId, query::constant::Constant, tx::transaction::Transaction};
+use crate::{
+    file::block_id::BlockId,
+    query::{constant::Constant, scan::Scan, updatescan::UpdateScan},
+    tx::transaction::Transaction,
+};
 
 #[derive(Debug)]
 pub enum TableScanError {
@@ -30,40 +34,11 @@ pub struct TableScan {
     currentslot: i32,
 }
 
-impl TableScan {
-    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: &str, layout: Arc<Layout>) -> Result<Self> {
-        let filename = format!("{}.tbl", tblname);
-        let mut scan = Self {
-            tx,
-            layout,
-            rp: None, // dummy
-            filename,
-            currentslot: -1, // dummy
-        };
-
-        if scan.tx.lock().unwrap().size(&scan.filename)? == 0 {
-            scan.move_to_new_block()?;
-        } else {
-            scan.move_to_block(0)?;
-        }
-
-        Ok(scan)
-    }
-    // TODO: Methods that implement Scan trait
-    pub fn close(&mut self) -> Result<()> {
-        if self.rp.is_some() {
-            self.tx
-                .lock()
-                .unwrap()
-                .unpin(self.rp.as_ref().unwrap().block())?;
-        }
-
-        Ok(())
-    }
-    pub fn before_first(&mut self) -> Result<()> {
+impl Scan for TableScan {
+    fn before_first(&mut self) -> Result<()> {
         self.move_to_block(0)
     }
-    pub fn next(&mut self) -> bool {
+    fn next(&mut self) -> bool {
         self.currentslot = self
             .rp
             .as_mut()
@@ -86,16 +61,16 @@ impl TableScan {
 
         true
     }
-    pub fn get_i32(&mut self, fldname: &str) -> Result<i32> {
+    fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.rp.as_mut().unwrap().get_i32(self.currentslot, fldname)
     }
-    pub fn get_string(&mut self, fldname: &str) -> Result<String> {
+    fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.rp
             .as_mut()
             .unwrap()
             .get_string(self.currentslot, fldname)
     }
-    pub fn get_val(&mut self, fldname: &str) -> Constant {
+    fn get_val(&mut self, fldname: &str) -> Constant {
         match self.layout.schema().field_type(fldname) {
             FieldType::INTEGER => {
                 return Constant::new_i32(self.get_i32(fldname).unwrap_or(0));
@@ -105,22 +80,35 @@ impl TableScan {
             }
         }
     }
-    pub fn has_field(&self, fldname: &str) -> bool {
+    fn has_field(&self, fldname: &str) -> bool {
         self.layout.schema().has_field(fldname)
     }
-    pub fn set_i32(&mut self, fldname: &str, val: i32) -> Result<()> {
+    fn close(&mut self) -> Result<()> {
+        if self.rp.is_some() {
+            self.tx
+                .lock()
+                .unwrap()
+                .unpin(self.rp.as_ref().unwrap().block())?;
+        }
+
+        Ok(())
+    }
+}
+
+impl UpdateScan for TableScan {
+    fn set_i32(&mut self, fldname: &str, val: i32) -> Result<()> {
         self.rp
             .as_mut()
             .unwrap()
             .set_i32(self.currentslot, fldname, val)
     }
-    pub fn set_string(&mut self, fldname: &str, val: String) -> Result<()> {
+    fn set_string(&mut self, fldname: &str, val: String) -> Result<()> {
         self.rp
             .as_mut()
             .unwrap()
             .set_string(self.currentslot, fldname, val)
     }
-    pub fn set_val(&mut self, fldname: &str, val: Constant) -> Result<()> {
+    fn set_val(&mut self, fldname: &str, val: Constant) -> Result<()> {
         match self.layout.schema().field_type(fldname) {
             FieldType::INTEGER => {
                 self.set_i32(fldname, val.as_i32().unwrap())?;
@@ -132,7 +120,7 @@ impl TableScan {
 
         Ok(())
     }
-    pub fn insert(&mut self) -> Result<()> {
+    fn insert(&mut self) -> Result<()> {
         self.currentslot = self
             .rp
             .as_mut()
@@ -155,10 +143,10 @@ impl TableScan {
 
         Ok(())
     }
-    pub fn delete(&mut self) -> Result<()> {
+    fn delete(&mut self) -> Result<()> {
         self.rp.as_mut().unwrap().delete(self.currentslot)
     }
-    pub fn move_to_rid(&mut self, rid: RID) -> Result<()> {
+    fn move_to_rid(&mut self, rid: RID) -> Result<()> {
         self.close()?;
         let blk = BlockId::new(&self.filename, rid.block_number());
         self.rp = RecordPage::new(Arc::clone(&self.tx), blk, Arc::clone(&self.layout))?.into();
@@ -166,9 +154,31 @@ impl TableScan {
 
         Ok(())
     }
-    pub fn get_rid(&self) -> RID {
+    fn get_rid(&self) -> RID {
         RID::new(self.rp.as_ref().unwrap().block().number(), self.currentslot)
     }
+}
+
+impl TableScan {
+    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: &str, layout: Arc<Layout>) -> Result<Self> {
+        let filename = format!("{}.tbl", tblname);
+        let mut scan = Self {
+            tx,
+            layout,
+            rp: None, // dummy
+            filename,
+            currentslot: -1, // dummy
+        };
+
+        if scan.tx.lock().unwrap().size(&scan.filename)? == 0 {
+            scan.move_to_new_block()?;
+        } else {
+            scan.move_to_block(0)?;
+        }
+
+        Ok(scan)
+    }
+
     fn move_to_block(&mut self, blknum: i32) -> Result<()> {
         self.close()?;
         let blk = BlockId::new(&self.filename, blknum);

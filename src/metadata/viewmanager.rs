@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use super::tablemanager::{TableMgr, MAX_NAME};
 use crate::{
+    query::{scan::Scan, updatescan::UpdateScan},
     record::{schema::Schema, tablescan::TableScan},
     tx::transaction::Transaction,
 };

@@ -4,12 +4,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use super::tablemanager::TableMgr;
 use crate::{
+    query::{scan::Scan, updatescan::UpdateScan},
     record::{layout::Layout, tablescan::TableScan},
     tx::transaction::Transaction,
 };
-
-use super::tablemanager::TableMgr;
 
 #[derive(Debug, Clone)]
 pub struct StatMgr {
