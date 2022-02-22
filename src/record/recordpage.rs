@@ -16,11 +16,11 @@ pub enum SlotFlag {
 pub struct RecordPage {
     tx: Arc<Mutex<Transaction>>,
     blk: BlockId,
-    layout: Layout,
+    layout: Arc<Layout>,
 }
 
 impl RecordPage {
-    pub fn new(tx: Arc<Mutex<Transaction>>, blk: BlockId, layout: Layout) -> Result<Self> {
+    pub fn new(tx: Arc<Mutex<Transaction>>, blk: BlockId, layout: Arc<Layout>) -> Result<Self> {
         tx.lock().unwrap().pin(&blk)?;
 
         Ok(Self { tx, blk, layout })
@@ -136,7 +136,7 @@ mod tests {
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);
-        let layout = Layout::new(sch);
+        let layout = Arc::new(Layout::new(sch));
         for fldname in layout.schema().fields() {
             let offset = layout.offset(fldname);
             println!("{} has offset {}", fldname, offset);

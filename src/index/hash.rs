@@ -13,13 +13,13 @@ pub const NUM_BUCKETS: i32 = 100;
 pub struct HashIndex {
     tx: Arc<Mutex<Transaction>>,
     idxname: String,
-    layout: Layout,
+    layout: Arc<Layout>,
     searchkey: Option<Constant>,
     ts: Option<TableScan>,
 }
 
 impl HashIndex {
-    pub fn new(tx: Arc<Mutex<Transaction>>, idxname: String, layout: Layout) -> Self {
+    pub fn new(tx: Arc<Mutex<Transaction>>, idxname: String, layout: Arc<Layout>) -> Self {
         panic!("TODO")
     }
     pub fn search_cost(numblocks: i32, rpb: i32) -> i32 {

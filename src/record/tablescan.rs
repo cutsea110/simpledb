@@ -24,14 +24,14 @@ impl fmt::Display for TableScanError {
 #[derive(Debug, Clone)]
 pub struct TableScan {
     tx: Arc<Mutex<Transaction>>,
-    layout: Layout,
+    layout: Arc<Layout>,
     rp: Option<RecordPage>,
     filename: String,
     currentslot: i32,
 }
 
 impl TableScan {
-    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: &str, layout: Layout) -> Result<Self> {
+    pub fn new(tx: Arc<Mutex<Transaction>>, tblname: &str, layout: Arc<Layout>) -> Result<Self> {
         let filename = format!("{}.tbl", tblname);
         let mut scan = Self {
             tx,
@@ -161,7 +161,7 @@ impl TableScan {
     pub fn move_to_rid(&mut self, rid: RID) -> Result<()> {
         self.close()?;
         let blk = BlockId::new(&self.filename, rid.block_number());
-        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone())?.into();
+        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, Arc::clone(&self.layout))?.into();
         self.currentslot = rid.slot();
 
         Ok(())
@@ -172,7 +172,7 @@ impl TableScan {
     fn move_to_block(&mut self, blknum: i32) -> Result<()> {
         self.close()?;
         let blk = BlockId::new(&self.filename, blknum);
-        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone())?.into();
+        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, Arc::clone(&self.layout))?.into();
         self.currentslot = -1;
 
         Ok(())
@@ -180,7 +180,7 @@ impl TableScan {
     fn move_to_new_block(&mut self) -> Result<()> {
         self.close()?;
         let blk = self.tx.lock().unwrap().append(&self.filename)?;
-        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, self.layout.clone())?.into();
+        self.rp = RecordPage::new(Arc::clone(&self.tx), blk, Arc::clone(&self.layout))?.into();
         self.rp.as_mut().unwrap().format()?;
         self.currentslot = -1;
 
@@ -213,7 +213,7 @@ mod tests {
         let mut sch = Schema::new();
         sch.add_i32_field("A");
         sch.add_string_field("B", 9);
-        let layout = Layout::new(sch);
+        let layout = Arc::new(Layout::new(sch));
         for fldname in layout.schema().fields() {
             let offset = layout.offset(fldname);
             println!("{} has offset {}", fldname, offset);

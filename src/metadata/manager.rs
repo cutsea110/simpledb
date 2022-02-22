@@ -46,7 +46,7 @@ impl MetadataMgr {
     ) -> Result<()> {
         self.tblmgr.create_table(tblname, sch, tx)
     }
-    pub fn get_layout(&self, tblname: &str, tx: Arc<Mutex<Transaction>>) -> Result<Layout> {
+    pub fn get_layout(&self, tblname: &str, tx: Arc<Mutex<Transaction>>) -> Result<Arc<Layout>> {
         self.tblmgr.get_layout(tblname, tx)
     }
     pub fn create_view(
@@ -79,7 +79,7 @@ impl MetadataMgr {
     pub fn get_stat_info(
         &mut self,
         tblname: &str,
-        layout: Layout,
+        layout: Arc<Layout>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<StatInfo> {
         self.statmgr.get_stat_info(tblname, layout, tx)

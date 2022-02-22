@@ -17,7 +17,7 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub struct IndexMgr {
-    layout: Layout,
+    layout: Arc<Layout>,
     tblmgr: TableMgr,
     statmgr: StatMgr,
 }
@@ -50,7 +50,7 @@ impl IndexMgr {
         fldname: &str,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<()> {
-        let mut ts = TableScan::new(tx, "idxcat", self.layout.clone())?;
+        let mut ts = TableScan::new(tx, "idxcat", Arc::clone(&self.layout))?;
         ts.insert()?;
         ts.set_string("indexname", idxname.to_string())?;
         ts.set_string("tablename", tblname.to_string())?;
@@ -65,7 +65,7 @@ impl IndexMgr {
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<HashMap<String, IndexInfo>> {
         let mut result = HashMap::new();
-        let mut ts = TableScan::new(Arc::clone(&tx), "idxcat", self.layout.clone())?;
+        let mut ts = TableScan::new(Arc::clone(&tx), "idxcat", Arc::clone(&self.layout))?;
         while ts.next() {
             if ts.get_string("tablename")? == tblname {
                 let idxname = ts.get_string("indexname")?;
@@ -96,7 +96,7 @@ pub struct IndexInfo {
     fldname: String,
     tx: Arc<Mutex<Transaction>>,
     tbl_schema: Schema,
-    idx_layout: Layout,
+    idx_layout: Arc<Layout>,
     si: StatInfo,
 }
 
@@ -109,7 +109,7 @@ impl IndexInfo {
         si: StatInfo,
     ) -> Self {
         let sch = Schema::new();
-        let layout = Layout::new(sch);
+        let layout = Arc::new(Layout::new(sch));
 
         let mut mgr = Self {
             idxname,
@@ -128,7 +128,7 @@ impl IndexInfo {
         let idx = HashIndex::new(
             Arc::clone(&self.tx),
             self.idxname.clone(),
-            self.idx_layout.clone(),
+            Arc::clone(&self.idx_layout),
         );
 
         Arc::new(Mutex::new(idx))
@@ -148,7 +148,7 @@ impl IndexInfo {
             return self.si.distinct_values(&self.fldname);
         }
     }
-    fn create_idx_layout(&mut self) -> Layout {
+    fn create_idx_layout(&mut self) -> Arc<Layout> {
         let mut sch = Schema::new();
         sch.add_i32_field("block");
         sch.add_i32_field("id");
@@ -162,6 +162,6 @@ impl IndexInfo {
             }
         }
 
-        Layout::new(sch)
+        Arc::new(Layout::new(sch))
     }
 }

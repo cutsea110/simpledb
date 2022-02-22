@@ -16,8 +16,8 @@ pub const MAX_NAME: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct TableMgr {
-    tcat_layout: Layout,
-    fcat_layout: Layout,
+    tcat_layout: Arc<Layout>,
+    fcat_layout: Arc<Layout>,
 }
 
 impl TableMgr {
@@ -25,14 +25,14 @@ impl TableMgr {
         let mut tcat_schema = Schema::new();
         tcat_schema.add_string_field("tblname", MAX_NAME);
         tcat_schema.add_i32_field("slotsize");
-        let tcat_layout = Layout::new(tcat_schema);
+        let tcat_layout = Arc::new(Layout::new(tcat_schema));
         let mut fcat_schema = Schema::new();
         fcat_schema.add_string_field("tblname", MAX_NAME);
         fcat_schema.add_string_field("fldname", MAX_NAME);
         fcat_schema.add_i32_field("type");
         fcat_schema.add_i32_field("length");
         fcat_schema.add_i32_field("offset");
-        let fcat_layout = Layout::new(fcat_schema);
+        let fcat_layout = Arc::new(Layout::new(fcat_schema));
         let mgr = Self {
             tcat_layout,
             fcat_layout,
@@ -53,13 +53,13 @@ impl TableMgr {
     ) -> Result<()> {
         let layout = Layout::new(sch);
         // insert one record into tblcat
-        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", self.tcat_layout.clone())?;
+        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", Arc::clone(&self.tcat_layout))?;
         tcat.insert()?;
         tcat.set_string("tblname", tblname.to_string())?;
         tcat.set_i32("slotsize", layout.slot_size() as i32)?;
         tcat.close()?;
         // insert a record into fldcat for each field
-        let mut fcat = TableScan::new(tx, "fldcat", self.fcat_layout.clone())?;
+        let mut fcat = TableScan::new(tx, "fldcat", Arc::clone(&self.fcat_layout))?;
         for fldname in layout.schema().fields() {
             fcat.insert()?;
             fcat.set_string("tblname", tblname.to_string())?;
@@ -72,9 +72,9 @@ impl TableMgr {
 
         Ok(())
     }
-    pub fn get_layout(&self, tblname: &str, tx: Arc<Mutex<Transaction>>) -> Result<Layout> {
+    pub fn get_layout(&self, tblname: &str, tx: Arc<Mutex<Transaction>>) -> Result<Arc<Layout>> {
         let mut size = -1;
-        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", self.tcat_layout.clone())?;
+        let mut tcat = TableScan::new(Arc::clone(&tx), "tblcat", Arc::clone(&self.tcat_layout))?;
         while tcat.next() {
             if tcat.get_string("tblname")? == tblname {
                 size = tcat.get_i32("slotsize")?;
@@ -85,7 +85,7 @@ impl TableMgr {
 
         let mut sch = Schema::new();
         let mut offsets = HashMap::new();
-        let mut fcat = TableScan::new(tx, "fldcat", self.fcat_layout.clone())?;
+        let mut fcat = TableScan::new(tx, "fldcat", Arc::clone(&self.fcat_layout))?;
         while fcat.next() {
             if fcat.get_string("tblname")? == tblname {
                 let fldname = fcat.get_string("fldname")?;
@@ -98,7 +98,8 @@ impl TableMgr {
         }
         fcat.close()?;
 
-        Ok(Layout::new_with(sch, offsets, size as usize))
+        let layout = Arc::new(Layout::new_with(sch, offsets, size as usize));
+        Ok(layout)
     }
 }
 

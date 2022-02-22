@@ -34,7 +34,7 @@ impl StatMgr {
     pub fn get_stat_info(
         &mut self,
         tblname: &str,
-        layout: Layout,
+        layout: Arc<Layout>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<StatInfo> {
         self.numcalls += 1;
@@ -71,7 +71,7 @@ impl StatMgr {
     pub fn calc_table_stats(
         &self,
         tblname: &str,
-        layout: Layout,
+        layout: Arc<Layout>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<StatInfo> {
         let mut num_recs = 0;
