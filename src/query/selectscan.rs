@@ -14,7 +14,7 @@ impl std::error::Error for SelectScanError {}
 impl fmt::Display for SelectScanError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &SelectScanError::DowncastError => {
+            SelectScanError::DowncastError => {
                 write!(f, "downcast error")
             }
         }
