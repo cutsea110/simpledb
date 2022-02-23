@@ -244,7 +244,7 @@ mod tests {
             let n: i32 = rng.gen_range(1..50);
             ts.set_i32("A", n)?;
             ts.set_string("B", format!("rec{}", n))?;
-            println!("inserting into slot {}: {{{}, rec{}}}", ts.get_rid(), n, n);
+            println!("inserting into slot {}: {{{}, rec{}}}", ts.get_rid()?, n, n);
         }
         println!("Deleting records with A-values < 25.");
         let mut count = 0;
@@ -254,7 +254,7 @@ mod tests {
             let b = ts.get_string("B")?;
             if a < 25 {
                 count += 1;
-                println!("slot {}: {{{}, {}}}", ts.get_rid(), a, b);
+                println!("slot {}: {{{}, {}}}", ts.get_rid()?, a, b);
                 ts.delete()?;
             }
         }
@@ -264,7 +264,7 @@ mod tests {
         while ts.next() {
             let a = ts.get_i32("A")?;
             let b = ts.get_string("B")?;
-            println!("slot {}: {{{}, {}}}", ts.get_rid(), a, b);
+            println!("slot {}: {{{}, {}}}", ts.get_rid()?, a, b);
         }
         ts.close()?;
         tx.lock().unwrap().commit()?;
