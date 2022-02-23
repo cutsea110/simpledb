@@ -1,4 +1,5 @@
 use anyhow::Result;
+use core::fmt;
 use std::cmp::*;
 
 use super::{constant::Constant, expression::Expression, scan::Scan};
@@ -8,6 +9,12 @@ use crate::{plan::plan::Plan, record::schema::Schema};
 pub struct Term {
     lhs: Expression,
     rhs: Expression,
+}
+
+impl fmt::Display for Term {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}={}", self.lhs.to_string(), self.rhs.to_string())
+    }
 }
 
 impl Term {
