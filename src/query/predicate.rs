@@ -1,5 +1,6 @@
 use anyhow::Result;
 use core::fmt;
+use std::sync::{Arc, Mutex};
 
 use super::{scan::Scan, term::Term};
 use crate::{plan::plan::Plan, query::constant::Constant, record::schema::Schema};
@@ -29,9 +30,9 @@ impl Predicate {
     pub fn conjoin_with(&mut self, pred: &mut Predicate) {
         self.terms.append(&mut pred.terms)
     }
-    pub fn is_satisfied(&self, s: &mut dyn Scan) -> bool {
+    pub fn is_satisfied(&self, s: Arc<Mutex<dyn Scan>>) -> bool {
         for t in self.terms.iter() {
-            if !t.is_satisfied(s) {
+            if !t.is_satisfied(Arc::clone(&s)) {
                 return false;
             }
         }

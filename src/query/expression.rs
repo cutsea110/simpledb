@@ -1,5 +1,6 @@
 use anyhow::Result;
 use core::fmt;
+use std::sync::{Arc, Mutex};
 
 use super::{constant::Constant, scan::Scan};
 use crate::record::schema::Schema;
@@ -60,10 +61,10 @@ impl Expression {
             Expression::Fldname(s) => Ok(&s),
         }
     }
-    pub fn evaluate(&self, s: &mut dyn Scan) -> Constant {
+    pub fn evaluate(&self, s: Arc<Mutex<dyn Scan>>) -> Constant {
         match self {
             Expression::Val(val) => val.clone(),
-            Expression::Fldname(fldname) => s.get_val(fldname),
+            Expression::Fldname(fldname) => s.lock().unwrap().get_val(fldname),
         }
     }
     pub fn applies_to(&self, sch: &Schema) -> bool {

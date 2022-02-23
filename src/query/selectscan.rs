@@ -31,7 +31,12 @@ impl Scan for SelectScan {
         self.s.lock().unwrap().before_first()
     }
     fn next(&mut self) -> bool {
-        panic!("TODO")
+        while self.s.lock().unwrap().next() {
+            if self.pred.is_satisfied(Arc::clone(&self.s)) {
+                return true;
+            }
+        }
+        false
     }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.s.lock().unwrap().get_i32(fldname)

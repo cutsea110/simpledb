@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::cmp::*;
+use std::{
+    cmp::*,
+    sync::{Arc, Mutex},
+};
 
 use super::{constant::Constant, expression::Expression, scan::Scan};
 use crate::{plan::plan::Plan, record::schema::Schema};
@@ -21,9 +24,9 @@ impl Term {
     pub fn new(lhs: Expression, rhs: Expression) -> Self {
         Self { lhs, rhs }
     }
-    pub fn is_satisfied(&self, s: &mut dyn Scan) -> bool {
-        let lhsval = self.lhs.evaluate(s);
-        let rhsval = self.rhs.evaluate(s);
+    pub fn is_satisfied(&self, s: Arc<Mutex<dyn Scan>>) -> bool {
+        let lhsval = self.lhs.evaluate(Arc::clone(&s));
+        let rhsval = self.rhs.evaluate(Arc::clone(&s));
         lhsval == rhsval
     }
     pub fn applies_to(&self, sch: &Schema) -> bool {
