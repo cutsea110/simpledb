@@ -20,7 +20,7 @@ impl fmt::Display for ExpressionError {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Expression {
     Val(Constant),
     Fldname(String),

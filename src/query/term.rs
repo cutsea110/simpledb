@@ -2,6 +2,7 @@ use crate::{plan::plan::Plan, record::schema::Schema};
 
 use super::{constant::Constant, expression::Expression, scan::Scan};
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Term {
     lhs: Expression,
     rhs: Expression,
