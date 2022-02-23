@@ -70,13 +70,15 @@ impl Scan for TableScan {
             .unwrap()
             .get_string(self.currentslot, fldname)
     }
-    fn get_val(&mut self, fldname: &str) -> Constant {
+    fn get_val(&mut self, fldname: &str) -> Result<Constant> {
         match self.layout.schema().field_type(fldname) {
             FieldType::INTEGER => {
-                return Constant::new_i32(self.get_i32(fldname).unwrap_or(0));
+                return Ok(Constant::new_i32(self.get_i32(fldname).unwrap_or(0)));
             }
             FieldType::VARCHAR => {
-                return Constant::new_string(self.get_string(fldname).unwrap_or("".to_string()));
+                return Ok(Constant::new_string(
+                    self.get_string(fldname).unwrap_or("".to_string()),
+                ));
             }
         }
     }

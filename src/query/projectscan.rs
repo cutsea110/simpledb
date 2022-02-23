@@ -2,11 +2,12 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
-use super::scan::Scan;
+use super::{constant::Constant, scan::Scan, updatescan::UpdateScan};
 
 #[derive(Debug)]
 pub enum ProjectScanError {
     DowncastError,
+    FieldNotFoundError(String),
 }
 
 impl std::error::Error for ProjectScanError {}
@@ -15,6 +16,9 @@ impl fmt::Display for ProjectScanError {
         match self {
             ProjectScanError::DowncastError => {
                 write!(f, "downcast error")
+            }
+            ProjectScanError::FieldNotFoundError(fld) => {
+                write!(f, "field({}) not found error", fld)
             }
         }
     }
@@ -27,28 +31,46 @@ pub struct ProjectScan {
 
 impl Scan for ProjectScan {
     fn before_first(&mut self) -> anyhow::Result<()> {
-        panic!("TODO")
+        self.s.lock().unwrap().before_first()
     }
     fn next(&mut self) -> bool {
-        panic!("TODO")
+        self.s.lock().unwrap().next()
     }
     fn get_i32(&mut self, fldname: &str) -> anyhow::Result<i32> {
-        panic!("TODO")
+        if self.has_field(fldname) {
+            self.s.lock().unwrap().get_i32(fldname)
+        } else {
+            Err(From::from(ProjectScanError::FieldNotFoundError(
+                fldname.to_string(),
+            )))
+        }
     }
     fn get_string(&mut self, fldname: &str) -> anyhow::Result<String> {
-        panic!("TODO")
+        if self.has_field(fldname) {
+            self.s.lock().unwrap().get_string(fldname)
+        } else {
+            Err(From::from(ProjectScanError::FieldNotFoundError(
+                fldname.to_string(),
+            )))
+        }
     }
-    fn get_val(&mut self, fldname: &str) -> super::constant::Constant {
-        panic!("TODO")
+    fn get_val(&mut self, fldname: &str) -> Result<Constant> {
+        if self.has_field(fldname) {
+            self.s.lock().unwrap().get_val(fldname)
+        } else {
+            Err(From::from(ProjectScanError::FieldNotFoundError(
+                fldname.to_string(),
+            )))
+        }
     }
     fn has_field(&self, fldname: &str) -> bool {
-        panic!("TODO")
+        self.fieldlist.contains(&fldname.to_string())
     }
     fn close(&mut self) -> anyhow::Result<()> {
-        panic!("TODO")
+        self.s.lock().unwrap().close()
     }
-    fn to_update_scan(&mut self) -> anyhow::Result<&mut dyn super::updatescan::UpdateScan> {
-        panic!("TODO")
+    fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
+        Err(From::from(ProjectScanError::DowncastError))
     }
 }
 

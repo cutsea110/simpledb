@@ -44,7 +44,7 @@ impl Scan for SelectScan {
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.s.lock().unwrap().get_string(fldname)
     }
-    fn get_val(&mut self, fldname: &str) -> Constant {
+    fn get_val(&mut self, fldname: &str) -> Result<Constant> {
         self.s.lock().unwrap().get_val(fldname)
     }
     fn has_field(&self, fldname: &str) -> bool {

@@ -27,7 +27,7 @@ impl Term {
     pub fn is_satisfied(&self, s: Arc<Mutex<dyn Scan>>) -> bool {
         let lhsval = self.lhs.evaluate(Arc::clone(&s));
         let rhsval = self.rhs.evaluate(Arc::clone(&s));
-        lhsval == rhsval
+        lhsval.unwrap() == rhsval.unwrap()
     }
     pub fn applies_to(&self, sch: &Schema) -> bool {
         self.lhs.applies_to(sch) && self.rhs.applies_to(sch)

@@ -61,9 +61,9 @@ impl Expression {
             Expression::Fldname(s) => Ok(&s),
         }
     }
-    pub fn evaluate(&self, s: Arc<Mutex<dyn Scan>>) -> Constant {
+    pub fn evaluate(&self, s: Arc<Mutex<dyn Scan>>) -> Result<Constant> {
         match self {
-            Expression::Val(val) => val.clone(),
+            Expression::Val(val) => Ok(val.clone()),
             Expression::Fldname(fldname) => s.lock().unwrap().get_val(fldname),
         }
     }
