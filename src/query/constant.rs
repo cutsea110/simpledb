@@ -23,6 +23,15 @@ pub enum Constant {
     String(String),
 }
 
+impl fmt::Display for Constant {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Constant::I32(ival) => write!(f, "{}", ival),
+            Constant::String(sval) => write!(f, "{}", sval),
+        }
+    }
+}
+
 impl Constant {
     pub fn new_i32(ival: i32) -> Self {
         Constant::I32(ival)
