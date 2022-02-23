@@ -9,6 +9,6 @@ pub trait UpdateScan: Scan {
     fn set_val(&mut self, fldname: &str, val: Constant) -> Result<()>;
     fn insert(&mut self) -> Result<()>;
     fn delete(&mut self) -> Result<()>;
-    fn get_rid(&self) -> RID;
+    fn get_rid(&self) -> Result<RID>;
     fn move_to_rid(&mut self, rid: RID) -> Result<()>;
 }

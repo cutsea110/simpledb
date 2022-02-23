@@ -79,7 +79,7 @@ impl StatMgr {
         let mut ts = TableScan::new(tx, tblname, layout)?;
         while ts.next() {
             num_recs += 1;
-            numblocks = ts.get_rid().block_number() + 1;
+            numblocks = ts.get_rid()?.block_number() + 1;
         }
         ts.close()?;
 

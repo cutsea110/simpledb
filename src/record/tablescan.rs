@@ -158,8 +158,10 @@ impl UpdateScan for TableScan {
 
         Ok(())
     }
-    fn get_rid(&self) -> RID {
-        RID::new(self.rp.as_ref().unwrap().block().number(), self.currentslot)
+    fn get_rid(&self) -> Result<RID> {
+        let rid = RID::new(self.rp.as_ref().unwrap().block().number(), self.currentslot);
+
+        Ok(rid)
     }
 }
 

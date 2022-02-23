@@ -55,29 +55,32 @@ impl Scan for SelectScan {
 
 impl UpdateScan for SelectScan {
     fn set_i32(&mut self, fldname: &str, val: i32) -> Result<()> {
-        if let Ok(us) = self.s.lock().unwrap().to_update_scan() {
-            us.set_i32(fldname, val)?;
-        }
-
-        Err(From::from(SelectScanError::DowncastError))
+        let mut us = self.s.lock().unwrap();
+        us.to_update_scan()?.set_i32(fldname, val)
     }
     fn set_string(&mut self, fldname: &str, val: String) -> Result<()> {
-        panic!("TODO")
+        let mut us = self.s.lock().unwrap();
+        us.to_update_scan()?.set_string(fldname, val)
     }
     fn set_val(&mut self, fldname: &str, val: Constant) -> Result<()> {
-        panic!("TODO")
+        let mut us = self.s.lock().unwrap();
+        us.to_update_scan()?.set_val(fldname, val)
     }
     fn insert(&mut self) -> Result<()> {
-        panic!("TODO")
+        let mut us = self.s.lock().unwrap();
+        us.to_update_scan()?.insert()
     }
     fn delete(&mut self) -> Result<()> {
-        panic!("TODO")
+        let mut us = self.s.lock().unwrap();
+        us.to_update_scan()?.delete()
     }
-    fn get_rid(&self) -> RID {
-        panic!("TODO")
+    fn get_rid(&self) -> Result<RID> {
+        let mut us = self.s.lock().unwrap();
+        us.to_update_scan()?.get_rid()
     }
     fn move_to_rid(&mut self, rid: RID) -> Result<()> {
-        panic!("TODO")
+        let mut us = self.s.lock().unwrap();
+        us.to_update_scan()?.move_to_rid(rid)
     }
 }
 
