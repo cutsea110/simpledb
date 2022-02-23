@@ -1,6 +1,8 @@
 pub mod constant;
 pub mod expression;
 pub mod predicate;
+pub mod productscan;
+pub mod projectscan;
 pub mod scan;
 pub mod selectscan;
 pub mod term;
