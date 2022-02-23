@@ -93,6 +93,10 @@ impl Scan for TableScan {
 
         Ok(())
     }
+    // downcast
+    fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
+        Ok(self)
+    }
 }
 
 impl UpdateScan for TableScan {

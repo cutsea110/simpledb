@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use super::constant::Constant;
+use super::{constant::Constant, updatescan::UpdateScan};
 
 pub trait Scan {
     fn before_first(&mut self) -> Result<()>;
@@ -10,4 +10,6 @@ pub trait Scan {
     fn get_val(&mut self, fldname: &str) -> Constant;
     fn has_field(&self, fldname: &str) -> bool;
     fn close(&mut self) -> Result<()>;
+
+    fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan>;
 }
