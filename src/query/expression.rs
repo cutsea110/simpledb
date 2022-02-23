@@ -54,7 +54,7 @@ impl Expression {
             Expression::Fldname(_) => None,
         }
     }
-    pub fn field_name(&self) -> Result<&str> {
+    pub fn as_field_name(&self) -> Result<&str> {
         match self {
             Expression::Val(_) => Err(From::from(ExpressionError::InvalidExpression)),
             Expression::Fldname(s) => Ok(&s),
@@ -66,7 +66,7 @@ impl Expression {
             Expression::Fldname(fldname) => s.get_val(fldname),
         }
     }
-    pub fn applies_to(&self, sch: Schema) -> bool {
+    pub fn applies_to(&self, sch: &Schema) -> bool {
         match self {
             Expression::Val(_) => true,
             Expression::Fldname(fldname) => sch.has_field(fldname),
