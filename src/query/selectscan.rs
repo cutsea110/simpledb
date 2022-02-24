@@ -105,6 +105,7 @@ mod tests {
         metadata::manager::MetadataMgr,
         record::{layout::Layout, schema::Schema, tablescan::TableScan},
         server::simpledb::SimpleDB,
+        tx::transaction::Transaction,
     };
 
     use super::*;
@@ -185,17 +186,16 @@ mod tests {
         }
     }
 
-    #[test]
-    fn unit_test() -> Result<()> {
-        if Path::new("_selectscan").exists() {
-            fs::remove_dir_all("_selectscan")?;
-        }
+    fn init_sampledb(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
+        init_student(mdm, Arc::clone(&tx))?;
+        init_dept(mdm, Arc::clone(&tx))?;
+        init_course(mdm, Arc::clone(&tx))?;
+        init_section(mdm, Arc::clone(&tx))?;
+        init_enroll(mdm, Arc::clone(&tx))?;
 
-        let simpledb = SimpleDB::new_with("_selectscan", 400, 8);
-
-        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
-        let mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
-
+        Ok(())
+    }
+    fn init_student(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create STUDENT Table
         let mut sch_student = Schema::new();
         sch_student.add_i32_field("SId");
@@ -227,6 +227,9 @@ mod tests {
             ts.set_i32("MajorId", s.major_id)?;
         }
 
+        Ok(())
+    }
+    fn init_dept(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create DEPT Table
         let mut sch_dept = Schema::new();
         sch_dept.add_i32_field("DId");
@@ -248,6 +251,9 @@ mod tests {
             ts.set_string("DName", d.d_name.to_string())?;
         }
 
+        Ok(())
+    }
+    fn init_course(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create COURSE Table
         let mut sch_course = Schema::new();
         sch_course.add_i32_field("CId");
@@ -273,6 +279,10 @@ mod tests {
             ts.set_string("Title", c.title.to_string())?;
             ts.set_i32("DeptId", c.dept_id)?;
         }
+
+        Ok(())
+    }
+    fn init_section(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create SECTION Table
         let mut sch_section = Schema::new();
         sch_section.add_i32_field("SectId");
@@ -300,6 +310,9 @@ mod tests {
             ts.set_i32("YearOffered", s.year_offered)?;
         }
 
+        Ok(())
+    }
+    fn init_enroll(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create ENROLL Table
         let mut sch_enroll = Schema::new();
         sch_enroll.add_i32_field("EId");
@@ -327,6 +340,24 @@ mod tests {
             ts.set_i32("SectionId", e.section_id)?;
             ts.set_string("Grade", e.grade.to_string())?;
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_selectscan").exists() {
+            fs::remove_dir_all("_selectscan")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_selectscan", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+
+        init_sampledb(&mut mdm, Arc::clone(&tx))?;
+
+        // TODO
 
         tx.lock().unwrap().commit()?;
 
