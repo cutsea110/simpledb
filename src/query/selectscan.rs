@@ -103,6 +103,7 @@ mod tests {
 
     use crate::{
         metadata::manager::MetadataMgr,
+        query::{expression::Expression, term::Term},
         record::{layout::Layout, schema::Schema, tablescan::TableScan},
         server::simpledb::SimpleDB,
         tx::transaction::Transaction,
@@ -357,7 +358,20 @@ mod tests {
 
         init_sampledb(&mut mdm, Arc::clone(&tx))?;
 
-        // TODO
+        // the STUDENT node
+        let layout = mdm.get_layout("STUDENT", Arc::clone(&tx))?;
+        let ts = TableScan::new(Arc::clone(&tx), "STUDENT", layout)?;
+
+        // the Select node
+        let lhs1 = Expression::new_fldname("GradYear".to_string());
+        let c = Constant::new_i32(2020);
+        let rhs1 = Expression::new_val(c);
+        let t1 = Term::new(lhs1, rhs1);
+        let pred = Predicate::new(t1);
+        let mut s = SelectScan::new(Arc::new(Mutex::new(ts)), pred);
+        while s.next() {
+            println!("{} {}", s.get_string("SName")?, s.get_i32("GradYear")?);
+        }
 
         tx.lock().unwrap().commit()?;
 
