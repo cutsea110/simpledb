@@ -364,13 +364,31 @@ mod tests {
 
         // the Select node
         let lhs1 = Expression::new_fldname("GradYear".to_string());
-        let c = Constant::new_i32(2020);
-        let rhs1 = Expression::new_val(c);
+        let c1 = Constant::new_i32(2020);
+        let rhs1 = Expression::new_val(c1);
         let t1 = Term::new(lhs1, rhs1);
-        let pred = Predicate::new(t1);
-        let mut s = SelectScan::new(Arc::new(Mutex::new(ts)), pred);
-        while s.next() {
-            println!("{} {}", s.get_string("SName")?, s.get_i32("GradYear")?);
+        let pred1 = Predicate::new(t1);
+        let mut s1 = SelectScan::new(Arc::new(Mutex::new(ts)), pred1);
+        println!("SELECT SName, GradYear FROM STUDENT WHERE GradYear = 2020");
+        while s1.next() {
+            println!("{} {}", s1.get_string("SName")?, s1.get_i32("GradYear")?);
+        }
+
+        // the another Select node
+        let lhs2 = Expression::new_fldname("MajorId".to_string());
+        let c2 = Constant::new_i32(20);
+        let rhs2 = Expression::new_val(c2);
+        let t2 = Term::new(lhs2, rhs2);
+        let pred2 = Predicate::new(t2);
+        let mut s2 = SelectScan::new(Arc::new(Mutex::new(s1)), pred2);
+        println!("SELECT SName, GradYear FROM STUDENT WHERE GradYear = 2020 AND MajorId = 20");
+        while s2.next() {
+            println!(
+                "{} {} {}",
+                s2.get_string("SName")?,
+                s2.get_i32("GradYear")?,
+                s2.get_i32("MajorId")?
+            );
         }
 
         tx.lock().unwrap().commit()?;
