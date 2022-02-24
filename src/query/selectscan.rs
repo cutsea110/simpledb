@@ -197,16 +197,16 @@ mod tests {
     }
     fn init_student(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create STUDENT Table
-        let mut sch_student = Schema::new();
-        sch_student.add_i32_field("SId");
-        sch_student.add_string_field("SName", 10);
-        sch_student.add_i32_field("GradYear");
-        sch_student.add_i32_field("MajorId");
-        let student = Arc::new(sch_student);
-        mdm.create_table("STUDENT", Arc::clone(&student), Arc::clone(&tx))?;
+        let mut sch = Schema::new();
+        sch.add_i32_field("SId");
+        sch.add_string_field("SName", 10);
+        sch.add_i32_field("GradYear");
+        sch.add_i32_field("MajorId");
+        let asch = Arc::new(sch);
+        mdm.create_table("STUDENT", Arc::clone(&asch), Arc::clone(&tx))?;
         // INSERT STUDENT Records
-        let layout_student = Arc::new(Layout::new(Arc::clone(&student)));
-        let mut ts = TableScan::new(Arc::clone(&tx), "STUDENT", layout_student)?;
+        let layout = Arc::new(Layout::new(Arc::clone(&asch)));
+        let mut ts = TableScan::new(Arc::clone(&tx), "STUDENT", layout)?;
         let students = vec![
             Student::new(1, "joe", 2021, 10),
             Student::new(2, "amy", 2020, 20),
@@ -231,14 +231,14 @@ mod tests {
     }
     fn init_dept(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create DEPT Table
-        let mut sch_dept = Schema::new();
-        sch_dept.add_i32_field("DId");
-        sch_dept.add_string_field("DName", 10);
-        let dept = Arc::new(sch_dept);
-        mdm.create_table("DEPT", Arc::clone(&dept), Arc::clone(&tx))?;
+        let mut sch = Schema::new();
+        sch.add_i32_field("DId");
+        sch.add_string_field("DName", 10);
+        let asch = Arc::new(sch);
+        mdm.create_table("DEPT", Arc::clone(&asch), Arc::clone(&tx))?;
         // INSERT DEPT Records
-        let layout_dept = Arc::new(Layout::new(Arc::clone(&dept)));
-        let mut ts = TableScan::new(Arc::clone(&tx), "DEPT", layout_dept)?;
+        let layout = Arc::new(Layout::new(Arc::clone(&asch)));
+        let mut ts = TableScan::new(Arc::clone(&tx), "DEPT", layout)?;
         let depts = vec![
             Dept::new(10, "compsci"),
             Dept::new(20, "math"),
@@ -255,15 +255,15 @@ mod tests {
     }
     fn init_course(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create COURSE Table
-        let mut sch_course = Schema::new();
-        sch_course.add_i32_field("CId");
-        sch_course.add_string_field("Title", 16);
-        sch_course.add_i32_field("DeptId");
-        let course = Arc::new(sch_course);
-        mdm.create_table("COURSE", Arc::clone(&course), Arc::clone(&tx))?;
+        let mut sch = Schema::new();
+        sch.add_i32_field("CId");
+        sch.add_string_field("Title", 16);
+        sch.add_i32_field("DeptId");
+        let asch = Arc::new(sch);
+        mdm.create_table("COURSE", Arc::clone(&asch), Arc::clone(&tx))?;
         // INSERT COURSE Records
-        let layout_course = Arc::new(Layout::new(Arc::clone(&course)));
-        let mut ts = TableScan::new(Arc::clone(&tx), "COURSE", layout_course)?;
+        let layout = Arc::new(Layout::new(Arc::clone(&asch)));
+        let mut ts = TableScan::new(Arc::clone(&tx), "COURSE", layout)?;
         let courses = vec![
             Course::new(12, "db systems", 10),
             Course::new(22, "compilers", 10),
@@ -284,16 +284,16 @@ mod tests {
     }
     fn init_section(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create SECTION Table
-        let mut sch_section = Schema::new();
-        sch_section.add_i32_field("SectId");
-        sch_section.add_i32_field("CourseId");
-        sch_section.add_string_field("Prof", 10);
-        sch_section.add_i32_field("YearOffered");
-        let section = Arc::new(sch_section);
-        mdm.create_table("SECTION", Arc::clone(&section), Arc::clone(&tx))?;
+        let mut sch = Schema::new();
+        sch.add_i32_field("SectId");
+        sch.add_i32_field("CourseId");
+        sch.add_string_field("Prof", 10);
+        sch.add_i32_field("YearOffered");
+        let asch = Arc::new(sch);
+        mdm.create_table("SECTION", Arc::clone(&asch), Arc::clone(&tx))?;
         // INSERT SECTION Records
-        let layout_section = Arc::new(Layout::new(Arc::clone(&section)));
-        let mut ts = TableScan::new(Arc::clone(&tx), "SECTION", layout_section)?;
+        let layout = Arc::new(Layout::new(Arc::clone(&asch)));
+        let mut ts = TableScan::new(Arc::clone(&tx), "SECTION", layout)?;
         let sections = vec![
             Section::new(13, 12, "turing", 2018),
             Section::new(23, 12, "turing", 2016),
@@ -314,16 +314,16 @@ mod tests {
     }
     fn init_enroll(mdm: &mut MetadataMgr, tx: Arc<Mutex<Transaction>>) -> Result<()> {
         // Create ENROLL Table
-        let mut sch_enroll = Schema::new();
-        sch_enroll.add_i32_field("EId");
-        sch_enroll.add_i32_field("StudentId");
-        sch_enroll.add_i32_field("SectionId");
-        sch_enroll.add_string_field("Grade", 2);
-        let enroll = Arc::new(sch_enroll);
-        mdm.create_table("ENROLL", Arc::clone(&enroll), Arc::clone(&tx))?;
+        let mut sch = Schema::new();
+        sch.add_i32_field("EId");
+        sch.add_i32_field("StudentId");
+        sch.add_i32_field("SectionId");
+        sch.add_string_field("Grade", 2);
+        let asch = Arc::new(sch);
+        mdm.create_table("ENROLL", Arc::clone(&asch), Arc::clone(&tx))?;
         // INSERT ENROLL Records
-        let layout_enroll = Arc::new(Layout::new(Arc::clone(&enroll)));
-        let mut ts = TableScan::new(Arc::clone(&tx), "ENROLL", layout_enroll)?;
+        let layout = Arc::new(Layout::new(Arc::clone(&asch)));
+        let mut ts = TableScan::new(Arc::clone(&tx), "ENROLL", layout)?;
         let enrolls = vec![
             Enroll::new(14, 1, 13, "A"),
             Enroll::new(24, 1, 43, "C"),
