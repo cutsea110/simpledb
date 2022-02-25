@@ -79,3 +79,44 @@ impl ProjectScan {
         Self { s, fieldlist }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use crate::{
+        metadata::manager::MetadataMgr, record::tablescan::TableScan, server::simpledb::SimpleDB,
+    };
+
+    use super::super::tests;
+    use super::*;
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_projectscan").exists() {
+            fs::remove_dir_all("_projectscan")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_projectscan", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+
+        tests::init_sampledb(&mut mdm, Arc::clone(&tx))?;
+
+        // the STUDENT node
+        let layout = mdm.get_layout("STUDENT", Arc::clone(&tx))?;
+        let ts = TableScan::new(Arc::clone(&tx), "STUDENT", layout)?;
+
+        // the Project node
+        let cols = vec!["SName".to_string(), "MajorId".to_string()];
+        let mut s2 = ProjectScan::new(Arc::new(Mutex::new(ts)), cols);
+        println!("SELECT SName, MajorId FROM STUDENT");
+        while s2.next() {
+            println!("{} {}", s2.get_string("SName")?, s2.get_i32("MajorId")?);
+        }
+
+        Ok(())
+    }
+}

@@ -97,9 +97,8 @@ impl SelectScan {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
-
     use anyhow::Result;
+    use std::{fs, path::Path};
 
     use crate::{
         metadata::manager::MetadataMgr,
