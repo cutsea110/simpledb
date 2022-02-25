@@ -122,11 +122,25 @@ mod tests {
 
         // the STUDENT node
         let layout = mdm.get_layout("STUDENT", Arc::clone(&tx))?;
-        let ts1 = TableScan::new(Arc::clone(&tx), "STUDENT", layout)?;
+        let mut ts1 = TableScan::new(Arc::clone(&tx), "STUDENT", layout)?;
+        println!("SELECT SId, SName, GradYear, MajorId FROM STUDENT");
+        while ts1.next() {
+            println!(
+                "{} {} {} {}",
+                ts1.get_i32("SId")?,
+                ts1.get_string("SName")?,
+                ts1.get_i32("GradYear")?,
+                ts1.get_i32("MajorId")?,
+            );
+        }
 
         // the DEPT node
         let layout = mdm.get_layout("DEPT", Arc::clone(&tx))?;
-        let ts2 = TableScan::new(Arc::clone(&tx), "DEPT", layout)?;
+        let mut ts2 = TableScan::new(Arc::clone(&tx), "DEPT", layout)?;
+        println!("SELECT DId, DName FROM DEPT");
+        while ts2.next() {
+            println!("{} {}", ts2.get_i32("DId")?, ts2.get_string("DName")?);
+        }
 
         // the Product node
         let ts3 = ProductScan::new(Arc::new(Mutex::new(ts1)), Arc::new(Mutex::new(ts2)));
