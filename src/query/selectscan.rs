@@ -147,7 +147,7 @@ mod tests {
         let pred2 = Predicate::new(t2);
         let mut s2 = SelectScan::new(Arc::new(Mutex::new(s1)), pred2);
         println!(
-            "SELECT SName, GradYear \
+            "SELECT SName, GradYear, MajorId \
                FROM (SELECT SId, SName, GradYear, MajorId FROM STUDENT WHERE GradYear = 2020) \
               WHERE MajorId = 20"
         );
