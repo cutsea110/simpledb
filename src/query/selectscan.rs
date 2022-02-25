@@ -146,7 +146,11 @@ mod tests {
         let t2 = Term::new(lhs2, rhs2);
         let pred2 = Predicate::new(t2);
         let mut s2 = SelectScan::new(Arc::new(Mutex::new(s1)), pred2);
-        println!("SELECT SName, GradYear FROM (SELECT * FROM STUDENT WHERE GradYear = 2020) WHERE MajorId = 20");
+        println!(
+            "SELECT SName, GradYear \
+               FROM (SELECT SId, SName, GradYear, MajorId FROM STUDENT WHERE GradYear = 2020) \
+              WHERE MajorId = 20"
+        );
         while s2.next() {
             println!(
                 "{} {} {}",
