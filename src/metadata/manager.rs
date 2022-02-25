@@ -100,11 +100,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_metadatamgrtest").exists() {
-            fs::remove_dir_all("_metadatamgrtest")?;
+        if Path::new("_test/metadatamgrtest").exists() {
+            fs::remove_dir_all("_test/metadatamgrtest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_metadatamgrtest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/metadatamgrtest", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;

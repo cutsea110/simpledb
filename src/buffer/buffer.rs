@@ -112,11 +112,11 @@ mod tests {
 
     #[test]
     fn unit_test() {
-        if Path::new("_buffertest").exists() {
-            fs::remove_dir_all("_buffertest").expect("cleanup");
+        if Path::new("_test/buffertest").exists() {
+            fs::remove_dir_all("_test/buffertest").expect("cleanup");
         }
 
-        let simpledb = SimpleDB::new_with("_buffertest", 400, 3);
+        let simpledb = SimpleDB::new_with("_test/buffertest", 400, 3);
 
         let bm = simpledb.buffer_mgr();
         let mut bm = bm.lock().unwrap();

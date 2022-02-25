@@ -154,11 +154,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_buffermgrtest").exists() {
-            fs::remove_dir_all("_buffermgrtest")?;
+        if Path::new("_test/buffermgrtest").exists() {
+            fs::remove_dir_all("_test/buffermgrtest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_buffermgrtest", 400, 3);
+        let simpledb = SimpleDB::new_with("_test/buffermgrtest", 400, 3);
 
         let bm = simpledb.buffer_mgr();
         let mut bm = bm.lock().unwrap();

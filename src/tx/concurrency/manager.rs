@@ -133,11 +133,11 @@ mod tests {
     // FIXME: this test is flaky. Tx B and Tx C can gone to deadlock.
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_concurrencytest").exists() {
-            fs::remove_dir_all("_concurrencytest")?;
+        if Path::new("_test/concurrencytest").exists() {
+            fs::remove_dir_all("_test/concurrencytest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_concurrencytest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/concurrencytest", 400, 8);
 
         let mut tx_a = simpledb.new_tx()?;
         let handle1 = thread::spawn(move || {

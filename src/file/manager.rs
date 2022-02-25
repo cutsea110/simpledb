@@ -163,11 +163,11 @@ mod tests {
 
     #[test]
     fn unit_test() {
-        if Path::new("_filetest").exists() {
-            fs::remove_dir_all("_filetest").expect("cleanup");
+        if Path::new("_test/filetest").exists() {
+            fs::remove_dir_all("_test/filetest").expect("cleanup");
         }
 
-        let simpledb = SimpleDB::new_with("_filetest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/filetest", 400, 8);
         let fm = simpledb.file_mgr();
 
         let blk = BlockId::new("testfile", 2);

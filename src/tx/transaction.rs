@@ -181,11 +181,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_txtest").exists() {
-            fs::remove_dir_all("_txtest")?;
+        if Path::new("_test/txtest").exists() {
+            fs::remove_dir_all("_test/txtest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_txtest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/txtest", 400, 8);
 
         let mut tx1 = simpledb.new_tx()?;
         let blk = BlockId::new("testfile", 1);

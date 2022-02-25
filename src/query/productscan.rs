@@ -109,11 +109,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_productscan").exists() {
-            fs::remove_dir_all("_productscan")?;
+        if Path::new("_test/productscan").exists() {
+            fs::remove_dir_all("_test/productscan")?;
         }
 
-        let simpledb = SimpleDB::new_with("_productscan", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/productscan", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;

@@ -115,11 +115,11 @@ mod tests {
 
     #[test]
     fn unit_test() {
-        if Path::new("_logtest").exists() {
-            fs::remove_dir_all("_logtest").expect("cleanup");
+        if Path::new("_test/logtest").exists() {
+            fs::remove_dir_all("_test/logtest").expect("cleanup");
         }
 
-        let simpledb = SimpleDB::new_with("_logtest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/logtest", 400, 8);
 
         let lm = simpledb.log_mgr();
         let mut lm = lm.lock().unwrap();

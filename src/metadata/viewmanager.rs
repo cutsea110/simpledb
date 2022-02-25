@@ -65,11 +65,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_viewmgrtest").exists() {
-            fs::remove_dir_all("_viewmgrtest")?;
+        if Path::new("_test/viewmgrtest").exists() {
+            fs::remove_dir_all("_test/viewmgrtest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_viewmgrtest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/viewmgrtest", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let tm = TableMgr::new(true, Arc::clone(&tx))?;

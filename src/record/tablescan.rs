@@ -221,11 +221,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_tablescan").exists() {
-            fs::remove_dir_all("_tablescan")?;
+        if Path::new("_test/tablescan").exists() {
+            fs::remove_dir_all("_test/tablescan")?;
         }
 
-        let simpledb = SimpleDB::new_with("_tablescan", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/tablescan", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let mut sch = Schema::new();

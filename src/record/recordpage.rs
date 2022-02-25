@@ -126,11 +126,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_recordpage").exists() {
-            fs::remove_dir_all("_recordpage")?;
+        if Path::new("_test/recordpage").exists() {
+            fs::remove_dir_all("_test/recordpage")?;
         }
 
-        let simpledb = SimpleDB::new_with("_recordpage", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/recordpage", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let mut sch = Schema::new();

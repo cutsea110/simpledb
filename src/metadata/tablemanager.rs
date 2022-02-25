@@ -119,11 +119,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_tblmgrtest").exists() {
-            fs::remove_dir_all("_tblmgrtest")?;
+        if Path::new("_test/tblmgrtest").exists() {
+            fs::remove_dir_all("_test/tblmgrtest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_tblmgrtest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/tblmgrtest", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let tm = TableMgr::new(true, Arc::clone(&tx))?;
@@ -155,11 +155,11 @@ mod tests {
 
     #[test]
     fn catalog_test() -> Result<()> {
-        if Path::new("_catalogtest").exists() {
-            fs::remove_dir_all("_catalogtest")?;
+        if Path::new("_test/catalogtest").exists() {
+            fs::remove_dir_all("_test/catalogtest")?;
         }
 
-        let simpledb = SimpleDB::new_with("_catalogtest", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/catalogtest", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let tm = TableMgr::new(true, Arc::clone(&tx))?;
