@@ -170,6 +170,8 @@ mod tests {
             );
         }
 
+        tx.lock().unwrap().commit()?;
+
         Ok(())
     }
 }

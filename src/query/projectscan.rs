@@ -117,6 +117,8 @@ mod tests {
             println!("{} {}", s2.get_string("SName")?, s2.get_i32("MajorId")?);
         }
 
+        tx.lock().unwrap().commit()?;
+
         Ok(())
     }
 }
