@@ -108,6 +108,16 @@ pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     })
 }
 
+pub fn many1<T>(parser: impl Parser<T> + Copy) -> impl Parser<Vec<T>> {
+    map(
+        join(parser, many(parser)),
+        |(val1, mut val2): (T, Vec<T>)| {
+            val2.insert(0, val1);
+            val2
+        },
+    )
+}
+
 pub fn separated<T>(parser: impl Parser<T>, sep: impl Parser<()>) -> impl Parser<Vec<T>> {
     generalize_lifetime(move |mut s| {
         let mut ret = vec![];
@@ -234,6 +244,23 @@ mod tests {
         assert_eq!(parser("10 20 30"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser(""), Some((vec![], "")));
         assert_eq!(parser("10 hello"), Some((vec![10], " hello")));
+
+        let parser = many(digit);
+        assert_eq!(parser("123"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser(""), Some((vec![], "")));
+        assert_eq!(parser("abc"), Some((vec![], "abc")));
+        assert_eq!(parser("10 20 30"), Some((vec![1, 0], " 20 30")));
+        assert_eq!(parser("123abc"), Some((vec![1, 2, 3], "abc")));
+    }
+
+    #[test]
+    fn many1_test() {
+        let parser = many1(digit);
+        assert_eq!(parser("123"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser(""), None);
+        assert_eq!(parser("abc"), None);
+        assert_eq!(parser("10 20 30"), Some((vec![1, 0], " 20 30")));
+        assert_eq!(parser("123abc"), Some((vec![1, 2, 3], "abc")));
     }
 
     #[test]
