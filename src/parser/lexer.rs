@@ -66,10 +66,10 @@ pub struct Lexer {
     input: Vec<char>,         // source code
     pub position: usize,      // reading position
     pub read_position: usize, // current moving reading position
-    pub ch: char,             // current read character
+    pub ch: Option<char>,     // current read character
 }
 
-fn is_letetr(ch: char) -> bool {
+fn is_letter(ch: char) -> bool {
     'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
 
@@ -103,35 +103,40 @@ fn get_keyword_token(ident: &str) -> Result<Token> {
 
 impl Lexer {
     pub fn new(input: Vec<char>) -> Self {
-        Self {
+        let mut lexer = Self {
             input,
             position: 0,
             read_position: 0,
-            ch: '0',
-        }
+            ch: None,
+        };
+        // init
+        lexer.read_char();
+
+        lexer
     }
 
     pub fn read_char(&mut self) {
         if self.read_position >= self.input.len() {
-            self.ch = '0';
+            self.ch = None;
         } else {
-            self.ch = self.input[self.read_position];
+            self.ch = Some(self.input[self.read_position]);
         }
         self.position = self.read_position;
         self.read_position += 1;
     }
 
     pub fn skip_whitespace(&mut self) {
-        let ch = self.ch;
-        if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
-            self.read_char();
+        if let Some(ch) = self.ch {
+            if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+                self.read_char();
+            }
         }
     }
 
     pub fn next_token(&mut self) -> Token {
         let read_identifier = |l: &mut Lexer| -> Vec<char> {
             let position = l.position;
-            while l.position < l.input.len() && is_letetr(l.ch) {
+            while l.position < l.input.len() && is_letter(l.ch.unwrap()) {
                 l.read_char();
             }
             l.input[position..l.position].to_vec()
@@ -139,7 +144,7 @@ impl Lexer {
 
         let read_number = |l: &mut Lexer| -> Vec<char> {
             let position = l.position;
-            while l.position < l.input.len() && is_digit(l.ch) {
+            while l.position < l.input.len() && is_digit(l.ch.unwrap()) {
                 l.read_char();
             }
             l.input[position..l.position].to_vec()
@@ -147,35 +152,38 @@ impl Lexer {
 
         let tok: Token;
         self.skip_whitespace();
-        match self.ch {
-            ',' => tok = Token::DELIMITER(Delimiter::COMMA),
-            '=' => tok = Token::DELIMITER(Delimiter::EQ),
-            ';' => tok = Token::DELIMITER(Delimiter::SEMICOLON),
-            '(' => tok = Token::DELIMITER(Delimiter::LPAREN),
-            ')' => tok = Token::DELIMITER(Delimiter::RPAREN),
-            '0' => tok = Token::EOS,
-            _ => {
-                if is_letetr(self.ch) {
-                    let ident: String = read_identifier(self).into_iter().collect();
-                    match get_keyword_token(&ident.to_lowercase()) {
-                        Ok(keyword_token) => {
-                            return keyword_token;
+        if let Some(ch) = self.ch {
+            match ch {
+                ',' => tok = Token::DELIMITER(Delimiter::COMMA),
+                '=' => tok = Token::DELIMITER(Delimiter::EQ),
+                ';' => tok = Token::DELIMITER(Delimiter::SEMICOLON),
+                '(' => tok = Token::DELIMITER(Delimiter::LPAREN),
+                ')' => tok = Token::DELIMITER(Delimiter::RPAREN),
+                _ => {
+                    if is_letter(ch) {
+                        let ident: String = read_identifier(self).into_iter().collect();
+                        match get_keyword_token(&ident.to_lowercase()) {
+                            Ok(keyword_token) => {
+                                return keyword_token;
+                            }
+                            Err(_) => {
+                                return Token::IDENTIFIER(ident);
+                            }
                         }
-                        Err(_) => {
-                            return Token::IDENTIFIER(ident);
-                        }
+                    } else if is_digit(ch) {
+                        let digits: String = read_number(self).into_iter().collect();
+                        let num = digits.parse().unwrap();
+                        return Token::INT32(num);
+                    } else {
+                        return Token::ILLEGAL;
                     }
-                } else if is_digit(self.ch) {
-                    let digits: String = read_number(self).into_iter().collect();
-                    let num = digits.parse().unwrap();
-                    return Token::INT32(num);
-                } else {
-                    return Token::ILLEGAL;
                 }
             }
+            self.read_char();
+            return tok;
         }
-        self.read_char();
-        tok
+
+        Token::EOS
     }
 }
 
@@ -187,7 +195,7 @@ mod tests {
     fn unit_test() {
         let input = "SELECT SId, SName FROM Student WHERE GradYear = 2020;";
         let mut l = Lexer::new(input.chars().collect());
-        l.read_char();
+
         loop {
             let token = l.next_token();
             if token == Token::EOS {
@@ -196,6 +204,6 @@ mod tests {
                 println!("{:?}", token);
             }
         }
-        println!("{} {} {}", char::from(l.ch), l.position, l.read_position);
+        println!("{:?} {} {}", l.ch, l.position, l.read_position);
     }
 }
