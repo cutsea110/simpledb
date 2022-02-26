@@ -38,37 +38,28 @@ pub fn sats<'a>(pred: &dyn Fn(char) -> bool, s: &'a str) -> Option<(Vec<char>, &
 }
 
 pub fn digit(s: &str) -> Option<(i32, &str)> {
-    if let Some(ch) = s.chars().next() {
-        if ch.is_ascii_digit() {
-            return Some((ch as i32 - 48, &s[1..])); // 48 = '0'
-        }
-        return None;
+    if let Some((ch, rest)) = sat(&|c: char| c.is_ascii_digit(), s) {
+        return Some((ch as i32 - 48, rest));
     }
 
     None
 }
 
 pub fn digits(s: &str) -> Option<(i32, &str)> {
-    let end = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
-    match s[..end].parse() {
-        Ok(val) => Some((val, &s[end..])),
-        Err(_) => None,
+    if let Some((ns, rest)) = sats(&|c: char| c.is_ascii_digit(), s) {
+        if !ns.is_empty() {
+            let num: String = ns.into_iter().collect();
+            return Some((num.parse().unwrap(), rest));
+        }
     }
+
+    None
 }
 
 pub fn space(s: &str) -> Option<((), &str)> {
-    if !s.is_empty() {
-        let mut pos = 0;
-        while let Some(ch) = s.chars().nth(pos) {
-            if !ch.is_whitespace() {
-                break;
-            }
-            pos += 1;
-            continue;
-        }
-        return Some(((), &s[pos..]));
+    if let Some((_, rest)) = sats(&|c: char| c.is_whitespace(), s) {
+        return Some(((), rest));
     }
-
     None
 }
 
@@ -151,7 +142,7 @@ mod tests {
 
     #[test]
     fn sat_test() {
-        assert_eq!(sat(&|c: char| true, "123"), Some(('1', "23")));
+        assert_eq!(sat(&|_| true, "123"), Some(('1', "23")));
         assert_eq!(sat(&|c: char| c.is_ascii_digit(), "123"), Some(('1', "23")));
         assert_eq!(sat(&|c: char| c.is_ascii_digit(), "abc"), None);
         assert_eq!(sat(&|c: char| c.is_alphabetic(), "abc"), Some(('a', "bc")));
@@ -159,11 +150,8 @@ mod tests {
 
     #[test]
     fn sats_test() {
-        assert_eq!(
-            sats(&|c: char| true, "123"),
-            Some((vec!['1', '2', '3'], ""))
-        );
-        assert_eq!(sats(&|c: char| true, ""), None);
+        assert_eq!(sats(&|_| true, "123"), Some((vec!['1', '2', '3'], "")));
+        assert_eq!(sats(&|_| true, ""), None);
         assert_eq!(
             sats(&|c: char| c.is_ascii_digit(), "123abc"),
             Some((vec!['1', '2', '3'], "abc"))
