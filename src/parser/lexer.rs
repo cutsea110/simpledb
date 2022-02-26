@@ -213,8 +213,6 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
-
     use super::*;
 
     fn lex(input: &str) {
