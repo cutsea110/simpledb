@@ -160,6 +160,7 @@ impl Lexer {
             l.input[position..l.position].to_vec()
         };
 
+        // TODO: support escape chars
         let read_string = |l: &mut Lexer| -> Vec<char> {
             let position = l.position;
             while l.position < l.input.len() {
@@ -220,6 +221,7 @@ mod tests {
     use super::*;
 
     fn lex(input: &str) {
+        println!("input: {:?}", input.chars().collect::<Vec<char>>());
         let mut l = Lexer::new(input.chars().collect());
         loop {
             match l.next_token() {
@@ -254,6 +256,15 @@ mod tests {
         println!("\nlex sql with redundant spaces");
         lex("SELECT  SId  , SName \
                FROM STUDENT \
-              WHERE SName = 'joe';");
+               WHERE SName = 'joe';");
+
+        println!("\nlex insert sql");
+        lex("INSERT INTO STUDENT(SId, SName, GradYear, MajorId) VALUES (1, 'Darci', 2023, 20);");
+
+        println!("\nlex update sql");
+        lex("UPDATE STUDENT SET GradYear = 2022 WHERE SName = 'Darci';");
+
+        println!("\nlex delete sql");
+        lex("DELETE DEPT WHERE DId = 20;");
     }
 }
