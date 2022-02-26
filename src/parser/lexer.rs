@@ -135,11 +135,10 @@ impl Lexer {
 
     pub fn skip_whitespace(&mut self) {
         while let Some(ch) = self.ch {
-            if is_whilespace(ch) {
-                self.read_char();
-            } else {
+            if !is_whilespace(ch) {
                 break;
             }
+            self.read_char();
         }
     }
 
