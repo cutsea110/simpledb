@@ -60,8 +60,6 @@ pub enum Keyword {
     ON,
 }
 
-type Location = i32;
-
 pub struct Lexer {
     input: Vec<char>,         // source code
     pub position: usize,      // reading position
@@ -81,7 +79,7 @@ fn is_whilespace(ch: char) -> bool {
     ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
 }
 
-fn is_string(ch: char) -> bool {
+fn is_str_delim(ch: char) -> bool {
     ch == '\''
 }
 
@@ -164,7 +162,7 @@ impl Lexer {
             let position = l.position;
             while l.position < l.input.len() {
                 l.read_char();
-                if is_string(l.ch.unwrap()) {
+                if is_str_delim(l.ch.unwrap()) {
                     l.read_char();
                     break;
                 }
@@ -196,7 +194,7 @@ impl Lexer {
                         let digits: String = read_number(self).into_iter().collect();
                         let num = digits.parse().unwrap();
                         return Token::INT32(num);
-                    } else if is_string(ch) {
+                    } else if is_str_delim(ch) {
                         let string: Vec<char> = read_string(self).into_iter().collect();
                         let s: String = string.into_iter().collect();
                         return Token::STRING(s);
