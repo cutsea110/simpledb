@@ -77,6 +77,14 @@ fn is_digit(ch: char) -> bool {
     '0' <= ch && ch <= '9'
 }
 
+fn is_whilespace(ch: char) -> bool {
+    ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
+}
+
+fn is_string(ch: char) -> bool {
+    ch == '\''
+}
+
 fn get_keyword_token(ident: &str) -> Result<Token> {
     match ident {
         "select" => Ok(Token::KEYWORD(Keyword::SELECT)),
@@ -126,9 +134,11 @@ impl Lexer {
     }
 
     pub fn skip_whitespace(&mut self) {
-        if let Some(ch) = self.ch {
-            if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+        while let Some(ch) = self.ch {
+            if is_whilespace(ch) {
                 self.read_char();
+            } else {
+                break;
             }
         }
     }
@@ -146,6 +156,18 @@ impl Lexer {
             let position = l.position;
             while l.position < l.input.len() && is_digit(l.ch.unwrap()) {
                 l.read_char();
+            }
+            l.input[position..l.position].to_vec()
+        };
+
+        let read_string = |l: &mut Lexer| -> Vec<char> {
+            let position = l.position;
+            while l.position < l.input.len() {
+                l.read_char();
+                if is_string(l.ch.unwrap()) {
+                    l.read_char();
+                    break;
+                }
             }
             l.input[position..l.position].to_vec()
         };
@@ -174,6 +196,10 @@ impl Lexer {
                         let digits: String = read_number(self).into_iter().collect();
                         let num = digits.parse().unwrap();
                         return Token::INT32(num);
+                    } else if is_string(ch) {
+                        let string: Vec<char> = read_string(self).into_iter().collect();
+                        let s: String = string.into_iter().collect();
+                        return Token::STRING(s);
                     } else {
                         return Token::ILLEGAL;
                     }
@@ -221,5 +247,13 @@ mod tests {
 
         println!("\nlex joined sql");
         lex("SELECT SName,GradYear,DName FROM STUDENT,DEPT WHERE GradYear=2020 AND MajorId=DId;");
+
+        println!("\nlex sql with string");
+        lex("SELECT SId, SName FROM STUDENT WHERE SName = 'joe';");
+
+        println!("\nlex sql with redundant spaces");
+        lex("SELECT  SId  , SName \
+               FROM STUDENT \
+              WHERE SName = 'joe';");
     }
 }
