@@ -8,14 +8,16 @@ where
     f
 }
 
-pub fn sat<'a>(pred: &dyn Fn(char) -> bool, s: &'a str) -> Option<(char, &'a str)> {
-    if let Some(ch) = s.chars().next() {
-        if pred(ch) {
-            return Some((ch, &s[1..]));
+pub fn sat(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
+    generalize_lifetime(|s: &str| {
+        let mut iter = s.chars();
+        if let Some(c) = iter.next() {
+            if pred(c) {
+                return Some((c, iter.as_str()));
+            }
         }
-        return None;
-    }
-    None
+        None
+    })
 }
 
 pub fn sats<'a>(pred: &dyn Fn(char) -> bool, s: &'a str) -> Option<(Vec<char>, &'a str)> {
@@ -37,12 +39,8 @@ pub fn sats<'a>(pred: &dyn Fn(char) -> bool, s: &'a str) -> Option<(Vec<char>, &
     None
 }
 
-pub fn digit(s: &str) -> Option<(i32, &str)> {
-    if let Some((ch, rest)) = sat(&|c: char| c.is_ascii_digit(), s) {
-        return Some((ch as i32 - 48, rest));
-    }
-
-    None
+pub fn digit() -> impl Parser<i32> {
+    map(sat(&|c: char| c.is_ascii_digit()), &|c: char| c as i32 - 48)
 }
 
 pub fn digits(s: &str) -> Option<(i32, &str)> {
@@ -56,11 +54,8 @@ pub fn digits(s: &str) -> Option<(i32, &str)> {
     None
 }
 
-pub fn space(s: &str) -> Option<((), &str)> {
-    if let Some((_, rest)) = sats(&|c: char| c.is_whitespace(), s) {
-        return Some(((), rest));
-    }
-    None
+pub fn space() -> impl Parser<()> {
+    map(sat(&|c: char| c.is_whitespace()), |_| ())
 }
 
 pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
