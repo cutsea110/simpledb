@@ -8,6 +8,35 @@ where
     f
 }
 
+pub fn sat<'a>(pred: &dyn Fn(char) -> bool, s: &'a str) -> Option<(char, &'a str)> {
+    if let Some(ch) = s.chars().next() {
+        if pred(ch) {
+            return Some((ch, &s[1..]));
+        }
+        return None;
+    }
+    None
+}
+
+pub fn sats<'a>(pred: &dyn Fn(char) -> bool, s: &'a str) -> Option<(Vec<char>, &'a str)> {
+    if !s.is_empty() {
+        let mut ret = vec![];
+        let mut pos = 0;
+        let mut iter = s.chars();
+        while let Some(ch) = iter.next() {
+            if !pred(ch) {
+                break;
+            }
+            pos += 1;
+            ret.push(ch);
+            continue;
+        }
+        return Some((ret, &s[pos..]));
+    }
+
+    None
+}
+
 pub fn digit(s: &str) -> Option<(i32, &str)> {
     if let Some(ch) = s.chars().next() {
         if ch.is_ascii_digit() {
@@ -119,6 +148,35 @@ pub fn separated<T>(parser: impl Parser<T>, sep: impl Parser<()>) -> impl Parser
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sat_test() {
+        assert_eq!(sat(&|c: char| true, "123"), Some(('1', "23")));
+        assert_eq!(sat(&|c: char| c.is_ascii_digit(), "123"), Some(('1', "23")));
+        assert_eq!(sat(&|c: char| c.is_ascii_digit(), "abc"), None);
+        assert_eq!(sat(&|c: char| c.is_alphabetic(), "abc"), Some(('a', "bc")));
+    }
+
+    #[test]
+    fn sats_test() {
+        assert_eq!(
+            sats(&|c: char| true, "123"),
+            Some((vec!['1', '2', '3'], ""))
+        );
+        assert_eq!(sats(&|c: char| true, ""), None);
+        assert_eq!(
+            sats(&|c: char| c.is_ascii_digit(), "123abc"),
+            Some((vec!['1', '2', '3'], "abc"))
+        );
+        assert_eq!(
+            sats(&|c: char| c.is_ascii_digit(), "abc"),
+            Some((vec![], "abc"))
+        );
+        assert_eq!(
+            sats(&|c: char| c.is_alphabetic(), "abc"),
+            Some((vec!['a', 'b', 'c'], ""))
+        );
+    }
 
     #[test]
     fn space_test() {
