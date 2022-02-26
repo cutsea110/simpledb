@@ -266,5 +266,14 @@ mod tests {
 
         println!("\nlex delete sql");
         lex("DELETE DEPT WHERE DId = 20;");
+
+        println!("\nlex create table");
+        lex("CREATE TABLE LECTURE (LId Int, Title Varchar(16), Year Int, Unit Int);");
+
+        println!("\nlex create view");
+        lex("CREATE View VStudent AS SELECT SName,GradYear,DName FROM STUDENT,DEPT WHERE GradYear=2020 AND MajorId=DId;");
+
+        println!("\nlex create index");
+        lex("CREATE Index idx_Lecture ON LECTURE (Title, Year);");
     }
 }
