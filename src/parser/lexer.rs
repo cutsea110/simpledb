@@ -83,6 +83,10 @@ fn is_str_delim(ch: char) -> bool {
     ch == '\''
 }
 
+fn is_escape(ch: char) -> bool {
+    ch == '\\'
+}
+
 fn get_keyword_token(ident: &str) -> Result<Token> {
     match ident {
         "select" => Ok(Token::KEYWORD(Keyword::SELECT)),
@@ -157,13 +161,25 @@ impl Lexer {
             l.input[position..l.position].to_vec()
         };
 
-        // TODO: support escape chars
         let read_string = |l: &mut Lexer| -> Vec<char> {
             let position = l.position;
             while l.position < l.input.len() {
                 l.read_char();
+                // backslash escaped case
+                if is_escape(l.ch.unwrap()) {
+                    l.read_char();
+                    continue;
+                }
+                // either terminated or quote escaped
                 if is_str_delim(l.ch.unwrap()) {
                     l.read_char();
+                    // quote escaped case
+                    if let Some(ch) = l.ch {
+                        if ch == '\'' {
+                            l.read_char();
+                            continue;
+                        }
+                    }
                     break;
                 }
             }
@@ -247,6 +263,12 @@ mod tests {
 
         println!("\nlex sql with string");
         lex("SELECT SId, SName FROM STUDENT WHERE SName = 'joe';");
+
+        println!("\nlex sql with quote escaped string");
+        lex("SELECT SId, SName FROM STUDENT WHERE SName = 'joe''s jr';");
+
+        println!("\nlex sql with backslash escaped string");
+        lex("SELECT SId, SName FROM STUDENT WHERE SName = 'joe\\'s Jr';");
 
         println!("\nlex sql with redundant spaces");
         lex("SELECT  SId  , SName \
