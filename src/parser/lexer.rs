@@ -189,21 +189,37 @@ impl Lexer {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use super::*;
 
-    #[test]
-    fn unit_test() {
-        let input = "SELECT SId, SName FROM Student WHERE GradYear = 2020;";
+    fn lex(input: &str) {
         let mut l = Lexer::new(input.chars().collect());
-
         loop {
-            let token = l.next_token();
-            if token == Token::EOS {
-                break;
-            } else {
-                println!("{:?}", token);
+            match l.next_token() {
+                Token::EOS => {
+                    break;
+                }
+                token => {
+                    println!("{:?}", token);
+                }
             }
         }
         println!("{:?} {} {}", l.ch, l.position, l.read_position);
+    }
+
+    #[test]
+    fn unit_test() {
+        println!("\nlex empty sql");
+        lex("");
+
+        println!("\nlex simple sql");
+        lex("SELECT SId, SName FROM STUDENT WHERE GradYear = 2020;");
+
+        println!("\nlex sql with subquery");
+        lex("SELECT SId, SName FROM (Select SId, SName, GradYear FROM STUDENT) WHERE GradYear = 2020;");
+
+        println!("\nlex joined sql");
+        lex("SELECT SName,GradYear,DName FROM STUDENT,DEPT WHERE GradYear=2020 AND MajorId=DId;");
     }
 }
