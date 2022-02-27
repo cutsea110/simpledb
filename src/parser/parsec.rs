@@ -300,13 +300,12 @@ where
 
 pub fn chainl1<T, F>(parser: impl Parser<T>, op: impl Parser<F>) -> impl Parser<T>
 where
-    T: Clone,
     F: Fn(T, T) -> T,
 {
     generalize_lifetime(move |mut s| {
         if let Some((x, rest1)) = parser(s) {
             s = rest1;
-            let mut result = x.clone();
+            let mut result = x;
             while let Some(((f, y), rest2)) = join(&op, &parser)(s) {
                 s = rest2;
                 result = f(result, y);
