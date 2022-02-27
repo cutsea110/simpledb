@@ -4,6 +4,7 @@ use Either::{Left, Right};
 pub trait Parser<T>: Fn(&str) -> Option<(T, &str)> {}
 impl<T, F> Parser<T> for F where F: Fn(&str) -> Option<(T, &str)> {}
 
+//
 fn generalize_lifetime<T, F>(f: F) -> F
 where
     F: Fn(&str) -> Option<(T, &str)>,
@@ -207,7 +208,16 @@ pub fn optional<T>(parser: impl Parser<T>) -> impl Parser<()> {
 }
 
 pub fn skip_many1<T>(parser: impl Parser<T>) -> impl Parser<()> {
-    map(many1(parser), |_| ())
+    generalize_lifetime(move |s| {
+        if let Some((_, rest1)) = parser(s) {
+            if let Some((_, rest2)) = skip_many(&parser)(rest1) {
+                return Some(((), rest2));
+            }
+            return Some(((), rest1));
+        }
+
+        None
+    })
 }
 
 pub fn many1<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -372,10 +382,27 @@ pub fn many_till<'a, T, U>(
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
+    many_accum(
+        |x, xs| {
+            xs.push(x);
+            xs
+        },
+        parser,
+    )
+}
+
+pub fn skip_many<T>(parser: impl Parser<T>) -> impl Parser<()> {
+    map(many_accum(|_, xs| xs, parser), |_| ())
+}
+
+pub fn many_accum<T, F>(acc: F, parser: impl Parser<T>) -> impl Parser<Vec<T>>
+where
+    F: Fn(T, &mut Vec<T>) -> &mut Vec<T>, // no need return value
+{
     generalize_lifetime(move |mut s| {
         let mut ret = vec![];
         while let Some((val, rest)) = parser(s) {
-            ret.push(val);
+            acc(val, &mut ret);
             s = rest;
         }
         Some((ret, s))
@@ -736,6 +763,16 @@ mod tests {
         let parser = optional(digit());
         assert_eq!(parser("123"), Some(((), "23")));
         assert_eq!(parser("abc"), Some(((), "abc")));
+        assert_eq!(parser(""), Some(((), "")));
+    }
+
+    #[test]
+    fn skip_many_test() {
+        let parser = skip_many(space());
+        assert_eq!(parser(" 123"), Some(((), "123")));
+        assert_eq!(parser("    123"), Some(((), "123")));
+        assert_eq!(parser("\t\nabc"), Some(((), "abc")));
+        assert_eq!(parser("123"), Some(((), "123")));
         assert_eq!(parser(""), Some(((), "")));
     }
 
