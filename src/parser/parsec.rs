@@ -61,6 +61,19 @@ pub fn crlf() -> impl Parser<char> {
     joinr(satisfy(&|c: char| c == '\r'), newline())
 }
 
+pub fn end_of_line() -> impl Parser<char> {
+    generalize_lifetime(move |s: &str| {
+        if let Some((val, rest)) = meet(newline(), crlf())(s) {
+            match val {
+                Left(c) => return Some((c, rest)),
+                Right(c) => return Some((c, rest)),
+            }
+        }
+
+        None
+    })
+}
+
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
@@ -261,6 +274,16 @@ mod tests {
         assert_eq!(crlf()("123"), None);
         assert_eq!(crlf()("null"), None);
         assert_eq!(crlf()(""), None);
+    }
+
+    #[test]
+    fn end_of_line_test() {
+        assert_eq!(end_of_line()("\r\n123"), Some(('\n', "123")));
+        assert_eq!(end_of_line()("\n\r123"), Some(('\n', "\r123")));
+        assert_eq!(end_of_line()("\r\r\n"), None);
+        assert_eq!(end_of_line()("123"), None);
+        assert_eq!(end_of_line()("null"), None);
+        assert_eq!(end_of_line()(""), None);
     }
 
     #[test]
