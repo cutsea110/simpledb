@@ -48,6 +48,10 @@ pub fn spaces() -> impl Parser<()> {
     map(many1(satisfy(&|c: char| c.is_whitespace())), |_| ())
 }
 
+pub fn space() -> impl Parser<char> {
+    satisfy(&|c: char| c.is_whitespace())
+}
+
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
@@ -188,6 +192,25 @@ mod tests {
     }
 
     #[test]
+    fn spaces_test() {
+        assert_eq!(spaces()("   123"), Some(((), "123")));
+        assert_eq!(spaces()("   hello"), Some(((), "hello")));
+        assert_eq!(spaces()(""), None);
+        assert_eq!(spaces()("   "), Some(((), "")));
+    }
+
+    #[test]
+    fn space_test() {
+        assert_eq!(space()("   123"), Some((' ', "  123")));
+        assert_eq!(space()("\t  123"), Some(('\t', "  123")));
+        assert_eq!(space()("\n  123"), Some(('\n', "  123")));
+        assert_eq!(space()("\r  123"), Some(('\r', "  123")));
+        assert_eq!(space()("123"), None);
+        assert_eq!(space()(""), None);
+        assert_eq!(space()("   "), Some((' ', "  ")));
+    }
+
+    #[test]
     fn satisfy_test() {
         assert_eq!(satisfy(&|_| true)("123"), Some(('1', "23")));
         assert_eq!(
@@ -199,14 +222,6 @@ mod tests {
             satisfy(&|c: char| c.is_alphabetic())("abc"),
             Some(('a', "bc"))
         );
-    }
-
-    #[test]
-    fn spaces_test() {
-        assert_eq!(spaces()("   123"), Some(((), "123")));
-        assert_eq!(spaces()("   hello"), Some(((), "hello")));
-        assert_eq!(spaces()(""), None);
-        assert_eq!(spaces()("   "), Some(((), "")));
     }
 
     #[test]
