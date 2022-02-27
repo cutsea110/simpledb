@@ -74,6 +74,10 @@ pub fn end_of_line() -> impl Parser<char> {
     })
 }
 
+pub fn tab() -> impl Parser<char> {
+    satisfy(&|c: char| c == '\t')
+}
+
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
@@ -284,6 +288,13 @@ mod tests {
         assert_eq!(end_of_line()("123"), None);
         assert_eq!(end_of_line()("null"), None);
         assert_eq!(end_of_line()(""), None);
+    }
+
+    #[test]
+    fn tab_test() {
+        assert_eq!(tab()("\t123"), Some(('\t', "123")));
+        assert_eq!(tab()("\t\t123"), Some(('\t', "\t123")));
+        assert_eq!(tab()("123"), None);
     }
 
     #[test]
