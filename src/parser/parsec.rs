@@ -1,5 +1,6 @@
+use std::borrow::{Borrow, BorrowMut};
+
 use either::Either;
-use itertools::Itertools;
 use Either::{Left, Right};
 
 pub trait Parser<T>: Fn(&str) -> Option<(T, &str)> {}
@@ -149,6 +150,24 @@ pub fn choice<T>(ps: Vec<impl Parser<T>>) -> impl Parser<T> {
             }
         }
         None
+    })
+}
+
+pub fn count<T>(n: usize, parser: impl Parser<T>) -> impl Parser<Vec<T>> {
+    generalize_lifetime(move |s0| {
+        let mut s = s0;
+        let mut result = vec![];
+
+        for _ in 0..n {
+            if let Some((val, rest)) = parser(s) {
+                result.push(val);
+                s = rest;
+                continue;
+            }
+            return None;
+        }
+
+        Some((result, s))
     })
 }
 
@@ -468,6 +487,35 @@ mod tests {
         assert_eq!(parser("ABC"), None);
         assert_eq!(parser("\n\r"), None);
         assert_eq!(parser(""), None);
+    }
+
+    #[test]
+    fn count_test() {
+        let parser = count(3, digit());
+        assert_eq!(parser("12345"), Some((vec!['1', '2', '3'], "45")));
+        let hello = string("hello");
+        let world = string("world");
+        let parser = count(3, meet(hello, world));
+        assert_eq!(
+            parser("hellohelloworldhello"),
+            Some((vec![Left("hello"), Left("hello"), Right("world")], "hello"))
+        );
+        let parser = count(8, hex_digit());
+        assert_eq!(
+            parser("deadbeef"),
+            Some((vec!['d', 'e', 'a', 'd', 'b', 'e', 'e', 'f'], ""))
+        );
+        let parser = count(0, hex_digit());
+        assert_eq!(parser("deadbeef"), Some((vec![], "deadbeef")));
+        let parser = count(6, digit());
+        assert_eq!(parser("12345"), None);
+        let parser = count(0, digit());
+        assert_eq!(parser("12345"), Some((vec![], "12345")));
+        let parser = count(3, joinl(many(digit()), char(',')));
+        assert_eq!(
+            parser("123,45,6,789"),
+            Some((vec![vec!['1', '2', '3'], vec!['4', '5'], vec!['6']], "789"))
+        );
     }
 
     #[test]
