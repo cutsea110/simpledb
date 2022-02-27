@@ -284,6 +284,40 @@ pub fn sep_end_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Pa
     })
 }
 
+pub fn chainl<T, F>(parser: impl Parser<T>, op: impl Parser<F>, x: T) -> impl Parser<T>
+where
+    T: Clone,
+    F: Fn(T, T) -> T,
+{
+    generalize_lifetime(move |s| {
+        if let Some(res) = chainl1(&parser, &op)(s) {
+            return Some(res);
+        }
+
+        Some((x.clone(), s))
+    })
+}
+
+pub fn chainl1<T, F>(parser: impl Parser<T>, op: impl Parser<F>) -> impl Parser<T>
+where
+    T: Clone,
+    F: Fn(T, T) -> T,
+{
+    generalize_lifetime(move |mut s| {
+        if let Some((x, rest1)) = parser(s) {
+            s = rest1;
+            let mut result = x.clone();
+            while let Some(((f, y), rest2)) = join(&op, &parser)(s) {
+                s = rest2;
+                result = f(result, y);
+            }
+            return Some((result, s));
+        }
+
+        None
+    })
+}
+
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -809,5 +843,18 @@ mod tests {
         assert_eq!(parser("42"), Some((vec![42], "")));
         assert_eq!(parser("abc"), None);
         assert_eq!(parser(""), None);
+    }
+
+    #[test]
+    fn chainl_test() {
+        let plus = map(char('+'), |_| |x, y: i32| x + y);
+        let parser = chainl(natural(), plus, 0);
+        assert_eq!(parser(""), Some((0, "")));
+        assert_eq!(parser("1"), Some((1, "")));
+        assert_eq!(parser("1+2"), Some((3, "")));
+        assert_eq!(parser("1+2+3"), Some((6, "")));
+        assert_eq!(parser("1+2+3+4+5+6+7+8+9+10"), Some((55, "")));
+        assert_eq!(parser("1+"), Some((1, "+")));
+        assert_eq!(parser("28+14abc"), Some((42, "abc")));
     }
 }
