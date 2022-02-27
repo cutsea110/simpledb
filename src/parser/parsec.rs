@@ -207,19 +207,7 @@ pub fn optional<T>(parser: impl Parser<T>) -> impl Parser<()> {
 }
 
 pub fn skip_many1<T>(parser: impl Parser<T>) -> impl Parser<()> {
-    generalize_lifetime(move |mut s| {
-        if let Some((_, rest)) = parser(s) {
-            s = rest;
-        } else {
-            return None;
-        }
-
-        while let Some((_, rest)) = parser(s) {
-            s = rest;
-        }
-
-        Some(((), s))
-    })
+    map(many1(parser), |_| ())
 }
 
 pub fn many1<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
