@@ -18,7 +18,7 @@ pub fn one_of<'a>(cs: &'a str) -> impl Parser<char> + 'a {
             let mut iter = cs.chars();
             while let Some(c) = iter.next() {
                 if c == c0 {
-                    return Some((c, &s[1..]));
+                    return Some((c0, &s[1..]));
                 }
             }
             return None;
