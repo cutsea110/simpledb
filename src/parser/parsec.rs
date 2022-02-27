@@ -206,6 +206,22 @@ pub fn optional<T>(parser: impl Parser<T>) -> impl Parser<()> {
     })
 }
 
+pub fn skip_many1<T>(parser: impl Parser<T>) -> impl Parser<()> {
+    generalize_lifetime(move |mut s| {
+        if let Some((_, rest)) = parser(s) {
+            s = rest;
+        } else {
+            return None;
+        }
+
+        while let Some((_, rest)) = parser(s) {
+            s = rest;
+        }
+
+        Some(((), s))
+    })
+}
+
 pub fn many1<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     generalize_lifetime(move |s| {
         if let Some((val1, rest1)) = parser(s) {
@@ -600,6 +616,16 @@ mod tests {
         assert_eq!(parser("123"), Some(((), "23")));
         assert_eq!(parser("abc"), Some(((), "abc")));
         assert_eq!(parser(""), Some(((), "")));
+    }
+
+    #[test]
+    fn skip_many1_test() {
+        let parser = skip_many1(space());
+        assert_eq!(parser(" 123"), Some(((), "123")));
+        assert_eq!(parser("    123"), Some(((), "123")));
+        assert_eq!(parser("\t\nabc"), Some(((), "abc")));
+        assert_eq!(parser("123"), None);
+        assert_eq!(parser(""), None);
     }
 
     #[test]
