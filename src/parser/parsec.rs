@@ -857,4 +857,17 @@ mod tests {
         assert_eq!(parser("1+"), Some((1, "+")));
         assert_eq!(parser("28+14abc"), Some((42, "abc")));
     }
+
+    #[test]
+    fn chainl1_test() {
+        let plus = map(char('+'), |_| |x, y: i32| x + y);
+        let parser = chainl1(natural(), plus);
+        assert_eq!(parser(""), None);
+        assert_eq!(parser("1"), Some((1, "")));
+        assert_eq!(parser("1+2"), Some((3, "")));
+        assert_eq!(parser("1+2+3"), Some((6, "")));
+        assert_eq!(parser("1+2+3+4+5+6+7+8+9+10"), Some((55, "")));
+        assert_eq!(parser("1+"), Some((1, "+")));
+        assert_eq!(parser("28+14abc"), Some((42, "abc")));
+    }
 }
