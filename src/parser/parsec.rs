@@ -117,6 +117,10 @@ pub fn char(c: char) -> impl Parser<char> {
     })
 }
 
+pub fn any_char() -> impl Parser<char> {
+    satisfy(&|_| true)
+}
+
 pub fn satisfy(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
     generalize_lifetime(|s: &str| {
         let mut iter = s.chars();
@@ -389,6 +393,17 @@ mod tests {
         assert_eq!(char('a')("ABC"), None);
         assert_eq!(char(';')(";;;"), Some((';', ";;")));
         assert_eq!(char('\n')("\n\r\t"), Some(('\n', "\r\t")));
+    }
+
+    #[test]
+    fn any_char_test() {
+        assert_eq!(any_char()("abc"), Some(('a', "bc")));
+        assert_eq!(any_char()("ABC"), Some(('A', "BC")));
+        assert_eq!(any_char()(" ABC"), Some((' ', "ABC")));
+        assert_eq!(any_char()("\t ABC"), Some(('\t', " ABC")));
+        assert_eq!(any_char()("# ABC"), Some(('#', " ABC")));
+        assert_eq!(any_char()(", ABC"), Some((',', " ABC")));
+        assert_eq!(any_char()("123"), Some(('1', "23")));
     }
 
     #[test]
