@@ -98,11 +98,19 @@ pub fn digit() -> impl Parser<char> {
     satisfy(&|c: char| c.is_ascii_digit())
 }
 
-pub fn char(c: char) -> impl Parser<()> {
+pub fn hex_digit() -> impl Parser<char> {
+    satisfy(&|c: char| c.is_ascii_hexdigit())
+}
+
+pub fn oct_digit() -> impl Parser<char> {
+    satisfy(&|c: char| '0' <= c && c <= '7')
+}
+
+pub fn char(c: char) -> impl Parser<char> {
     generalize_lifetime(move |s| {
         let mut chars = s.chars();
         if chars.next() == Some(c) {
-            Some(((), chars.as_str()))
+            Some((c, &s[1..]))
         } else {
             None
         }
@@ -357,6 +365,33 @@ mod tests {
     }
 
     #[test]
+    fn hex_digit_test() {
+        assert_eq!(hex_digit()("123"), Some(('1', "23")));
+        assert_eq!(hex_digit()("abc"), Some(('a', "bc")));
+        assert_eq!(hex_digit()("ABC"), Some(('A', "BC")));
+        assert_eq!(hex_digit()("HEX"), None);
+        assert_eq!(hex_digit()(""), None);
+    }
+
+    #[test]
+    fn oct_digit_test() {
+        assert_eq!(oct_digit()("012"), Some(('0', "12")));
+        assert_eq!(oct_digit()("789"), Some(('7', "89")));
+        assert_eq!(oct_digit()("abc"), None);
+        assert_eq!(oct_digit()("ABC"), None);
+        assert_eq!(oct_digit()("HEX"), None);
+        assert_eq!(oct_digit()(""), None);
+    }
+
+    #[test]
+    fn char_test() {
+        assert_eq!(char('a')("abc"), Some(('a', "bc")));
+        assert_eq!(char('a')("ABC"), None);
+        assert_eq!(char(';')(";;;"), Some((';', ";;")));
+        assert_eq!(char('\n')("\n\r\t"), Some(('\n', "\r\t")));
+    }
+
+    #[test]
     fn satisfy_test() {
         assert_eq!(satisfy(&|_| true)("123"), Some(('1', "23")));
         assert_eq!(
@@ -483,7 +518,7 @@ mod tests {
 
     #[test]
     fn separated_test() {
-        let parser = separated(digits(), char(','));
+        let parser = separated(digits(), map(char(','), |_| ()));
         assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser(""), Some((vec![], "")));
     }
