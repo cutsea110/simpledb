@@ -8,36 +8,16 @@ where
     f
 }
 
-pub fn satisfy(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
-    generalize_lifetime(|s: &str| {
-        let mut iter = s.chars();
-        if let Some(c) = iter.next() {
-            if pred(c) {
-                return Some((c, iter.as_str()));
-            }
-        }
-        None
-    })
+// char
+
+pub fn spaces() -> impl Parser<()> {
+    map(many1(satisfy(&|c: char| c.is_whitespace())), |_| ())
 }
 
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
     })
-}
-
-pub fn digits() -> impl Parser<i32> {
-    map(many1(digit()), |ns: Vec<i32>| {
-        ns.iter().fold(0, |sum, x| 10 * sum + x)
-    })
-}
-
-pub fn space() -> impl Parser<()> {
-    map(many1(satisfy(&|c: char| c.is_whitespace())), |_| ())
-}
-
-pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
-    generalize_lifetime(move |s| parser(s.trim_start()))
 }
 
 pub fn char(c: char) -> impl Parser<()> {
@@ -51,23 +31,26 @@ pub fn char(c: char) -> impl Parser<()> {
     })
 }
 
+pub fn satisfy(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
+    generalize_lifetime(|s: &str| {
+        let mut iter = s.chars();
+        if let Some(c) = iter.next() {
+            if pred(c) {
+                return Some((c, iter.as_str()));
+            }
+        }
+        None
+    })
+}
+
 pub fn string(target: &'static str) -> impl Parser<()> {
     generalize_lifetime(move |s| s.strip_prefix(target).map(|rest| ((), rest)))
 }
 
-pub fn map<A, B>(parser: impl Parser<A>, f: impl Fn(A) -> B) -> impl Parser<B> {
-    generalize_lifetime(move |s| parser(s).map(|(val, rest)| (f(val), rest)))
-}
+// combinator
 
 pub fn choice<T>(parser1: impl Parser<T>, parser2: impl Parser<T>) -> impl Parser<T> {
     generalize_lifetime(move |s| parser1(s).or_else(|| parser2(s)))
-}
-
-pub fn join<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Parser<(A, B)> {
-    generalize_lifetime(move |s| {
-        parser1(s)
-            .and_then(|(val1, rest1)| parser2(rest1).map(|(val2, rest2)| ((val1, val2), rest2)))
-    })
 }
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -123,6 +106,29 @@ pub fn separated<T>(parser: impl Parser<T>, sep: impl Parser<()>) -> impl Parser
     })
 }
 
+// uncategorized
+
+pub fn digits() -> impl Parser<i32> {
+    map(many1(digit()), |ns: Vec<i32>| {
+        ns.iter().fold(0, |sum, x| 10 * sum + x)
+    })
+}
+
+pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
+    generalize_lifetime(move |s| parser(s.trim_start()))
+}
+
+pub fn map<A, B>(parser: impl Parser<A>, f: impl Fn(A) -> B) -> impl Parser<B> {
+    generalize_lifetime(move |s| parser(s).map(|(val, rest)| (f(val), rest)))
+}
+
+pub fn join<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Parser<(A, B)> {
+    generalize_lifetime(move |s| {
+        parser1(s)
+            .and_then(|(val1, rest1)| parser2(rest1).map(|(val2, rest2)| ((val1, val2), rest2)))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,11 +148,11 @@ mod tests {
     }
 
     #[test]
-    fn space_test() {
-        assert_eq!(space()("   123"), Some(((), "123")));
-        assert_eq!(space()("   hello"), Some(((), "hello")));
-        assert_eq!(space()(""), None);
-        assert_eq!(space()("   "), Some(((), "")));
+    fn spaces_test() {
+        assert_eq!(spaces()("   123"), Some(((), "123")));
+        assert_eq!(spaces()("   hello"), Some(((), "hello")));
+        assert_eq!(spaces()(""), None);
+        assert_eq!(spaces()("   "), Some(((), "")));
     }
 
     #[test]
