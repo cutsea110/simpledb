@@ -52,6 +52,10 @@ pub fn space() -> impl Parser<char> {
     satisfy(&|c: char| c.is_whitespace())
 }
 
+pub fn newline() -> impl Parser<char> {
+    satisfy(&|c: char| c == '\n')
+}
+
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
@@ -208,6 +212,16 @@ mod tests {
         assert_eq!(space()("123"), None);
         assert_eq!(space()(""), None);
         assert_eq!(space()("   "), Some((' ', "  ")));
+    }
+
+    #[test]
+    fn newline_test() {
+        assert_eq!(newline()("\n123"), Some(('\n', "123")));
+        assert_eq!(newline()("\n\n123"), Some(('\n', "\n123")));
+        assert_eq!(newline()("123"), None);
+        assert_eq!(newline()("\r123"), None);
+        assert_eq!(newline()("\t123"), None);
+        assert_eq!(newline()(" 123"), None);
     }
 
     #[test]
