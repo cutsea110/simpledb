@@ -342,6 +342,15 @@ mod tests {
     }
 
     #[test]
+    fn letter_test() {
+        assert_eq!(letter()("Hello"), Some(('H', "ello")));
+        assert_eq!(letter()("hello"), Some(('h', "ello")));
+        assert_eq!(letter()("123"), None);
+        assert_eq!(letter()("\n"), None);
+        assert_eq!(letter()(""), None);
+    }
+
+    #[test]
     fn satisfy_test() {
         assert_eq!(satisfy(&|_| true)("123"), Some(('1', "23")));
         assert_eq!(
