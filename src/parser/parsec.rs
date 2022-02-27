@@ -1,5 +1,3 @@
-use std::borrow::{Borrow, BorrowMut};
-
 use either::Either;
 use Either::{Left, Right};
 
@@ -169,6 +167,14 @@ pub fn count<T>(n: usize, parser: impl Parser<T>) -> impl Parser<Vec<T>> {
 
         Some((result, s))
     })
+}
+
+pub fn between<T, U, V>(
+    open: impl Parser<T>,
+    close: impl Parser<U>,
+    parser: impl Parser<V>,
+) -> impl Parser<V> {
+    joinl(joinr(open, parser), close)
 }
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -516,6 +522,31 @@ mod tests {
             parser("123,45,6,789"),
             Some((vec![vec!['1', '2', '3'], vec!['4', '5'], vec!['6']], "789"))
         );
+        assert_eq!(
+            parser(",123,45,6,789"),
+            Some((vec![vec![], vec!['1', '2', '3'], vec!['4', '5']], "6,789"))
+        );
+    }
+
+    #[test]
+    fn between_test() {
+        let parser = between(char('"'), char('"'), many(none_of("\"")));
+        assert_eq!(
+            parser("\"Hello World\" I said."),
+            Some((
+                vec!['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd'],
+                " I said."
+            ))
+        );
+        let d = many1(digit());
+        let csv = join(&d, many(joinr(char(','), &d)));
+        let parser = between(char('{'), char('}'), csv);
+        assert_eq!(
+            parser("{12,23,34}"),
+            Some(((vec!['1', '2'], vec![vec!['2', '3'], vec!['3', '4']]), ""))
+        );
+        assert_eq!(parser("{42}"), Some(((vec!['4', '2'], vec![]), "")));
+        assert_eq!(parser("{}"), None);
     }
 
     #[test]
