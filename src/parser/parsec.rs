@@ -233,7 +233,7 @@ pub fn digits() -> impl Parser<i32> {
 }
 
 pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
-    generalize_lifetime(move |s| parser(s.trim_start()))
+    joinl(parser, many(space()))
 }
 
 pub fn map<A, B>(parser: impl Parser<A>, f: impl Fn(A) -> B) -> impl Parser<B> {
@@ -457,8 +457,8 @@ mod tests {
     #[test]
     fn lexeme_test() {
         let parser = lexeme(digits());
-        assert_eq!(parser("   123   hello"), Some((123, "   hello")));
-        assert_eq!(parser("\r\n\t123\n\t\rhello"), Some((123, "\n\t\rhello")));
+        assert_eq!(parser("123   hello"), Some((123, "hello")));
+        assert_eq!(parser("123\r\n\thello"), Some((123, "hello")));
     }
 
     #[test]
@@ -572,7 +572,7 @@ mod tests {
         let parser = many(lexeme(digits()));
         assert_eq!(parser("10 20 30"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser(""), Some((vec![], "")));
-        assert_eq!(parser("10 hello"), Some((vec![10], " hello")));
+        assert_eq!(parser("10 hello"), Some((vec![10], "hello")));
 
         let parser = many(digit());
         assert_eq!(parser("123"), Some((vec!['1', '2', '3'], "")));
