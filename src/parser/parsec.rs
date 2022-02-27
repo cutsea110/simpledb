@@ -271,6 +271,10 @@ pub fn digits() -> impl Parser<i32> {
     })
 }
 
+pub fn symbol<'a>(s: &'static str) -> impl Parser<&'a str> {
+    lexeme(string(s))
+}
+
 pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
     joinl(parser, many(space()))
 }
@@ -491,6 +495,18 @@ mod tests {
     fn digits_test() {
         assert_eq!(digits()("123*456"), Some((123, "*456")));
         assert_eq!(digits()("ABCDEFG"), None);
+    }
+
+    #[test]
+    fn symbol_test() {
+        let parser = symbol("hello");
+        assert_eq!(parser("hello world"), Some(("hello", "world")));
+        assert_eq!(parser("hello    world"), Some(("hello", "world")));
+        assert_eq!(parser("hello"), Some(("hello", "")));
+        assert_eq!(parser("hello  "), Some(("hello", "")));
+        assert_eq!(parser("  "), None);
+        assert_eq!(parser("123"), None);
+        assert_eq!(parser(""), None);
     }
 
     #[test]
