@@ -255,6 +255,35 @@ pub fn end_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser
     many1(joinl(parser, sep))
 }
 
+pub fn sep_end_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+    generalize_lifetime(move |s| {
+        if let Some(res) = sep_end_by1(&parser, &sep)(s) {
+            return Some(res);
+        }
+        return Some((vec![], s));
+    })
+}
+
+pub fn sep_end_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+    generalize_lifetime(move |mut s| {
+        let mut result = vec![];
+        if let Some((val1, rest1)) = parser(s) {
+            result.push(val1);
+            s = rest1;
+            while let Some((val2, rest2)) = joinr(&sep, &parser)(s) {
+                result.push(val2);
+                s = rest2;
+            }
+            if let Some((_, rest3)) = sep(s) {
+                s = rest3;
+            }
+            return Some((result, s));
+        }
+
+        None
+    })
+}
+
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -754,6 +783,30 @@ mod tests {
         assert_eq!(parser("10;20;30"), Some((vec![10, 20], "30")));
         assert_eq!(parser("42;"), Some((vec![42], "")));
         assert_eq!(parser("42"), None);
+        assert_eq!(parser("abc"), None);
+        assert_eq!(parser(""), None);
+    }
+
+    #[test]
+    fn sep_end_by_test() {
+        let parser = sep_end_by(natural(), char(';'));
+        assert_eq!(parser("1;2;3;"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser("10;20;30;"), Some((vec![10, 20, 30], "")));
+        assert_eq!(parser("10;20;30"), Some((vec![10, 20, 30], "")));
+        assert_eq!(parser("42;"), Some((vec![42], "")));
+        assert_eq!(parser("42"), Some((vec![42], "")));
+        assert_eq!(parser("abc"), Some((vec![], "abc")));
+        assert_eq!(parser(""), Some((vec![], "")));
+    }
+
+    #[test]
+    fn sep_end_by1_test() {
+        let parser = sep_end_by1(natural(), char(';'));
+        assert_eq!(parser("1;2;3;"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser("10;20;30;"), Some((vec![10, 20, 30], "")));
+        assert_eq!(parser("10;20;30"), Some((vec![10, 20, 30], "")));
+        assert_eq!(parser("42;"), Some((vec![42], "")));
+        assert_eq!(parser("42"), Some((vec![42], "")));
         assert_eq!(parser("abc"), None);
         assert_eq!(parser(""), None);
     }
