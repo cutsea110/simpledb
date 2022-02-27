@@ -8,7 +8,7 @@ where
     f
 }
 
-pub fn sat(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
+pub fn satisfy(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
     generalize_lifetime(|s: &str| {
         let mut iter = s.chars();
         if let Some(c) = iter.next() {
@@ -20,27 +20,10 @@ pub fn sat(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
     })
 }
 
-pub fn sats<'a>(pred: &dyn Fn(char) -> bool, s: &'a str) -> Option<(Vec<char>, &'a str)> {
-    if !s.is_empty() {
-        let mut ret = vec![];
-        let mut pos = 0;
-        let mut iter = s.chars();
-        while let Some(ch) = iter.next() {
-            if !pred(ch) {
-                break;
-            }
-            pos += 1;
-            ret.push(ch);
-            continue;
-        }
-        return Some((ret, &s[pos..]));
-    }
-
-    None
-}
-
 pub fn digit() -> impl Parser<i32> {
-    map(sat(&|c: char| c.is_ascii_digit()), &|c: char| c as i32 - 48)
+    map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
+        c as i32 - 48
+    })
 }
 
 pub fn digits() -> impl Parser<i32> {
@@ -50,7 +33,7 @@ pub fn digits() -> impl Parser<i32> {
 }
 
 pub fn space() -> impl Parser<()> {
-    map(many1(sat(&|c: char| c.is_whitespace())), |_| ())
+    map(many1(satisfy(&|c: char| c.is_whitespace())), |_| ())
 }
 
 pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
@@ -145,28 +128,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sat_test() {
-        assert_eq!(sat(&|_| true)("123"), Some(('1', "23")));
-        assert_eq!(sat(&|c: char| c.is_ascii_digit())("123"), Some(('1', "23")));
-        assert_eq!(sat(&|c: char| c.is_ascii_digit())("abc"), None);
-        assert_eq!(sat(&|c: char| c.is_alphabetic())("abc"), Some(('a', "bc")));
-    }
-
-    #[test]
-    fn sats_test() {
-        assert_eq!(sats(&|_| true, "123"), Some((vec!['1', '2', '3'], "")));
-        assert_eq!(sats(&|_| true, ""), None);
+    fn satisfy_test() {
+        assert_eq!(satisfy(&|_| true)("123"), Some(('1', "23")));
         assert_eq!(
-            sats(&|c: char| c.is_ascii_digit(), "123abc"),
-            Some((vec!['1', '2', '3'], "abc"))
+            satisfy(&|c: char| c.is_ascii_digit())("123"),
+            Some(('1', "23"))
         );
+        assert_eq!(satisfy(&|c: char| c.is_ascii_digit())("abc"), None);
         assert_eq!(
-            sats(&|c: char| c.is_ascii_digit(), "abc"),
-            Some((vec![], "abc"))
-        );
-        assert_eq!(
-            sats(&|c: char| c.is_alphabetic(), "abc"),
-            Some((vec!['a', 'b', 'c'], ""))
+            satisfy(&|c: char| c.is_alphabetic())("abc"),
+            Some(('a', "bc"))
         );
     }
 
