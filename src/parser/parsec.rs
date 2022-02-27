@@ -351,6 +351,24 @@ where
     })
 }
 
+pub fn many_till<'a, T, U>(
+    parser: &'a impl Parser<T>,
+    end: &'a impl Parser<U>,
+) -> impl Parser<Vec<T>> + 'a {
+    generalize_lifetime(move |s| {
+        if let Some((_, rest)) = end(s) {
+            return Some((vec![], rest));
+        } else if let Some((val1, rest1)) = parser(s) {
+            if let Some((mut val2, rest2)) = many_till(parser, end)(rest1) {
+                val2.insert(0, val1);
+                return Some((val2, rest2));
+            }
+        }
+
+        None
+    })
+}
+
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -936,5 +954,28 @@ mod tests {
         assert_eq!(parser("1+2+3+4+5+6+7+8+9+10"), Some((55, "")));
         assert_eq!(parser("1+"), Some((1, "+")));
         assert_eq!(parser("28+14abc"), Some((42, "abc")));
+    }
+
+    #[test]
+    fn many_till_test() {
+        let d = digit();
+        let period = char('.');
+        let parser = many_till(&d, &period);
+        assert_eq!(parser("123.45"), Some((vec!['1', '2', '3'], "45")));
+        assert_eq!(parser(".123.45"), Some((vec![], "123.45")));
+        assert_eq!(parser("abc"), None);
+        assert_eq!(parser(""), None);
+
+        let begin = char('"');
+        let s = none_of("\"");
+        let end = char('"');
+        let parser = joinr(begin, many_till(&s, &end));
+        assert_eq!(
+            parser("\"Hello World\""),
+            Some((
+                vec!['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd'],
+                ""
+            ))
+        );
     }
 }
