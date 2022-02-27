@@ -1,4 +1,5 @@
 use either::Either;
+use itertools::Itertools;
 use Either::{Left, Right};
 
 pub trait Parser<T>: Fn(&str) -> Option<(T, &str)> {}
@@ -139,8 +140,16 @@ pub fn string<'a>(target: &'static str) -> impl Parser<&'a str> {
 
 // combinator
 
-pub fn choice<T>(parser1: impl Parser<T>, parser2: impl Parser<T>) -> impl Parser<T> {
-    generalize_lifetime(move |s| parser1(s).or_else(|| parser2(s)))
+pub fn choice<T>(ps: Vec<impl Parser<T>>) -> impl Parser<T> {
+    generalize_lifetime(move |s| {
+        let mut iter = ps.iter();
+        while let Some(parser) = iter.next() {
+            if let Some(res) = parser(s) {
+                return Some(res);
+            }
+        }
+        None
+    })
 }
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -450,16 +459,20 @@ mod tests {
     }
 
     #[test]
-    fn choce_test() {
-        let parser = choice(digits(), map(string("null"), |_| 0));
-        assert_eq!(parser("1234"), Some((1234, "")));
-        assert_eq!(parser("null"), Some((0, "")));
-        assert_eq!(parser("hoge"), None);
+    fn choice_test() {
+        let hello = string("hello");
+        let world = string("world");
+        let parser = choice(vec![hello, world]);
+        assert_eq!(parser("hello world"), Some(("hello", " world")));
+        assert_eq!(parser("world hello"), Some(("world", " hello")));
+        assert_eq!(parser("ABC"), None);
+        assert_eq!(parser("\n\r"), None);
+        assert_eq!(parser(""), None);
     }
 
     #[test]
     fn join_test() {
-        let plus_minus = choice(map(char('+'), |_| '+'), map(char('-'), |_| '-'));
+        let plus_minus = choice(vec![char('+'), char('-')]);
         let parser = join(plus_minus, digits());
         assert_eq!(parser("+123"), Some((('+', 123), "")));
         assert_eq!(parser("-123"), Some((('-', 123), "")));
@@ -472,7 +485,7 @@ mod tests {
 
     #[test]
     fn joinl_test() {
-        let plus_minus = choice(map(char('+'), |_| '+'), map(char('-'), |_| '-'));
+        let plus_minus = choice(vec![char('+'), char('-')]);
         let parser = joinl(plus_minus, digits());
         assert_eq!(parser("+123"), Some(('+', "")));
         assert_eq!(parser("-123"), Some(('-', "")));
@@ -485,7 +498,7 @@ mod tests {
 
     #[test]
     fn joinr_test() {
-        let plus_minus = choice(map(char('+'), |_| '+'), map(char('-'), |_| '-'));
+        let plus_minus = choice(vec![char('+'), char('-')]);
         let parser = joinr(plus_minus, digits());
         assert_eq!(parser("+123"), Some((123, "")));
         assert_eq!(parser("-123"), Some((123, "")));
