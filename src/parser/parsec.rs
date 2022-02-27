@@ -288,7 +288,7 @@ pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     })
 }
 
-pub fn digits() -> impl Parser<i32> {
+pub fn natural() -> impl Parser<i32> {
     map(many1(digit()), |ns: Vec<char>| {
         ns.iter().fold(0, |sum, &c| 10 * sum + ((c as i32) - 48))
     })
@@ -515,9 +515,9 @@ mod tests {
     }
 
     #[test]
-    fn digits_test() {
-        assert_eq!(digits()("123*456"), Some((123, "*456")));
-        assert_eq!(digits()("ABCDEFG"), None);
+    fn natural_test() {
+        assert_eq!(natural()("123*456"), Some((123, "*456")));
+        assert_eq!(natural()("ABCDEFG"), None);
     }
 
     #[test]
@@ -534,7 +534,7 @@ mod tests {
 
     #[test]
     fn lexeme_test() {
-        let parser = lexeme(digits());
+        let parser = lexeme(natural());
         assert_eq!(parser("123   hello"), Some((123, "hello")));
         assert_eq!(parser("123\r\n\thello"), Some((123, "hello")));
     }
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn map_test() {
-        let parser = map(digits(), |x| x + 1);
+        let parser = map(natural(), |x| x + 1);
         assert_eq!(parser("1"), Some((2, "")));
         assert_eq!(parser("X"), None);
     }
@@ -658,7 +658,7 @@ mod tests {
     #[test]
     fn join_test() {
         let plus_minus = choice(vec![char('+'), char('-')]);
-        let parser = join(plus_minus, digits());
+        let parser = join(plus_minus, natural());
         assert_eq!(parser("+123"), Some((('+', 123), "")));
         assert_eq!(parser("-123"), Some((('-', 123), "")));
         assert_eq!(parser("+"), None);
@@ -671,7 +671,7 @@ mod tests {
     #[test]
     fn joinl_test() {
         let plus_minus = choice(vec![char('+'), char('-')]);
-        let parser = joinl(plus_minus, digits());
+        let parser = joinl(plus_minus, natural());
         assert_eq!(parser("+123"), Some(('+', "")));
         assert_eq!(parser("-123"), Some(('-', "")));
         assert_eq!(parser("+"), None);
@@ -684,7 +684,7 @@ mod tests {
     #[test]
     fn joinr_test() {
         let plus_minus = choice(vec![char('+'), char('-')]);
-        let parser = joinr(plus_minus, digits());
+        let parser = joinr(plus_minus, natural());
         assert_eq!(parser("+123"), Some((123, "")));
         assert_eq!(parser("-123"), Some((123, "")));
         assert_eq!(parser("+"), None);
@@ -697,7 +697,7 @@ mod tests {
     #[test]
     fn meet_test() {
         let hello = string("hello");
-        let parser = meet(digits(), hello);
+        let parser = meet(natural(), hello);
         assert_eq!(parser("123hello"), Some((Left(123), "hello")));
         assert_eq!(parser("hello123"), Some((Right("hello"), "123")));
         assert_eq!(parser("bay123"), None);
@@ -706,7 +706,7 @@ mod tests {
 
     #[test]
     fn many_test() {
-        let parser = many(lexeme(digits()));
+        let parser = many(lexeme(natural()));
         assert_eq!(parser("10 20 30"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser(""), Some((vec![], "")));
         assert_eq!(parser("10 hello"), Some((vec![10], "hello")));
@@ -735,7 +735,7 @@ mod tests {
 
     #[test]
     fn separated_test() {
-        let parser = separated(digits(), map(char(','), |_| ()));
+        let parser = separated(natural(), map(char(','), |_| ()));
         assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser(""), Some((vec![], "")));
     }
