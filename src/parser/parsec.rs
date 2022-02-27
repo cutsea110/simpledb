@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 pub trait Parser<T>: Fn(&str) -> Option<(T, &str)> {}
 impl<T, F> Parser<T> for F where F: Fn(&str) -> Option<(T, &str)> {}
 
@@ -9,6 +11,22 @@ where
 }
 
 // char
+
+pub fn one_of<'a>(cs: &'a str) -> impl Parser<char> + 'a {
+    generalize_lifetime(move |s| {
+        if let Some(c0) = s.chars().next() {
+            let mut iter = cs.chars();
+            while let Some(c) = iter.next() {
+                if c == c0 {
+                    return Some((c, &s[1..]));
+                }
+            }
+            return None;
+        }
+
+        None
+    })
+}
 
 pub fn spaces() -> impl Parser<()> {
     map(many1(satisfy(&|c: char| c.is_whitespace())), |_| ())
@@ -132,6 +150,14 @@ pub fn join<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Pars
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn one_of_test() {
+        assert_eq!(one_of("aeiou")("abc"), Some(('a', "bc")));
+        assert_eq!(one_of("1234")("4567"), Some(('4', "567")));
+        assert_eq!(one_of("aeiou")("bcd"), None);
+        assert_eq!(one_of("aeiou")("ABC"), None);
+    }
 
     #[test]
     fn satisfy_test() {
