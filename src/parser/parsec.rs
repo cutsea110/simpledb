@@ -197,6 +197,16 @@ pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
     })
 }
 
+pub fn optional<T>(parser: impl Parser<T>) -> impl Parser<()> {
+    generalize_lifetime(move |s| {
+        if let Some((_, rest)) = parser(s) {
+            return Some(((), rest));
+        }
+
+        Some(((), s))
+    })
+}
+
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     generalize_lifetime(move |mut s| {
         let mut ret = vec![];
@@ -583,6 +593,14 @@ mod tests {
         assert_eq!(parser("123"), Some((Some('1'), "23")));
         assert_eq!(parser("abc"), None);
         assert_eq!(parser(""), None);
+    }
+
+    #[test]
+    fn optional_test() {
+        let parser = optional(digit());
+        assert_eq!(parser("123"), Some(((), "23")));
+        assert_eq!(parser("abc"), Some(((), "abc")));
+        assert_eq!(parser(""), Some(((), "")));
     }
 
     #[test]
