@@ -94,10 +94,8 @@ pub fn letter() -> impl Parser<char> {
     satisfy(&|c: char| c.is_alphabetic())
 }
 
-pub fn digit() -> impl Parser<i32> {
-    map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
-        c as i32 - 48
-    })
+pub fn digit() -> impl Parser<char> {
+    satisfy(&|c: char| c.is_ascii_digit())
 }
 
 pub fn char(c: char) -> impl Parser<()> {
@@ -189,8 +187,8 @@ pub fn separated<T>(parser: impl Parser<T>, sep: impl Parser<()>) -> impl Parser
 // uncategorized
 
 pub fn digits() -> impl Parser<i32> {
-    map(many1(digit()), |ns: Vec<i32>| {
-        ns.iter().fold(0, |sum, x| 10 * sum + x)
+    map(many1(digit()), |ns: Vec<char>| {
+        ns.iter().fold(0, |sum, &c| 10 * sum + ((c as i32) - 48))
     })
 }
 
@@ -351,6 +349,14 @@ mod tests {
     }
 
     #[test]
+    fn digit_test() {
+        assert_eq!(digit()("123"), Some(('1', "23")));
+        assert_eq!(digit()("abc"), None);
+        assert_eq!(digit()("ABC"), None);
+        assert_eq!(digit()(""), None);
+    }
+
+    #[test]
     fn satisfy_test() {
         assert_eq!(satisfy(&|_| true)("123"), Some(('1', "23")));
         assert_eq!(
@@ -362,12 +368,6 @@ mod tests {
             satisfy(&|c: char| c.is_alphabetic())("abc"),
             Some(('a', "bc"))
         );
-    }
-
-    #[test]
-    fn digit_test() {
-        assert_eq!(digit()("123"), Some((1, "23")));
-        assert_eq!(digit()(""), None);
     }
 
     #[test]
@@ -464,21 +464,21 @@ mod tests {
         assert_eq!(parser("10 hello"), Some((vec![10], " hello")));
 
         let parser = many(digit());
-        assert_eq!(parser("123"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser("123"), Some((vec!['1', '2', '3'], "")));
         assert_eq!(parser(""), Some((vec![], "")));
         assert_eq!(parser("abc"), Some((vec![], "abc")));
-        assert_eq!(parser("10 20 30"), Some((vec![1, 0], " 20 30")));
-        assert_eq!(parser("123abc"), Some((vec![1, 2, 3], "abc")));
+        assert_eq!(parser("10 20 30"), Some((vec!['1', '0'], " 20 30")));
+        assert_eq!(parser("123abc"), Some((vec!['1', '2', '3'], "abc")));
     }
 
     #[test]
     fn many1_test() {
         let parser = many1(digit());
-        assert_eq!(parser("123"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser("123"), Some((vec!['1', '2', '3'], "")));
         assert_eq!(parser(""), None);
         assert_eq!(parser("abc"), None);
-        assert_eq!(parser("10 20 30"), Some((vec![1, 0], " 20 30")));
-        assert_eq!(parser("123abc"), Some((vec![1, 2, 3], "abc")));
+        assert_eq!(parser("10 20 30"), Some((vec!['1', '0'], " 20 30")));
+        assert_eq!(parser("123abc"), Some((vec!['1', '2', '3'], "abc")));
     }
 
     #[test]
