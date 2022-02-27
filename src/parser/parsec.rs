@@ -177,6 +177,16 @@ pub fn between<T, U, V>(
     joinl(joinr(open, parser), close)
 }
 
+pub fn option<T: Clone>(parser: impl Parser<T>, x: T) -> impl Parser<T> {
+    generalize_lifetime(move |s| {
+        if let Some((val, rest)) = parser(s) {
+            return Some((val, rest));
+        }
+
+        Some((x.clone(), s))
+    })
+}
+
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     generalize_lifetime(move |mut s| {
         let mut ret = vec![];
@@ -547,6 +557,14 @@ mod tests {
         );
         assert_eq!(parser("{42}"), Some(((vec!['4', '2'], vec![]), "")));
         assert_eq!(parser("{}"), None);
+    }
+
+    #[test]
+    fn option_test() {
+        let parser = option(digit(), '0');
+        assert_eq!(parser("123"), Some(('1', "23")));
+        assert_eq!(parser("abc"), Some(('0', "abc")));
+        assert_eq!(parser(""), Some(('0', "")));
     }
 
     #[test]
