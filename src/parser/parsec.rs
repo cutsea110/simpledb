@@ -251,6 +251,10 @@ pub fn end_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<
     many(joinl(parser, sep))
 }
 
+pub fn end_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+    many1(joinl(parser, sep))
+}
+
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -740,5 +744,17 @@ mod tests {
         assert_eq!(parser("42"), Some((vec![], "42")));
         assert_eq!(parser("abc"), Some((vec![], "abc")));
         assert_eq!(parser(""), Some((vec![], "")));
+    }
+
+    #[test]
+    fn end_by1_test() {
+        let parser = end_by1(natural(), char(';'));
+        assert_eq!(parser("1;2;3;"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser("10;20;30;"), Some((vec![10, 20, 30], "")));
+        assert_eq!(parser("10;20;30"), Some((vec![10, 20], "30")));
+        assert_eq!(parser("42;"), Some((vec![42], "")));
+        assert_eq!(parser("42"), None);
+        assert_eq!(parser("abc"), None);
+        assert_eq!(parser(""), None);
     }
 }
