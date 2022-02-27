@@ -1,4 +1,5 @@
-use itertools::Itertools;
+use either::Either;
+use Either::{Left, Right};
 
 pub trait Parser<T>: Fn(&str) -> Option<(T, &str)> {}
 impl<T, F> Parser<T> for F where F: Fn(&str) -> Option<(T, &str)> {}
@@ -89,8 +90,8 @@ pub fn satisfy(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
     })
 }
 
-pub fn string(target: &'static str) -> impl Parser<()> {
-    generalize_lifetime(move |s| s.strip_prefix(target).map(|rest| ((), rest)))
+pub fn string<'a>(target: &'static str) -> impl Parser<&'a str> {
+    generalize_lifetime(move |s| s.strip_prefix(target).map(|rest| (target, rest)))
 }
 
 // combinator
@@ -184,6 +185,19 @@ pub fn joinl<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Par
 // *>
 pub fn joinr<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Parser<B> {
     map(join(parser1, parser2), |(_, y)| y)
+}
+
+// <|>
+pub fn meet<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Parser<Either<A, B>> {
+    generalize_lifetime(move |s| {
+        if let Some((val1, rest1)) = parser1(s) {
+            return Some((Left(val1), rest1));
+        } else if let Some((val2, rest2)) = parser2(s) {
+            return Some((Right(val2), rest2));
+        } else {
+            return None;
+        }
+    })
 }
 
 #[cfg(test)]
@@ -284,9 +298,11 @@ mod tests {
 
     #[test]
     fn string_test() {
-        let parser = string("hello");
-        assert_eq!(parser("hello world"), Some(((), " world")));
-        assert_eq!(parser("hell world"), None);
+        let parser = string("cut");
+        assert_eq!(parser("cut fruits"), Some(("cut", " fruits")));
+        assert_eq!(parser("cutty"), Some(("cut", "ty")));
+        assert_eq!(parser("scutter"), None);
+        assert_eq!(parser("cu oxygen"), None);
     }
 
     #[test]
@@ -315,6 +331,42 @@ mod tests {
         assert_eq!(parser("123"), None);
         assert_eq!(parser("-abc"), None);
         assert_eq!(parser("*abc"), None);
+    }
+
+    #[test]
+    fn joinl_test() {
+        let plus_minus = choice(map(char('+'), |_| '+'), map(char('-'), |_| '-'));
+        let parser = joinl(plus_minus, digits());
+        assert_eq!(parser("+123"), Some(('+', "")));
+        assert_eq!(parser("-123"), Some(('-', "")));
+        assert_eq!(parser("+"), None);
+        assert_eq!(parser("-"), None);
+        assert_eq!(parser("123"), None);
+        assert_eq!(parser("-abc"), None);
+        assert_eq!(parser("*abc"), None);
+    }
+
+    #[test]
+    fn joinr_test() {
+        let plus_minus = choice(map(char('+'), |_| '+'), map(char('-'), |_| '-'));
+        let parser = joinr(plus_minus, digits());
+        assert_eq!(parser("+123"), Some((123, "")));
+        assert_eq!(parser("-123"), Some((123, "")));
+        assert_eq!(parser("+"), None);
+        assert_eq!(parser("-"), None);
+        assert_eq!(parser("123"), None);
+        assert_eq!(parser("-abc"), None);
+        assert_eq!(parser("*abc"), None);
+    }
+
+    #[test]
+    fn meet_test() {
+        let hello = string("hello");
+        let parser = meet(digits(), hello);
+        assert_eq!(parser("123hello"), Some((Left(123), "hello")));
+        assert_eq!(parser("hello123"), Some((Right("hello"), "123")));
+        assert_eq!(parser("bay123"), None);
+        assert_eq!(parser(""), None);
     }
 
     #[test]
