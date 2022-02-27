@@ -57,7 +57,7 @@ pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
     generalize_lifetime(move |s| parser(s.trim_start()))
 }
 
-pub fn chr(c: char) -> impl Parser<()> {
+pub fn char(c: char) -> impl Parser<()> {
     generalize_lifetime(move |s| {
         let mut chars = s.chars();
         if chars.next() == Some(c) {
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn join_test() {
-        let plus_minus = choice(map(chr('+'), |_| '+'), map(chr('-'), |_| '-'));
+        let plus_minus = choice(map(char('+'), |_| '+'), map(char('-'), |_| '-'));
         let parser = join(plus_minus, digits());
         assert_eq!(parser("+123"), Some((('+', 123), "")));
         assert_eq!(parser("-123"), Some((('-', 123), "")));
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn separated_test() {
-        let parser = separated(digits(), chr(','));
+        let parser = separated(digits(), char(','));
         assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser(""), Some((vec![], "")));
     }
