@@ -317,6 +317,40 @@ where
     })
 }
 
+pub fn chainr<'a, T, F>(
+    parser: &'a impl Parser<T>,
+    op: &'a impl Parser<F>,
+    x: T,
+) -> impl Parser<T> + 'a
+where
+    T: Clone + 'a,
+    F: Fn(T, T) -> T,
+{
+    generalize_lifetime(move |s| {
+        if let Some(res) = chainr1(parser, op)(s) {
+            return Some(res);
+        }
+
+        Some((x.clone(), s))
+    })
+}
+
+pub fn chainr1<'a, T, F>(parser: &'a impl Parser<T>, op: &'a impl Parser<F>) -> impl Parser<T> + 'a
+where
+    F: Fn(T, T) -> T,
+{
+    generalize_lifetime(move |s| {
+        if let Some((x, rest1)) = parser(s) {
+            if let Some(((f, y), rest2)) = join(op, chainr1(parser, op))(rest1) {
+                return Some((f(x, y), rest2));
+            }
+            return Some((x, rest1));
+        }
+
+        None
+    })
+}
+
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -861,6 +895,34 @@ mod tests {
     fn chainl1_test() {
         let plus = map(char('+'), |_| |x, y: i32| x + y);
         let parser = chainl1(natural(), plus);
+        assert_eq!(parser(""), None);
+        assert_eq!(parser("1"), Some((1, "")));
+        assert_eq!(parser("1+2"), Some((3, "")));
+        assert_eq!(parser("1+2+3"), Some((6, "")));
+        assert_eq!(parser("1+2+3+4+5+6+7+8+9+10"), Some((55, "")));
+        assert_eq!(parser("1+"), Some((1, "+")));
+        assert_eq!(parser("28+14abc"), Some((42, "abc")));
+    }
+
+    #[test]
+    fn chainr_test() {
+        let nat = natural();
+        let plus = map(char('+'), |_| |x, y: i32| x + y);
+        let parser = chainr(&nat, &plus, 0);
+        assert_eq!(parser(""), Some((0, "")));
+        assert_eq!(parser("1"), Some((1, "")));
+        assert_eq!(parser("1+2"), Some((3, "")));
+        assert_eq!(parser("1+2+3"), Some((6, "")));
+        assert_eq!(parser("1+2+3+4+5+6+7+8+9+10"), Some((55, "")));
+        assert_eq!(parser("1+"), Some((1, "+")));
+        assert_eq!(parser("28+14abc"), Some((42, "abc")));
+    }
+
+    #[test]
+    fn chainr1_test() {
+        let nat = natural();
+        let plus = map(char('+'), |_| |x, y: i32| x + y);
+        let parser = chainr1(&nat, &plus);
         assert_eq!(parser(""), None);
         assert_eq!(parser("1"), Some((1, "")));
         assert_eq!(parser("1+2"), Some((3, "")));
