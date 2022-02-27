@@ -731,7 +731,16 @@ mod tests {
     }
 
     #[test]
-    fn sep_by_test() {}
+    fn sep_by_test() {
+        let parser = sep_by(natural(), char(','));
+        assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
+        assert_eq!(parser("10,20,30"), Some((vec![10, 20, 30], "")));
+        assert_eq!(parser("10,20,30,"), Some((vec![10, 20, 30], ",")));
+        assert_eq!(parser("42"), Some((vec![42], "")));
+        assert_eq!(parser("42,"), Some((vec![42], ",")));
+        assert_eq!(parser("abc"), Some((vec![], "abc")));
+        assert_eq!(parser(""), Some((vec![], "")));
+    }
 
     #[test]
     fn separated_test() {
