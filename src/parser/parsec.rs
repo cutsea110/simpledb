@@ -224,6 +224,29 @@ pub fn many1<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     })
 }
 
+pub fn sep_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+    generalize_lifetime(move |s| {
+        if let Some(res) = sep_by1(&parser, &sep)(s) {
+            return Some(res);
+        }
+        return Some((vec![], s));
+    })
+}
+
+pub fn sep_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+    generalize_lifetime(move |s| {
+        if let Some((val1, rest1)) = parser(s) {
+            if let Some((mut val2, rest2)) = many(joinr(&sep, &parser))(rest1) {
+                val2.insert(0, val1);
+                return Some((val2, rest2));
+            }
+            return Some((vec![val1], rest1));
+        }
+
+        None
+    })
+}
+
 pub fn separated<T>(parser: impl Parser<T>, sep: impl Parser<()>) -> impl Parser<Vec<T>> {
     generalize_lifetime(move |mut s| {
         let mut ret = vec![];
@@ -706,6 +729,9 @@ mod tests {
         assert_eq!(parser("10 20 30"), Some((vec!['1', '0'], " 20 30")));
         assert_eq!(parser("123abc"), Some((vec!['1', '2', '3'], "abc")));
     }
+
+    #[test]
+    fn sep_by_test() {}
 
     #[test]
     fn separated_test() {
