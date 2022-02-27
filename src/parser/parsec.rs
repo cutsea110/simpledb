@@ -56,6 +56,10 @@ pub fn newline() -> impl Parser<char> {
     satisfy(&|c: char| c == '\n')
 }
 
+pub fn crlf() -> impl Parser<char> {
+    joinr(satisfy(&|c: char| c == '\r'), newline())
+}
+
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
@@ -164,11 +168,22 @@ pub fn map<A, B>(parser: impl Parser<A>, f: impl Fn(A) -> B) -> impl Parser<B> {
     generalize_lifetime(move |s| parser(s).map(|(val, rest)| (f(val), rest)))
 }
 
+// <*>
 pub fn join<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Parser<(A, B)> {
     generalize_lifetime(move |s| {
         parser1(s)
             .and_then(|(val1, rest1)| parser2(rest1).map(|(val2, rest2)| ((val1, val2), rest2)))
     })
+}
+
+// <*
+pub fn joinl<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Parser<A> {
+    map(join(parser1, parser2), |(x, _)| x)
+}
+
+// *>
+pub fn joinr<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Parser<B> {
+    map(join(parser1, parser2), |(_, y)| y)
 }
 
 #[cfg(test)]
@@ -222,6 +237,16 @@ mod tests {
         assert_eq!(newline()("\r123"), None);
         assert_eq!(newline()("\t123"), None);
         assert_eq!(newline()(" 123"), None);
+    }
+
+    #[test]
+    fn crlf_test() {
+        assert_eq!(crlf()("\r\n123"), Some(('\n', "123")));
+        assert_eq!(crlf()("\n\r123"), None);
+        assert_eq!(crlf()("\r\r\n"), None);
+        assert_eq!(crlf()("123"), None);
+        assert_eq!(crlf()("null"), None);
+        assert_eq!(crlf()(""), None);
     }
 
     #[test]
