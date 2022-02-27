@@ -284,13 +284,17 @@ pub fn sep_end_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Pa
     })
 }
 
-pub fn chainl<T, F>(parser: impl Parser<T>, op: impl Parser<F>, x: T) -> impl Parser<T>
+pub fn chainl<'a, T, F>(
+    parser: &'a impl Parser<T>,
+    op: &'a impl Parser<F>,
+    x: T,
+) -> impl Parser<T> + 'a
 where
-    T: Clone,
+    T: Clone + 'a,
     F: Fn(T, T) -> T,
 {
     generalize_lifetime(move |s| {
-        if let Some(res) = chainl1(&parser, &op)(s) {
+        if let Some(res) = chainl1(parser, op)(s) {
             return Some(res);
         }
 
@@ -298,7 +302,7 @@ where
     })
 }
 
-pub fn chainl1<T, F>(parser: impl Parser<T>, op: impl Parser<F>) -> impl Parser<T>
+pub fn chainl1<'a, T, F>(parser: &'a impl Parser<T>, op: &'a impl Parser<F>) -> impl Parser<T> + 'a
 where
     F: Fn(T, T) -> T,
 {
@@ -306,7 +310,7 @@ where
         if let Some((x, rest1)) = parser(s) {
             s = rest1;
             let mut result = x;
-            while let Some(((f, y), rest2)) = join(&op, &parser)(s) {
+            while let Some(((f, y), rest2)) = join(op, parser)(s) {
                 s = rest2;
                 result = f(result, y);
             }
@@ -880,8 +884,9 @@ mod tests {
 
     #[test]
     fn chainl_test() {
+        let nat = natural();
         let plus = map(char('+'), |_| |x, y: i32| x + y);
-        let parser = chainl(natural(), plus, 0);
+        let parser = chainl(&nat, &plus, 0);
         assert_eq!(parser(""), Some((0, "")));
         assert_eq!(parser("1"), Some((1, "")));
         assert_eq!(parser("1+2"), Some((3, "")));
@@ -893,8 +898,9 @@ mod tests {
 
     #[test]
     fn chainl1_test() {
+        let nat = natural();
         let plus = map(char('+'), |_| |x, y: i32| x + y);
-        let parser = chainl1(natural(), plus);
+        let parser = chainl1(&nat, &plus);
         assert_eq!(parser(""), None);
         assert_eq!(parser("1"), Some((1, "")));
         assert_eq!(parser("1+2"), Some((3, "")));
