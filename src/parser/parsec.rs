@@ -247,34 +247,6 @@ pub fn sep_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser
     })
 }
 
-pub fn separated<T>(parser: impl Parser<T>, sep: impl Parser<()>) -> impl Parser<Vec<T>> {
-    generalize_lifetime(move |mut s| {
-        let mut ret = vec![];
-        match parser(s) {
-            Some((val, rest)) => {
-                ret.push(val);
-                s = rest;
-            }
-            None => return Some((ret, s)),
-        }
-
-        while let Some((_, rest)) = sep(s) {
-            s = rest;
-            match parser(s) {
-                Some((val, rest)) => {
-                    ret.push(val);
-                    s = rest;
-                }
-                None => {
-                    return None;
-                }
-            }
-        }
-
-        Some((ret, s))
-    })
-}
-
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -739,13 +711,6 @@ mod tests {
         assert_eq!(parser("42"), Some((vec![42], "")));
         assert_eq!(parser("42,"), Some((vec![42], ",")));
         assert_eq!(parser("abc"), Some((vec![], "abc")));
-        assert_eq!(parser(""), Some((vec![], "")));
-    }
-
-    #[test]
-    fn separated_test() {
-        let parser = separated(natural(), map(char(','), |_| ()));
-        assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser(""), Some((vec![], "")));
     }
 }
