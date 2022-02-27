@@ -177,13 +177,23 @@ pub fn between<T, U, V>(
     joinl(joinr(open, parser), close)
 }
 
-pub fn option<T: Clone>(parser: impl Parser<T>, x: T) -> impl Parser<T> {
+pub fn option<T: Clone>(x: T, parser: impl Parser<T>) -> impl Parser<T> {
     generalize_lifetime(move |s| {
         if let Some((val, rest)) = parser(s) {
             return Some((val, rest));
         }
 
         Some((x.clone(), s))
+    })
+}
+
+pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
+    generalize_lifetime(move |s| {
+        if let Some((val, rest)) = parser(s) {
+            return Some((Some(val), rest));
+        }
+
+        None
     })
 }
 
@@ -561,10 +571,18 @@ mod tests {
 
     #[test]
     fn option_test() {
-        let parser = option(digit(), '0');
+        let parser = option('0', digit());
         assert_eq!(parser("123"), Some(('1', "23")));
         assert_eq!(parser("abc"), Some(('0', "abc")));
         assert_eq!(parser(""), Some(('0', "")));
+    }
+
+    #[test]
+    fn option_maybe_test() {
+        let parser = option_maybe(digit());
+        assert_eq!(parser("123"), Some((Some('1'), "23")));
+        assert_eq!(parser("abc"), None);
+        assert_eq!(parser(""), None);
     }
 
     #[test]
