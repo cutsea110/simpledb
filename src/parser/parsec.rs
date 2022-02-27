@@ -86,6 +86,14 @@ pub fn lower() -> impl Parser<char> {
     satisfy(&|c: char| c.is_lowercase())
 }
 
+pub fn alpha_num() -> impl Parser<char> {
+    satisfy(&|c: char| c.is_alphanumeric())
+}
+
+pub fn letter() -> impl Parser<char> {
+    satisfy(&|c: char| c.is_alphabetic())
+}
+
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
@@ -303,6 +311,7 @@ mod tests {
         assert_eq!(tab()("\t123"), Some(('\t', "123")));
         assert_eq!(tab()("\t\t123"), Some(('\t', "\t123")));
         assert_eq!(tab()("123"), None);
+        assert_eq!(tab()(""), None);
     }
 
     #[test]
@@ -310,6 +319,8 @@ mod tests {
         assert_eq!(upper()("Hello"), Some(('H', "ello")));
         assert_eq!(upper()("hello"), None);
         assert_eq!(upper()("123"), None);
+        assert_eq!(upper()("\n"), None);
+        assert_eq!(upper()(""), None);
     }
 
     #[test]
@@ -317,6 +328,17 @@ mod tests {
         assert_eq!(lower()("Hello"), None);
         assert_eq!(lower()("hello"), Some(('h', "ello")));
         assert_eq!(lower()("123"), None);
+        assert_eq!(lower()("\n"), None);
+        assert_eq!(lower()(""), None);
+    }
+
+    #[test]
+    fn alpha_num_test() {
+        assert_eq!(alpha_num()("Hello"), Some(('H', "ello")));
+        assert_eq!(alpha_num()("hello"), Some(('h', "ello")));
+        assert_eq!(alpha_num()("123"), Some(('1', "23")));
+        assert_eq!(alpha_num()("\n"), None);
+        assert_eq!(alpha_num()(""), None);
     }
 
     #[test]
