@@ -78,6 +78,14 @@ pub fn tab() -> impl Parser<char> {
     satisfy(&|c: char| c == '\t')
 }
 
+pub fn upper() -> impl Parser<char> {
+    satisfy(&|c: char| c.is_uppercase())
+}
+
+pub fn lower() -> impl Parser<char> {
+    satisfy(&|c: char| c.is_lowercase())
+}
+
 pub fn digit() -> impl Parser<i32> {
     map(satisfy(&|c: char| c.is_ascii_digit()), &|c: char| {
         c as i32 - 48
@@ -295,6 +303,20 @@ mod tests {
         assert_eq!(tab()("\t123"), Some(('\t', "123")));
         assert_eq!(tab()("\t\t123"), Some(('\t', "\t123")));
         assert_eq!(tab()("123"), None);
+    }
+
+    #[test]
+    fn upper_test() {
+        assert_eq!(upper()("Hello"), Some(('H', "ello")));
+        assert_eq!(upper()("hello"), None);
+        assert_eq!(upper()("123"), None);
+    }
+
+    #[test]
+    fn lower_test() {
+        assert_eq!(lower()("Hello"), None);
+        assert_eq!(lower()("hello"), Some(('h', "ello")));
+        assert_eq!(lower()("123"), None);
     }
 
     #[test]
