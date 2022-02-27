@@ -43,19 +43,14 @@ pub fn digit() -> impl Parser<i32> {
     map(sat(&|c: char| c.is_ascii_digit()), &|c: char| c as i32 - 48)
 }
 
-pub fn digits(s: &str) -> Option<(i32, &str)> {
-    if let Some((ns, rest)) = sats(&|c: char| c.is_ascii_digit(), s) {
-        if !ns.is_empty() {
-            let num: String = ns.into_iter().collect();
-            return Some((num.parse().unwrap(), rest));
-        }
-    }
-
-    None
+pub fn digits() -> impl Parser<i32> {
+    map(many1(digit()), |ns: Vec<i32>| {
+        ns.iter().fold(0, |sum, x| 10 * sum + x)
+    })
 }
 
 pub fn space() -> impl Parser<()> {
-    map(sat(&|c: char| c.is_whitespace()), |_| ())
+    map(many1(sat(&|c: char| c.is_whitespace())), |_| ())
 }
 
 pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
@@ -103,14 +98,18 @@ pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     })
 }
 
-pub fn many1<T>(parser: impl Parser<T> + Copy) -> impl Parser<Vec<T>> {
-    map(
-        join(parser, many(parser)),
-        |(val1, mut val2): (T, Vec<T>)| {
-            val2.insert(0, val1);
-            val2
-        },
-    )
+pub fn many1<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
+    generalize_lifetime(move |s| {
+        if let Some((val1, rest1)) = parser(s) {
+            if let Some((mut val2, rest2)) = many(&parser)(rest1) {
+                val2.insert(0, val1);
+                return Some((val2, rest2));
+            }
+            return Some((vec![val1], rest1));
+        }
+
+        None
+    })
 }
 
 pub fn separated<T>(parser: impl Parser<T>, sep: impl Parser<()>) -> impl Parser<Vec<T>> {
@@ -147,10 +146,10 @@ mod tests {
 
     #[test]
     fn sat_test() {
-        assert_eq!(sat(&|_| true, "123"), Some(('1', "23")));
-        assert_eq!(sat(&|c: char| c.is_ascii_digit(), "123"), Some(('1', "23")));
-        assert_eq!(sat(&|c: char| c.is_ascii_digit(), "abc"), None);
-        assert_eq!(sat(&|c: char| c.is_alphabetic(), "abc"), Some(('a', "bc")));
+        assert_eq!(sat(&|_| true)("123"), Some(('1', "23")));
+        assert_eq!(sat(&|c: char| c.is_ascii_digit())("123"), Some(('1', "23")));
+        assert_eq!(sat(&|c: char| c.is_ascii_digit())("abc"), None);
+        assert_eq!(sat(&|c: char| c.is_alphabetic())("abc"), Some(('a', "bc")));
     }
 
     #[test]
@@ -173,27 +172,27 @@ mod tests {
 
     #[test]
     fn space_test() {
-        assert_eq!(space("   123"), Some(((), "123")));
-        assert_eq!(space("   hello"), Some(((), "hello")));
-        assert_eq!(space(""), None);
-        assert_eq!(space("   "), Some(((), "")));
+        assert_eq!(space()("   123"), Some(((), "123")));
+        assert_eq!(space()("   hello"), Some(((), "hello")));
+        assert_eq!(space()(""), None);
+        assert_eq!(space()("   "), Some(((), "")));
     }
 
     #[test]
     fn digit_test() {
-        assert_eq!(digit("123"), Some((1, "23")));
-        assert_eq!(digit(""), None);
+        assert_eq!(digit()("123"), Some((1, "23")));
+        assert_eq!(digit()(""), None);
     }
 
     #[test]
     fn digits_test() {
-        assert_eq!(digits("123*456"), Some((123, "*456")));
-        assert_eq!(digits("ABCDEFG"), None);
+        assert_eq!(digits()("123*456"), Some((123, "*456")));
+        assert_eq!(digits()("ABCDEFG"), None);
     }
 
     #[test]
     fn lexeme_test() {
-        let parser = lexeme(digits);
+        let parser = lexeme(digits());
         assert_eq!(parser("   123   hello"), Some((123, "   hello")));
         assert_eq!(parser("\r\n\t123\n\t\rhello"), Some((123, "\n\t\rhello")));
     }
@@ -207,14 +206,14 @@ mod tests {
 
     #[test]
     fn map_test() {
-        let parser = map(digits, |x| x + 1);
+        let parser = map(digits(), |x| x + 1);
         assert_eq!(parser("1"), Some((2, "")));
         assert_eq!(parser("X"), None);
     }
 
     #[test]
     fn choce_test() {
-        let parser = choice(digits, map(string("null"), |_| 0));
+        let parser = choice(digits(), map(string("null"), |_| 0));
         assert_eq!(parser("1234"), Some((1234, "")));
         assert_eq!(parser("null"), Some((0, "")));
         assert_eq!(parser("hoge"), None);
@@ -223,7 +222,7 @@ mod tests {
     #[test]
     fn join_test() {
         let plus_minus = choice(map(chr('+'), |_| '+'), map(chr('-'), |_| '-'));
-        let parser = join(plus_minus, digits);
+        let parser = join(plus_minus, digits());
         assert_eq!(parser("+123"), Some((('+', 123), "")));
         assert_eq!(parser("-123"), Some((('-', 123), "")));
         assert_eq!(parser("+"), None);
@@ -235,12 +234,12 @@ mod tests {
 
     #[test]
     fn many_test() {
-        let parser = many(lexeme(digits));
+        let parser = many(lexeme(digits()));
         assert_eq!(parser("10 20 30"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser(""), Some((vec![], "")));
         assert_eq!(parser("10 hello"), Some((vec![10], " hello")));
 
-        let parser = many(digit);
+        let parser = many(digit());
         assert_eq!(parser("123"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser(""), Some((vec![], "")));
         assert_eq!(parser("abc"), Some((vec![], "abc")));
@@ -250,7 +249,7 @@ mod tests {
 
     #[test]
     fn many1_test() {
-        let parser = many1(digit);
+        let parser = many1(digit());
         assert_eq!(parser("123"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser(""), None);
         assert_eq!(parser("abc"), None);
@@ -260,7 +259,7 @@ mod tests {
 
     #[test]
     fn separated_test() {
-        let parser = separated(digits, chr(','));
+        let parser = separated(digits(), chr(','));
         assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser(""), Some((vec![], "")));
     }
