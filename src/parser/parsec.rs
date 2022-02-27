@@ -28,6 +28,22 @@ pub fn one_of<'a>(cs: &'a str) -> impl Parser<char> + 'a {
     })
 }
 
+pub fn none_of<'a>(cs: &'a str) -> impl Parser<char> + 'a {
+    generalize_lifetime(move |s| {
+        if let Some(c0) = s.chars().next() {
+            let mut iter = cs.chars();
+            while let Some(c) = iter.next() {
+                if c == c0 {
+                    return None;
+                }
+            }
+            return Some((c0, &s[1..]));
+        }
+
+        None
+    })
+}
+
 pub fn spaces() -> impl Parser<()> {
     map(many1(satisfy(&|c: char| c.is_whitespace())), |_| ())
 }
@@ -157,6 +173,18 @@ mod tests {
         assert_eq!(one_of("1234")("4567"), Some(('4', "567")));
         assert_eq!(one_of("aeiou")("bcd"), None);
         assert_eq!(one_of("aeiou")("ABC"), None);
+        assert_eq!(one_of("aeiou")(""), None);
+        assert_eq!(one_of("")("ABC"), None);
+    }
+
+    #[test]
+    fn none_of_test() {
+        assert_eq!(none_of("aeiou")("abc"), None);
+        assert_eq!(none_of("1234")("4567"), None);
+        assert_eq!(none_of("aeiou")("bcd"), Some(('b', "cd")));
+        assert_eq!(none_of("aeiou")("ABC"), Some(('A', "BC")));
+        assert_eq!(none_of("aeiou")(""), None);
+        assert_eq!(none_of("")("ABC"), Some(('A', "BC")));
     }
 
     #[test]
