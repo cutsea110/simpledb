@@ -509,7 +509,7 @@ pub fn natural() -> impl Parser<i32> {
     })
 }
 
-pub fn symbol<'a>(s: &'static str) -> impl Parser<&'a str> {
+pub fn symbol<'a>(s: &'a str) -> impl Parser<&'a str> {
     lexeme(string(s))
 }
 
