@@ -377,6 +377,26 @@ where
     generalize_lifetime(move |s| Some((x.clone(), s)))
 }
 
+pub fn try_<T, U, V, F>(
+    parser: impl Parser<T>,
+    next: impl Parser<U>,
+    f: F,
+) -> impl Parser<Either<T, V>>
+where
+    F: Fn(T, U) -> V,
+{
+    generalize_lifetime(move |s| {
+        if let Some((val1, rest1)) = parser(s) {
+            if let Some((val2, rest2)) = next(rest1) {
+                return Some((Right(f(val1, val2)), rest2));
+            }
+            return Some((Left(val1), rest1));
+        }
+
+        return None;
+    })
+}
+
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     many_accum(
         |x, xs| {
