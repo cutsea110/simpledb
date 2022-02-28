@@ -114,6 +114,19 @@ pub fn char(c: char) -> impl Parser<char> {
     })
 }
 
+pub fn char_ignore_case(c: char) -> impl Parser<char> {
+    let eq_ignore_case = |c1: char, c2: char| c1.to_ascii_lowercase() == c2.to_ascii_lowercase();
+
+    generalize_lifetime(move |s| {
+        if let Some(c1) = s.chars().next() {
+            if eq_ignore_case(c1, c) {
+                return Some((c, &s[1..]));
+            }
+        }
+        None
+    })
+}
+
 pub fn any_char() -> impl Parser<char> {
     satisfy(|_| true)
 }
@@ -650,6 +663,16 @@ mod tests {
     }
 
     #[test]
+    fn char_ignore_case_test() {
+        assert_eq!(char_ignore_case('a')("abc"), Some(('a', "bc")));
+        assert_eq!(char_ignore_case('a')("ABC"), Some(('a', "BC")));
+        assert_eq!(char_ignore_case('A')("abc"), Some(('A', "bc")));
+        assert_eq!(char_ignore_case('a')("XYZ"), None);
+        assert_eq!(char_ignore_case(';')(";;;"), Some((';', ";;")));
+        assert_eq!(char_ignore_case('\n')("\n\r\t"), Some(('\n', "\r\t")));
+    }
+
+    #[test]
     fn any_char_test() {
         assert_eq!(any_char()("abc"), Some(('a', "bc")));
         assert_eq!(any_char()("ABC"), Some(('A', "BC")));
@@ -706,6 +729,14 @@ mod tests {
         assert_eq!(parser("cutty"), Some(("cut", "ty")));
         assert_eq!(parser("scutter"), None);
         assert_eq!(parser("cu oxygen"), None);
+    }
+
+    #[test]
+    fn string_ignore_case_test() {
+        let parser = string_ignore_case("Hello");
+        assert_eq!(parser("hello"), Some(("Hello", "")));
+        assert_eq!(parser("HELLO"), Some(("Hello", "")));
+        assert_eq!(parser("HELLOW!"), Some(("Hello", "W!")));
     }
 
     #[test]
