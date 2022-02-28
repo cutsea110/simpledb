@@ -190,10 +190,7 @@ where
     })
 }
 
-pub fn option_maybe<'a, T>(parser: &'a impl Parser<T>) -> impl Parser<Option<T>> + 'a
-where
-    T: 'a,
-{
+pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
     map(meet(parser, lit(())), |val| match val {
         Left(v) => Some(v),
         Right(_) => None,
