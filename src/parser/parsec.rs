@@ -138,6 +138,17 @@ pub fn string(target: &str) -> impl Parser<&str> {
     generalize_lifetime(move |s| s.strip_prefix(target).map(|rest| (target, rest)))
 }
 
+pub fn string_ignore_case(target: &str) -> impl Parser<&str> {
+    let eq_ignore_case = |c1: &str, c2: &str| c1.to_ascii_lowercase() == c2.to_ascii_lowercase();
+
+    generalize_lifetime(move |s| {
+        if eq_ignore_case(&s[0..target.len()], target) {
+            return Some((target, &s[target.len()..]));
+        }
+        None
+    })
+}
+
 // combinator
 
 pub fn choice<T>(ps: Vec<impl Parser<T>>) -> impl Parser<T> {
