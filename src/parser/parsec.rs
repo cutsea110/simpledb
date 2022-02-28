@@ -4,7 +4,7 @@ use Either::{Left, Right};
 pub trait Parser<T>: Fn(&str) -> Option<(T, &str)> {}
 impl<T, F> Parser<T> for F where F: Fn(&str) -> Option<(T, &str)> {}
 
-//
+// ref. https://zenn.dev/nojima/articles/05cb9ffa0f993b
 fn generalize_lifetime<T, F>(f: F) -> F
 where
     F: Fn(&str) -> Option<(T, &str)>,
