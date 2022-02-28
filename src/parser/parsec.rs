@@ -172,11 +172,16 @@ where
     })
 }
 
-pub fn between<T, U, V>(
-    open: impl Parser<T>,
-    close: impl Parser<U>,
-    parser: impl Parser<V>,
-) -> impl Parser<V> {
+pub fn between<'a, T, U, V>(
+    open: &'a impl Parser<T>,
+    close: &'a impl Parser<U>,
+    parser: &'a impl Parser<V>,
+) -> impl Parser<V> + 'a
+where
+    T: 'a,
+    U: 'a,
+    V: 'a,
+{
     joinl(joinr(open, parser), close)
 }
 
@@ -751,7 +756,9 @@ mod tests {
 
     #[test]
     fn between_test() {
-        let parser = between(char('"'), char('"'), many(none_of("\"")));
+        let dq = char('"');
+        let except_dqs = many(none_of("\""));
+        let parser = between(&dq, &dq, &except_dqs);
         assert_eq!(
             parser("\"Hello World\" I said."),
             Some((
@@ -761,7 +768,9 @@ mod tests {
         );
         let d = many1(digit());
         let csv = join(&d, many(joinr(char(','), &d)));
-        let parser = between(char('{'), char('}'), csv);
+        let lbrace = char('{');
+        let rbrace = char('}');
+        let parser = between(&lbrace, &rbrace, &csv);
         assert_eq!(
             parser("{12,23,34}"),
             Some(((vec!['1', '2'], vec![vec!['2', '3'], vec!['3', '4']]), ""))
@@ -1052,7 +1061,9 @@ mod tests {
 
         let nat = lexeme(natural());
         let csv = join(&nat, many(joinr(char(','), &nat)));
-        let parser = look_ahead(between(char('{'), char('}'), csv));
+        let lbrace = char('{');
+        let rbrace = char('}');
+        let parser = look_ahead(between(&lbrace, &rbrace, &csv));
         assert_eq!(
             parser("{12 ,23 ,34}"),
             Some(((12, vec![23, 34]), "{12 ,23 ,34}"))
