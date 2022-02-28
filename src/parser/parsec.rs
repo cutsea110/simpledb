@@ -172,16 +172,11 @@ where
     })
 }
 
-pub fn between<'a, T, U, V>(
-    open: &'a impl Parser<T>,
-    close: &'a impl Parser<U>,
-    parser: &'a impl Parser<V>,
-) -> impl Parser<V> + 'a
-where
-    T: 'a,
-    U: 'a,
-    V: 'a,
-{
+pub fn between<T, U, V>(
+    open: impl Parser<T>,
+    close: impl Parser<U>,
+    parser: impl Parser<V>,
+) -> impl Parser<V> {
     joinl(joinr(open, parser), close)
 }
 
