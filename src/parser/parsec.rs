@@ -118,8 +118,11 @@ pub fn any_char() -> impl Parser<char> {
     satisfy(&|_| true)
 }
 
-pub fn satisfy(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
-    generalize_lifetime(|s: &str| {
+pub fn satisfy<'a, F>(pred: F) -> impl Parser<char> + 'a
+where
+    F: Fn(char) -> bool + 'a,
+{
+    generalize_lifetime(move |s: &str| {
         let mut iter = s.chars();
         if let Some(c) = iter.next() {
             if pred(c) {
