@@ -47,7 +47,7 @@ pub fn none_of<'a>(cs: &'a str) -> impl Parser<char> + 'a {
 }
 
 pub fn spaces() -> impl Parser<()> {
-    map(many1(satisfy(&|c: char| c.is_whitespace())), |_| ())
+    skip_many(space())
 }
 
 pub fn space() -> impl Parser<char> {
@@ -409,20 +409,6 @@ where
     })
 }
 
-pub fn natural() -> impl Parser<i32> {
-    map(many1(digit()), |ns: Vec<char>| {
-        ns.iter().fold(0, |sum, &c| 10 * sum + ((c as i32) - 48))
-    })
-}
-
-pub fn symbol<'a>(s: &'static str) -> impl Parser<&'a str> {
-    lexeme(string(s))
-}
-
-pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
-    joinl(parser, many(space()))
-}
-
 pub fn map<A, B>(parser: impl Parser<A>, f: impl Fn(A) -> B) -> impl Parser<B> {
     generalize_lifetime(move |s| parser(s).map(|(val, rest)| (f(val), rest)))
 }
@@ -458,6 +444,22 @@ pub fn meet<A, B>(parser1: impl Parser<A>, parser2: impl Parser<B>) -> impl Pars
     })
 }
 
+// crafts
+
+pub fn natural() -> impl Parser<i32> {
+    map(many1(digit()), |ns: Vec<char>| {
+        ns.iter().fold(0, |sum, &c| 10 * sum + ((c as i32) - 48))
+    })
+}
+
+pub fn symbol<'a>(s: &'static str) -> impl Parser<&'a str> {
+    lexeme(string(s))
+}
+
+pub fn lexeme<T>(parser: impl Parser<T>) -> impl Parser<T> {
+    joinl(parser, many(space()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -486,7 +488,7 @@ mod tests {
     fn spaces_test() {
         assert_eq!(spaces()("   123"), Some(((), "123")));
         assert_eq!(spaces()("   hello"), Some(((), "hello")));
-        assert_eq!(spaces()(""), None);
+        assert_eq!(spaces()(""), Some(((), "")));
         assert_eq!(spaces()("   "), Some(((), "")));
     }
 
