@@ -50,15 +50,15 @@ pub fn spaces() -> impl Parser<()> {
 }
 
 pub fn space() -> impl Parser<char> {
-    satisfy(&|c: char| c.is_whitespace())
+    satisfy(|c: char| c.is_whitespace())
 }
 
 pub fn newline() -> impl Parser<char> {
-    satisfy(&|c: char| c == '\n')
+    satisfy(|c: char| c == '\n')
 }
 
 pub fn crlf() -> impl Parser<char> {
-    joinr(satisfy(&|c: char| c == '\r'), newline())
+    joinr(satisfy(|c: char| c == '\r'), newline())
 }
 
 pub fn end_of_line() -> impl Parser<char> {
@@ -69,35 +69,35 @@ pub fn end_of_line() -> impl Parser<char> {
 }
 
 pub fn tab() -> impl Parser<char> {
-    satisfy(&|c: char| c == '\t')
+    satisfy(|c: char| c == '\t')
 }
 
 pub fn upper() -> impl Parser<char> {
-    satisfy(&|c: char| c.is_uppercase())
+    satisfy(|c: char| c.is_uppercase())
 }
 
 pub fn lower() -> impl Parser<char> {
-    satisfy(&|c: char| c.is_lowercase())
+    satisfy(|c: char| c.is_lowercase())
 }
 
 pub fn alpha_num() -> impl Parser<char> {
-    satisfy(&|c: char| c.is_alphanumeric())
+    satisfy(|c: char| c.is_alphanumeric())
 }
 
 pub fn letter() -> impl Parser<char> {
-    satisfy(&|c: char| c.is_alphabetic())
+    satisfy(|c: char| c.is_alphabetic())
 }
 
 pub fn digit() -> impl Parser<char> {
-    satisfy(&|c: char| c.is_ascii_digit())
+    satisfy(|c: char| c.is_ascii_digit())
 }
 
 pub fn hex_digit() -> impl Parser<char> {
-    satisfy(&|c: char| c.is_ascii_hexdigit())
+    satisfy(|c: char| c.is_ascii_hexdigit())
 }
 
 pub fn oct_digit() -> impl Parser<char> {
-    satisfy(&|c: char| '0' <= c && c <= '7')
+    satisfy(|c: char| '0' <= c && c <= '7')
 }
 
 // TODO: refactor: use satisfy
@@ -115,14 +115,14 @@ pub fn char(c: char) -> impl Parser<char> {
 }
 
 pub fn any_char() -> impl Parser<char> {
-    satisfy(&|_| true)
+    satisfy(|_| true)
 }
 
 pub fn satisfy<'a, F>(pred: F) -> impl Parser<char> + 'a
 where
     F: Fn(char) -> bool + 'a,
 {
-    generalize_lifetime(move |s: &str| {
+    generalize_lifetime(move |s| {
         let mut iter = s.chars();
         if let Some(c) = iter.next() {
             if pred(c) {
