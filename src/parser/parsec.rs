@@ -1,5 +1,4 @@
-use either::Either;
-use Either::{Left, Right};
+use either::Either::{self, *};
 
 pub trait Parser<T>: Fn(&str) -> Option<(T, &str)> {}
 impl<T, F> Parser<T> for F where F: Fn(&str) -> Option<(T, &str)> {}
@@ -101,14 +100,17 @@ pub fn oct_digit() -> impl Parser<char> {
     satisfy(&|c: char| '0' <= c && c <= '7')
 }
 
+// TODO: refactor: use satisfy
 pub fn char(c: char) -> impl Parser<char> {
     generalize_lifetime(move |s| {
-        let mut chars = s.chars();
-        if chars.next() == Some(c) {
-            Some((c, &s[1..]))
-        } else {
-            None
+        let mut iter = s.chars();
+        if let Some(ch) = iter.next() {
+            if ch == c {
+                return Some((ch, iter.as_str()));
+            }
         }
+
+        None
     })
 }
 
@@ -124,6 +126,7 @@ pub fn satisfy(pred: &'static dyn Fn(char) -> bool) -> impl Parser<char> {
                 return Some((c, iter.as_str()));
             }
         }
+
         None
     })
 }
@@ -172,13 +175,17 @@ pub fn between<T, U, V>(
 }
 
 pub fn option<T: Clone>(x: T, parser: impl Parser<T>) -> impl Parser<T> {
-    generalize_lifetime(move |s| {
-        if let Some((val, rest)) = parser(s) {
-            return Some((val, rest));
-        }
-
-        Some((x.clone(), s))
+    map(meet(parser, lit(x)), |val| match val {
+        Left(v) => v,
+        Right(v) => v,
     })
+}
+
+pub fn lit<T>(x: T) -> impl Parser<T>
+where
+    T: Clone,
+{
+    generalize_lifetime(move |s| Some((x.clone(), s)))
 }
 
 pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
