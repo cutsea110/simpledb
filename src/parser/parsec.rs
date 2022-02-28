@@ -134,7 +134,7 @@ where
     })
 }
 
-pub fn string<'a>(target: &'static str) -> impl Parser<&'a str> {
+pub fn string<'a>(target: &'a str) -> impl Parser<&'a str> {
     generalize_lifetime(move |s| s.strip_prefix(target).map(|rest| (target, rest)))
 }
 
