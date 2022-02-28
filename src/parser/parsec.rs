@@ -185,7 +185,10 @@ where
     joinl(joinr(open, parser), close)
 }
 
-pub fn option<T: Clone>(x: T, parser: impl Parser<T>) -> impl Parser<T> {
+pub fn option<'a, T>(x: T, parser: &'a impl Parser<T>) -> impl Parser<T> + 'a
+where
+    T: Clone + 'a,
+{
     map(meet(parser, lit(x)), |val| match val {
         Left(v) => v,
         Right(v) => v,
@@ -781,7 +784,8 @@ mod tests {
 
     #[test]
     fn option_test() {
-        let parser = option('0', digit());
+        let d = digit();
+        let parser = option('0', &d);
         assert_eq!(parser("123"), Some(('1', "23")));
         assert_eq!(parser("abc"), Some(('0', "abc")));
         assert_eq!(parser(""), Some(('0', "")));
