@@ -205,7 +205,10 @@ where
     })
 }
 
-pub fn optional<T>(parser: impl Parser<T>) -> impl Parser<()> {
+pub fn optional<'a, T>(parser: &'a impl Parser<T>) -> impl Parser<()> + 'a
+where
+    T: 'a,
+{
     map(meet(parser, lit(())), |_| ())
 }
 
@@ -805,7 +808,8 @@ mod tests {
 
     #[test]
     fn optional_test() {
-        let parser = optional(digit());
+        let d = digit();
+        let parser = optional(&d);
         assert_eq!(parser("123"), Some(((), "23")));
         assert_eq!(parser("abc"), Some(((), "abc")));
         assert_eq!(parser(""), Some(((), "")));
