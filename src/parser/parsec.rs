@@ -307,9 +307,9 @@ where
     })
 }
 
-pub fn chainl1<T, F>(parser: impl Parser<T>, op: impl Parser<F>) -> impl Parser<T>
+pub fn chainl1<'a, T, F>(parser: &'a impl Parser<T>, op: &'a impl Parser<F>) -> impl Parser<T> + 'a
 where
-    F: Fn(T, T) -> T,
+    F: Fn(T, T) -> T + 'a,
 {
     generalize_lifetime(move |mut s| {
         if let Some((x, rest1)) = parser(s) {
@@ -1005,7 +1005,7 @@ mod tests {
     fn chainl1_test() {
         let nat = natural();
         let plus = map(char('+'), |_| |x, y: i32| x + y);
-        let parser = chainl1(nat, plus);
+        let parser = chainl1(&nat, &plus);
         assert_eq!(parser(""), None);
         assert_eq!(parser("1"), Some((1, "")));
         assert_eq!(parser("1+2"), Some((3, "")));
