@@ -228,10 +228,7 @@ pub fn sep_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<
     })
 }
 
-pub fn sep_by1<'a, T, U>(
-    parser: &'a impl Parser<T>,
-    sep: &'a impl Parser<U>,
-) -> impl Parser<Vec<T>> + 'a {
+pub fn sep_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
     generalize_lifetime(move |s| {
         if let Some((val1, rest1)) = parser(s) {
             if let Some((mut val2, rest2)) = many(joinr(&sep, &parser))(rest1) {
