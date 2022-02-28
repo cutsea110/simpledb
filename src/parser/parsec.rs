@@ -180,9 +180,9 @@ pub fn between<T, U, V>(
     joinl(joinr(open, parser), close)
 }
 
-pub fn option<'a, T>(x: T, parser: &'a impl Parser<T>) -> impl Parser<T> + 'a
+pub fn option<T>(x: T, parser: impl Parser<T>) -> impl Parser<T>
 where
-    T: Clone + 'a,
+    T: Clone,
 {
     map(meet(parser, lit(x)), |val| match val {
         Left(v) => v,
