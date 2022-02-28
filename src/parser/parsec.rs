@@ -63,15 +63,9 @@ pub fn crlf() -> impl Parser<char> {
 }
 
 pub fn end_of_line() -> impl Parser<char> {
-    generalize_lifetime(move |s: &str| {
-        if let Some((val, rest)) = meet(newline(), crlf())(s) {
-            match val {
-                Left(c) => return Some((c, rest)),
-                Right(c) => return Some((c, rest)),
-            }
-        }
-
-        None
+    map(meet(newline(), crlf()), |x| match x {
+        Left(c) => c,
+        Right(c) => c,
     })
 }
 
