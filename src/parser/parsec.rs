@@ -195,7 +195,10 @@ where
     })
 }
 
-pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
+pub fn option_maybe<'a, T>(parser: &'a impl Parser<T>) -> impl Parser<Option<T>> + 'a
+where
+    T: 'a,
+{
     map(meet(parser, lit(())), |val| match val {
         Left(v) => Some(v),
         Right(_) => None,
@@ -793,7 +796,8 @@ mod tests {
 
     #[test]
     fn option_maybe_test() {
-        let parser = option_maybe(digit());
+        let d = digit();
+        let parser = option_maybe(&d);
         assert_eq!(parser("123"), Some((Some('1'), "23")));
         assert_eq!(parser("abc"), Some((None, "abc")));
         assert_eq!(parser(""), Some((None, "")));
