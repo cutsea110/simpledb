@@ -242,7 +242,10 @@ pub fn sep_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<
     })
 }
 
-pub fn sep_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+pub fn sep_by1<'a, T, U>(
+    parser: &'a impl Parser<T>,
+    sep: &'a impl Parser<U>,
+) -> impl Parser<Vec<T>> + 'a {
     generalize_lifetime(move |s| {
         if let Some((val1, rest1)) = parser(s) {
             if let Some((mut val2, rest2)) = many(joinr(&sep, &parser))(rest1) {
@@ -256,7 +259,14 @@ pub fn sep_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser
     })
 }
 
-pub fn end_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+pub fn end_by<'a, T, U>(
+    parser: &'a impl Parser<T>,
+    sep: &'a impl Parser<U>,
+) -> impl Parser<Vec<T>> + 'a
+where
+    T: 'a,
+    U: 'a,
+{
     many(joinl(parser, sep))
 }
 
@@ -936,7 +946,9 @@ mod tests {
 
     #[test]
     fn sep_by1_test() {
-        let parser = sep_by1(natural(), char(','));
+        let comma = char(',');
+        let nat = natural();
+        let parser = sep_by1(&nat, &comma);
         assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser("10,20,30"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser("10,20,30,"), Some((vec![10, 20, 30], ",")));
@@ -948,7 +960,9 @@ mod tests {
 
     #[test]
     fn end_by_test() {
-        let parser = end_by(natural(), char(';'));
+        let semi = char(';');
+        let nat = natural();
+        let parser = end_by(&nat, &semi);
         assert_eq!(parser("1;2;3;"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser("10;20;30;"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser("10;20;30"), Some((vec![10, 20], "30")));
