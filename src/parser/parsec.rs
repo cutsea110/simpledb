@@ -134,7 +134,7 @@ where
     })
 }
 
-pub fn string<'a>(target: &'a str) -> impl Parser<&'a str> {
+pub fn string(target: &str) -> impl Parser<&str> {
     generalize_lifetime(move |s| s.strip_prefix(target).map(|rest| (target, rest)))
 }
 
@@ -509,7 +509,7 @@ pub fn natural() -> impl Parser<i32> {
     })
 }
 
-pub fn symbol<'a>(s: &'a str) -> impl Parser<&'a str> {
+pub fn symbol(s: &str) -> impl Parser<&str> {
     lexeme(string(s))
 }
 
