@@ -248,14 +248,7 @@ pub fn sep_by1<'a, T, U>(
     })
 }
 
-pub fn end_by<'a, T, U>(
-    parser: &'a impl Parser<T>,
-    sep: &'a impl Parser<U>,
-) -> impl Parser<Vec<T>> + 'a
-where
-    T: 'a,
-    U: 'a,
-{
+pub fn end_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
     many(joinl(parser, sep))
 }
 
