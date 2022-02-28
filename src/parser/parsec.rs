@@ -293,10 +293,14 @@ pub fn sep_end_by1<'a, T, U>(
     })
 }
 
-pub fn chainl<T, F>(parser: impl Parser<T>, op: impl Parser<F>, x: T) -> impl Parser<T>
+pub fn chainl<'a, T, F>(
+    parser: &'a impl Parser<T>,
+    op: &'a impl Parser<F>,
+    x: T,
+) -> impl Parser<T> + 'a
 where
-    T: Clone,
-    F: Fn(T, T) -> T,
+    T: Clone + 'a,
+    F: Fn(T, T) -> T + 'a,
 {
     generalize_lifetime(move |s| {
         if let Some(res) = chainl1(&parser, &op)(s) {
@@ -991,7 +995,7 @@ mod tests {
     fn chainl_test() {
         let nat = natural();
         let plus = map(char('+'), |_| |x, y: i32| x + y);
-        let parser = chainl(nat, plus, 0);
+        let parser = chainl(&nat, &plus, 0);
         assert_eq!(parser(""), Some((0, "")));
         assert_eq!(parser("1"), Some((1, "")));
         assert_eq!(parser("1+2"), Some((3, "")));
