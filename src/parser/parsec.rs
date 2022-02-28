@@ -260,7 +260,14 @@ pub fn end_by<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<
     many(joinl(parser, sep))
 }
 
-pub fn end_by1<T, U>(parser: impl Parser<T>, sep: impl Parser<U>) -> impl Parser<Vec<T>> {
+pub fn end_by1<'a, T, U>(
+    parser: &'a impl Parser<T>,
+    sep: &'a impl Parser<U>,
+) -> impl Parser<Vec<T>> + 'a
+where
+    T: 'a,
+    U: 'a,
+{
     many1(joinl(parser, sep))
 }
 
@@ -953,7 +960,9 @@ mod tests {
 
     #[test]
     fn end_by1_test() {
-        let parser = end_by1(natural(), char(';'));
+        let semi = char(';');
+        let nat = natural();
+        let parser = end_by1(&nat, &semi);
         assert_eq!(parser("1;2;3;"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser("10;20;30;"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser("10;20;30"), Some((vec![10, 20], "30")));
