@@ -320,7 +320,7 @@ where
     F: Fn(T, T) -> T + 'a,
 {
     generalize_lifetime(move |s| {
-        if let Some(res) = chainl1(&parser, &op)(s) {
+        if let Some(res) = chainl1(parser, op)(s) {
             return Some(res);
         }
 
@@ -336,7 +336,7 @@ where
         if let Some((x, rest1)) = parser(s) {
             s = rest1;
             let mut result = x;
-            while let Some(((f, y), rest2)) = join(&op, &parser)(s) {
+            while let Some(((f, y), rest2)) = join(op, parser)(s) {
                 s = rest2;
                 result = f(result, y);
             }
