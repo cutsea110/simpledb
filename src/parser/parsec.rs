@@ -181,13 +181,6 @@ pub fn option<T: Clone>(x: T, parser: impl Parser<T>) -> impl Parser<T> {
     })
 }
 
-pub fn lit<T>(x: T) -> impl Parser<T>
-where
-    T: Clone,
-{
-    generalize_lifetime(move |s| Some((x.clone(), s)))
-}
-
 pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
     map(meet(parser, lit(())), |val| match val {
         Left(v) => Some(v),
@@ -199,17 +192,11 @@ pub fn optional<T>(parser: impl Parser<T>) -> impl Parser<()> {
     map(meet(parser, lit(())), |_| ())
 }
 
-pub fn skip_many1<T>(parser: impl Parser<T>) -> impl Parser<()> {
-    generalize_lifetime(move |s| {
-        if let Some((_, rest1)) = parser(s) {
-            if let Some((_, rest2)) = skip_many(&parser)(rest1) {
-                return Some(((), rest2));
-            }
-            return Some(((), rest1));
-        }
-
-        None
-    })
+pub fn skip_many1<'a, T>(parser: &'a impl Parser<T>) -> impl Parser<()> + 'a
+where
+    T: 'a,
+{
+    map(joinr(parser, meet(skip_many(parser), lit(()))), |_| ())
 }
 
 pub fn many1<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -382,6 +369,13 @@ pub fn look_ahead<T>(parser: impl Parser<T>) -> impl Parser<T> {
 }
 
 // primitive
+
+pub fn lit<T>(x: T) -> impl Parser<T>
+where
+    T: Clone,
+{
+    generalize_lifetime(move |s| Some((x.clone(), s)))
+}
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     many_accum(
@@ -782,7 +776,8 @@ mod tests {
 
     #[test]
     fn skip_many1_test() {
-        let parser = skip_many1(space());
+        let spc = space();
+        let parser = skip_many1(&spc);
         assert_eq!(parser(" 123"), Some(((), "123")));
         assert_eq!(parser("    123"), Some(((), "123")));
         assert_eq!(parser("\t\nabc"), Some(((), "abc")));
