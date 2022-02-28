@@ -1048,4 +1048,16 @@ mod tests {
             Some(((12, vec![23, 34]), "{12 ,23 ,34}"))
         );
     }
+
+    #[test]
+    fn lit_test() {
+        let parser = lit(42);
+        assert_eq!(parser("hello"), Some((42, "hello")));
+        assert_eq!(parser(""), Some((42, "")));
+
+        let parser = lit("ok");
+        assert_eq!(parser("hello"), Some(("ok", "hello")));
+        assert_eq!(parser("ok"), Some(("ok", "ok")));
+        assert_eq!(parser(""), Some(("ok", "")));
+    }
 }
