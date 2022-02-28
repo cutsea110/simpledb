@@ -379,6 +379,16 @@ pub fn many_till<'a, T, U>(
     })
 }
 
+pub fn look_ahead<T>(parser: impl Parser<T>) -> impl Parser<T> {
+    generalize_lifetime(move |s| {
+        if let Some((val, _)) = parser(s) {
+            return Some((val, s));
+        }
+
+        None
+    })
+}
+
 // primitive
 
 pub fn many<T>(parser: impl Parser<T>) -> impl Parser<Vec<T>> {
@@ -1015,6 +1025,20 @@ mod tests {
                 vec!['H', 'e', 'l', 'l', 'o', ' ', 'W', 'o', 'r', 'l', 'd'],
                 ""
             ))
+        );
+    }
+
+    #[test]
+    fn look_ahead_test() {
+        let parser = look_ahead(natural());
+        assert_eq!(parser("123 "), Some((123, "123 ")));
+
+        let nat = lexeme(natural());
+        let csv = join(&nat, many(joinr(char(','), &nat)));
+        let parser = look_ahead(between(char('{'), char('}'), csv));
+        assert_eq!(
+            parser("{12 ,23 ,34}"),
+            Some(((12, vec![23, 34]), "{12 ,23 ,34}"))
         );
     }
 }
