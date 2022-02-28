@@ -651,14 +651,14 @@ mod tests {
 
     #[test]
     fn satisfy_test() {
-        assert_eq!(satisfy(&|_| true)("123"), Some(('1', "23")));
+        assert_eq!(satisfy(|_| true)("123"), Some(('1', "23")));
         assert_eq!(
-            satisfy(&|c: char| c.is_ascii_digit())("123"),
+            satisfy(|c: char| c.is_ascii_digit())("123"),
             Some(('1', "23"))
         );
-        assert_eq!(satisfy(&|c: char| c.is_ascii_digit())("abc"), None);
+        assert_eq!(satisfy(|c: char| c.is_ascii_digit())("abc"), None);
         assert_eq!(
-            satisfy(&|c: char| c.is_alphabetic())("abc"),
+            satisfy(|c: char| c.is_alphabetic())("abc"),
             Some(('a', "bc"))
         );
     }
@@ -718,31 +718,25 @@ mod tests {
 
     #[test]
     fn count_test() {
-        let d = digit();
-        let parser = count(3, &d);
+        let parser = count(3, digit());
         assert_eq!(parser("12345"), Some((vec!['1', '2', '3'], "45")));
-        let hello = string("hello");
-        let world = string("world");
-        let helloworld = meet(hello, world);
-        let parser = count(3, &helloworld);
+        let parser = count(3, meet(string("hello"), string("world")));
         assert_eq!(
             parser("hellohelloworldhello"),
             Some((vec![Left("hello"), Left("hello"), Right("world")], "hello"))
         );
-        let hex = hex_digit();
-        let parser = count(8, &hex);
+        let parser = count(8, hex_digit());
         assert_eq!(
             parser("deadbeef"),
             Some((vec!['d', 'e', 'a', 'd', 'b', 'e', 'e', 'f'], ""))
         );
-        let parser = count(0, &hex);
+        let parser = count(0, hex_digit());
         assert_eq!(parser("deadbeef"), Some((vec![], "deadbeef")));
-        let parser = count(6, &d);
+        let parser = count(6, digit());
         assert_eq!(parser("12345"), None);
-        let parser = count(0, &d);
+        let parser = count(0, digit());
         assert_eq!(parser("12345"), Some((vec![], "12345")));
-        let dcomma = joinl(many(digit()), char(','));
-        let parser = count(3, &dcomma);
+        let parser = count(3, joinl(many(digit()), char(',')));
         assert_eq!(
             parser("123,45,6,789"),
             Some((vec![vec!['1', '2', '3'], vec!['4', '5'], vec!['6']], "789"))
@@ -755,9 +749,7 @@ mod tests {
 
     #[test]
     fn between_test() {
-        let dq = char('"');
-        let except_dqs = many(none_of("\""));
-        let parser = between(&dq, &dq, &except_dqs);
+        let parser = between(char('"'), char('"'), many(none_of("\"")));
         assert_eq!(
             parser("\"Hello World\" I said."),
             Some((
@@ -765,11 +757,8 @@ mod tests {
                 " I said."
             ))
         );
-        let d = many1(digit());
-        let csv = join(&d, many(joinr(char(','), &d)));
-        let lbrace = char('{');
-        let rbrace = char('}');
-        let parser = between(&lbrace, &rbrace, &csv);
+        let csv = join(many1(digit()), many(joinr(char(','), many1(digit()))));
+        let parser = between(char('{'), char('}'), csv);
         assert_eq!(
             parser("{12,23,34}"),
             Some(((vec!['1', '2'], vec![vec!['2', '3'], vec!['3', '4']]), ""))
@@ -780,8 +769,7 @@ mod tests {
 
     #[test]
     fn option_test() {
-        let d = digit();
-        let parser = option('0', &d);
+        let parser = option('0', digit());
         assert_eq!(parser("123"), Some(('1', "23")));
         assert_eq!(parser("abc"), Some(('0', "abc")));
         assert_eq!(parser(""), Some(('0', "")));
@@ -789,8 +777,7 @@ mod tests {
 
     #[test]
     fn option_maybe_test() {
-        let d = digit();
-        let parser = option_maybe(&d);
+        let parser = option_maybe(digit());
         assert_eq!(parser("123"), Some((Some('1'), "23")));
         assert_eq!(parser("abc"), Some((None, "abc")));
         assert_eq!(parser(""), Some((None, "")));
@@ -798,8 +785,7 @@ mod tests {
 
     #[test]
     fn optional_test() {
-        let d = digit();
-        let parser = optional(&d);
+        let parser = optional(digit());
         assert_eq!(parser("123"), Some(((), "23")));
         assert_eq!(parser("abc"), Some(((), "abc")));
         assert_eq!(parser(""), Some(((), "")));
@@ -915,9 +901,7 @@ mod tests {
 
     #[test]
     fn sep_by1_test() {
-        let comma = char(',');
-        let nat = natural();
-        let parser = sep_by1(&nat, &comma);
+        let parser = sep_by1(natural(), char(','));
         assert_eq!(parser("1,2,3"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser("10,20,30"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser("10,20,30,"), Some((vec![10, 20, 30], ",")));
@@ -929,9 +913,7 @@ mod tests {
 
     #[test]
     fn end_by_test() {
-        let semi = char(';');
-        let nat = natural();
-        let parser = end_by(&nat, &semi);
+        let parser = end_by(natural(), char(';'));
         assert_eq!(parser("1;2;3;"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser("10;20;30;"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser("10;20;30"), Some((vec![10, 20], "30")));
@@ -943,9 +925,7 @@ mod tests {
 
     #[test]
     fn end_by1_test() {
-        let semi = char(';');
-        let nat = natural();
-        let parser = end_by1(&nat, &semi);
+        let parser = end_by1(natural(), char(';'));
         assert_eq!(parser("1;2;3;"), Some((vec![1, 2, 3], "")));
         assert_eq!(parser("10;20;30;"), Some((vec![10, 20, 30], "")));
         assert_eq!(parser("10;20;30"), Some((vec![10, 20], "30")));
@@ -1049,10 +1029,9 @@ mod tests {
         assert_eq!(parser("abc"), None);
         assert_eq!(parser(""), None);
 
-        let begin = char('"');
         let s = none_of("\"");
         let end = char('"');
-        let parser = joinr(begin, many_till(&s, &end));
+        let parser = joinr(char('"'), many_till(&s, &end));
         assert_eq!(
             parser("\"Hello World\""),
             Some((
@@ -1067,11 +1046,8 @@ mod tests {
         let parser = look_ahead(natural());
         assert_eq!(parser("123 "), Some((123, "123 ")));
 
-        let nat = lexeme(natural());
-        let csv = join(&nat, many(joinr(char(','), &nat)));
-        let lbrace = char('{');
-        let rbrace = char('}');
-        let parser = look_ahead(between(&lbrace, &rbrace, &csv));
+        let csv = join(lexeme(natural()), many(joinr(char(','), lexeme(natural()))));
+        let parser = look_ahead(between(char('{'), char('}'), csv));
         assert_eq!(
             parser("{12 ,23 ,34}"),
             Some(((12, vec![23, 34]), "{12 ,23 ,34}"))
@@ -1096,7 +1072,7 @@ mod tests {
         let dots = map(many1(char('.')), |xs: Vec<char>| {
             xs.into_iter().collect::<String>()
         });
-        let parser = try_(msg, dots, |x: &str, y: String| format!("{}{}", x, y));
+        let parser = try_(msg, dots, |x, y| format!("{}{}", x, y));
         assert_eq!(parser("trying"), Some((Left("trying"), "")));
         assert_eq!(
             parser("trying..."),
