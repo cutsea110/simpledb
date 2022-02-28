@@ -189,20 +189,14 @@ where
 }
 
 pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
-    map(meet(parser, lit("no care")), |val| match val {
+    map(meet(parser, lit(())), |val| match val {
         Left(v) => Some(v),
         Right(_) => None,
     })
 }
 
 pub fn optional<T>(parser: impl Parser<T>) -> impl Parser<()> {
-    generalize_lifetime(move |s| {
-        if let Some((_, rest)) = parser(s) {
-            return Some(((), rest));
-        }
-
-        Some(((), s))
-    })
+    map(meet(parser, lit(())), |_| ())
 }
 
 pub fn skip_many1<T>(parser: impl Parser<T>) -> impl Parser<()> {
