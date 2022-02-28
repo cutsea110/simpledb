@@ -152,10 +152,7 @@ pub fn choice<T>(ps: Vec<impl Parser<T>>) -> impl Parser<T> {
     })
 }
 
-pub fn count<'a, T>(n: usize, parser: &'a impl Parser<T>) -> impl Parser<Vec<T>> + 'a
-where
-    T: 'a,
-{
+pub fn count<T>(n: usize, parser: impl Parser<T>) -> impl Parser<Vec<T>> {
     generalize_lifetime(move |mut s| {
         let mut result = vec![];
 
