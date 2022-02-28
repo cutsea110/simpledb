@@ -152,7 +152,10 @@ pub fn choice<T>(ps: Vec<impl Parser<T>>) -> impl Parser<T> {
     })
 }
 
-pub fn count<T>(n: usize, parser: impl Parser<T>) -> impl Parser<Vec<T>> {
+pub fn count<'a, T>(n: usize, parser: &'a impl Parser<T>) -> impl Parser<Vec<T>> + 'a
+where
+    T: 'a,
+{
     generalize_lifetime(move |mut s| {
         let mut result = vec![];
 
@@ -711,27 +714,31 @@ mod tests {
 
     #[test]
     fn count_test() {
-        let parser = count(3, digit());
+        let d = digit();
+        let parser = count(3, &d);
         assert_eq!(parser("12345"), Some((vec!['1', '2', '3'], "45")));
         let hello = string("hello");
         let world = string("world");
-        let parser = count(3, meet(hello, world));
+        let helloworld = meet(hello, world);
+        let parser = count(3, &helloworld);
         assert_eq!(
             parser("hellohelloworldhello"),
             Some((vec![Left("hello"), Left("hello"), Right("world")], "hello"))
         );
-        let parser = count(8, hex_digit());
+        let hex = hex_digit();
+        let parser = count(8, &hex);
         assert_eq!(
             parser("deadbeef"),
             Some((vec!['d', 'e', 'a', 'd', 'b', 'e', 'e', 'f'], ""))
         );
-        let parser = count(0, hex_digit());
+        let parser = count(0, &hex);
         assert_eq!(parser("deadbeef"), Some((vec![], "deadbeef")));
-        let parser = count(6, digit());
+        let parser = count(6, &d);
         assert_eq!(parser("12345"), None);
-        let parser = count(0, digit());
+        let parser = count(0, &d);
         assert_eq!(parser("12345"), Some((vec![], "12345")));
-        let parser = count(3, joinl(many(digit()), char(',')));
+        let dcomma = joinl(many(digit()), char(','));
+        let parser = count(3, &dcomma);
         assert_eq!(
             parser("123,45,6,789"),
             Some((vec![vec!['1', '2', '3'], vec!['4', '5'], vec!['6']], "789"))
