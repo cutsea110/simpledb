@@ -189,12 +189,9 @@ where
 }
 
 pub fn option_maybe<T>(parser: impl Parser<T>) -> impl Parser<Option<T>> {
-    generalize_lifetime(move |s| {
-        if let Some((val, rest)) = parser(s) {
-            return Some((Some(val), rest));
-        }
-
-        None
+    map(meet(parser, lit("no care")), |val| match val {
+        Left(v) => Some(v),
+        Right(_) => None,
     })
 }
 
@@ -767,8 +764,8 @@ mod tests {
     fn option_maybe_test() {
         let parser = option_maybe(digit());
         assert_eq!(parser("123"), Some((Some('1'), "23")));
-        assert_eq!(parser("abc"), None);
-        assert_eq!(parser(""), None);
+        assert_eq!(parser("abc"), Some((None, "abc")));
+        assert_eq!(parser(""), Some((None, "")));
     }
 
     #[test]
