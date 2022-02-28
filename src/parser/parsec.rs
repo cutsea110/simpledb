@@ -1060,4 +1060,21 @@ mod tests {
         assert_eq!(parser("ok"), Some(("ok", "ok")));
         assert_eq!(parser(""), Some(("ok", "")));
     }
+
+    #[test]
+    fn try_test() {
+        let msg = string("trying");
+        let dots = map(many1(char('.')), |xs: Vec<char>| {
+            xs.into_iter().collect::<String>()
+        });
+        let parser = try_(msg, dots, |x: &str, y: String| format!("{}{}", x, y));
+        assert_eq!(parser("trying"), Some((Left("trying"), "")));
+        assert_eq!(
+            parser("trying..."),
+            Some((Right("trying...".to_string()), ""))
+        );
+        assert_eq!(parser("try"), None);
+        assert_eq!(parser("..."), None);
+        assert_eq!(parser(""), None);
+    }
 }
