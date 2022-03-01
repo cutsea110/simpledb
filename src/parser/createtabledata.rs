@@ -1,5 +1,6 @@
 use crate::record::schema::Schema;
 
+#[derive(Debug, Clone)]
 pub struct CreateTableData {
     tblname: String,
     sch: Schema,

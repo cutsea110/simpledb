@@ -9,6 +9,8 @@ use crate::query::expression::Expression;
 use crate::query::predicate::Predicate;
 use crate::query::term::Term;
 
+// primitive parser
+
 fn keyword<Input>(s: &'static str) -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -210,6 +212,8 @@ where
         .skip(spaces().silent())
 }
 
+// token
+
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -258,6 +262,8 @@ where
     // lexeme
     .skip(spaces().silent())
 }
+
+// Methods for parsing predicates and their components
 
 pub fn field<Input>() -> impl Parser<Input, Output = String>
 where
@@ -314,6 +320,30 @@ where
     chainl1(pred1, conjoin)
 }
 
+// Methods for parsing queries
+
+pub fn query<Input>() -> impl Parser<Input, Output = QueryData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let fields = keyword_select().with(select_list());
+    let tables = keyword_from().with(table_list());
+    let where_clause = keyword_where().with(predicate());
+    let where_clauses = many(where_clause).map(|mut cs: Vec<Predicate>| {
+        cs.iter_mut()
+            .fold(Predicate::new_empty(), |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            })
+    });
+
+    fields
+        .and(tables)
+        .and(where_clauses)
+        .map(|((fs, ts), pred)| QueryData::new(fs, ts, pred))
+}
+
 fn select_list<Input>() -> impl Parser<Input, Output = Vec<String>>
 where
     Input: Stream<Token = char>,
@@ -346,27 +376,12 @@ where
     chainl1(id_tok1, sep)
 }
 
-pub fn query<Input>() -> impl Parser<Input, Output = QueryData>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    let fields = keyword_select().with(select_list());
-    let tables = keyword_from().with(table_list());
-    let where_clause = keyword_where().with(predicate());
-    let where_clauses = many(where_clause).map(|mut cs: Vec<Predicate>| {
-        cs.iter_mut()
-            .fold(Predicate::new_empty(), |mut p1, mut p2| {
-                p1.conjoin_with(&mut p2);
-                p1
-            })
-    });
+// Methods for parsing the various update commands
 
-    fields
-        .and(tables)
-        .and(where_clauses)
-        .map(|((fs, ts), pred)| QueryData::new(fs, ts, pred))
-}
+// TODO: updateCmd
+// TODO: create
+
+// Method for parsing delete commands
 
 #[cfg(test)]
 mod tests {
