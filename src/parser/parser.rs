@@ -259,7 +259,7 @@ where
     .skip(spaces().silent())
 }
 
-fn field<Input>() -> impl Parser<Input, Output = String>
+pub fn field<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -267,7 +267,7 @@ where
     id_tok()
 }
 
-fn constant<Input>() -> impl Parser<Input, Output = Constant>
+pub fn constant<Input>() -> impl Parser<Input, Output = Constant>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -277,7 +277,7 @@ where
         .or(i32_tok().map(|ival| Constant::new_i32(ival)))
 }
 
-fn expression<Input>() -> impl Parser<Input, Output = Expression>
+pub fn expression<Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -287,7 +287,7 @@ where
         .or(constant().map(|c| Expression::Val(c)))
 }
 
-fn term<Input>() -> impl Parser<Input, Output = Term>
+pub fn term<Input>() -> impl Parser<Input, Output = Term>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -298,7 +298,7 @@ where
         .map(|(lhs, rhs)| Term::new(lhs, rhs))
 }
 
-fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
+pub fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -346,7 +346,7 @@ where
     chainl1(id_tok1, sep)
 }
 
-fn query<Input>() -> impl Parser<Input, Output = QueryData>
+pub fn query<Input>() -> impl Parser<Input, Output = QueryData>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
