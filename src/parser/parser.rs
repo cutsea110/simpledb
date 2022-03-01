@@ -554,58 +554,62 @@ mod tests {
         assert_eq!(
             parser.parse("age = 18"),
             Ok((
-                Predicate {
-                    terms: vec![Term {
-                        lhs: Expression::Fldname("age".to_string()),
-                        rhs: Expression::Val(Constant::I32(18))
-                    }]
-                },
+                Predicate::new(Term::new(
+                    Expression::Fldname("age".to_string()),
+                    Expression::Val(Constant::I32(18))
+                )),
                 ""
             ))
+        );
+        let terms = vec![
+            Term::new(
+                Expression::Fldname("age".to_string()),
+                Expression::Val(Constant::I32(18)),
+            ),
+            Term::new(
+                Expression::Fldname("name".to_string()),
+                Expression::Val(Constant::String("joe".to_string())),
+            ),
+        ];
+        let expected = terms.iter().map(|t| Predicate::new(t.clone())).fold(
+            Predicate::new_empty(),
+            |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            },
         );
         assert_eq!(
             parser.parse("age = 18 and name = 'joe'"),
-            Ok((
-                Predicate {
-                    terms: vec![
-                        Term {
-                            lhs: Expression::Fldname("age".to_string()),
-                            rhs: Expression::Val(Constant::I32(18))
-                        },
-                        Term {
-                            lhs: Expression::Fldname("name".to_string()),
-                            rhs: Expression::Val(Constant::String("joe".to_string()))
-                        }
-                    ]
-                },
-                ""
-            ))
+            Ok((expected, ""))
+        );
+        let terms = vec![
+            Term::new(
+                Expression::Fldname("age".to_string()),
+                Expression::Val(Constant::I32(18)),
+            ),
+            Term::new(
+                Expression::Fldname("name".to_string()),
+                Expression::Val(Constant::String("joe".to_string())),
+            ),
+            Term::new(
+                Expression::Fldname("sex".to_string()),
+                Expression::Val(Constant::String("male".to_string())),
+            ),
+            Term::new(
+                Expression::Fldname("dev_id".to_string()),
+                Expression::Fldname("major_id".to_string()),
+            ),
+        ];
+        let expected = terms.iter().map(|t| Predicate::new(t.clone())).fold(
+            Predicate::new_empty(),
+            |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            },
         );
         assert_eq!(
             parser.parse("age = 18 and name = 'joe' AND sex = 'male' And dev_id = major_id"),
-            Ok((
-                Predicate {
-                    terms: vec![
-                        Term {
-                            lhs: Expression::Fldname("age".to_string()),
-                            rhs: Expression::Val(Constant::I32(18))
-                        },
-                        Term {
-                            lhs: Expression::Fldname("name".to_string()),
-                            rhs: Expression::Val(Constant::String("joe".to_string()))
-                        },
-                        Term {
-                            lhs: Expression::Fldname("sex".to_string()),
-                            rhs: Expression::Val(Constant::String("male".to_string()))
-                        },
-                        Term {
-                            lhs: Expression::Fldname("dev_id".to_string()),
-                            rhs: Expression::Fldname("major_id".to_string())
-                        }
-                    ]
-                },
-                ""
-            ))
+            Ok((expected, ""))
         );
 
         let mut parser = query();
@@ -617,6 +621,65 @@ mod tests {
                     vec!["name".to_string(), "age".to_string()],
                     vec!["student".to_string()],
                     Predicate::new_empty(),
+                ),
+                ""
+            ))
+        );
+        let terms = vec![
+            Term::new(
+                Expression::Fldname("age".to_string()),
+                Expression::Val(Constant::I32(18)),
+            ),
+            Term::new(
+                Expression::Fldname("name".to_string()),
+                Expression::Val(Constant::String("joe".to_string())),
+            ),
+            Term::new(
+                Expression::Fldname("sex".to_string()),
+                Expression::Val(Constant::String("male".to_string())),
+            ),
+            Term::new(
+                Expression::Fldname("dev_id".to_string()),
+                Expression::Fldname("major_id".to_string()),
+            ),
+        ];
+        let expected = terms.iter().map(|t| Predicate::new(t.clone())).fold(
+            Predicate::new_empty(),
+            |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            },
+        );
+        assert_eq!(
+            parser.parse(
+                "SELECT name, age \
+                            FROM student, dept \
+                           WHERE age = 18 \
+                             AND name = 'joe' \
+                             AND sex = 'male' \
+                             AND dev_id = major_id"
+            ),
+            Ok((
+                QueryData::new(
+                    vec!["name".to_string(), "age".to_string()],
+                    vec!["student".to_string(), "dept".to_string()],
+                    expected.clone(),
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse(
+                "SELECT name, age \
+                            FROM student, dept \
+                           WHERE age = 18 AND name = 'joe' \
+                           WHERE sex = 'male' AND dev_id = major_id"
+            ),
+            Ok((
+                QueryData::new(
+                    vec!["name".to_string(), "age".to_string()],
+                    vec!["student".to_string(), "dept".to_string()],
+                    expected.clone(),
                 ),
                 ""
             ))

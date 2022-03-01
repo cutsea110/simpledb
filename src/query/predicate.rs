@@ -7,7 +7,7 @@ use crate::{plan::plan::Plan, query::constant::Constant, record::schema::Schema}
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Predicate {
-    pub terms: Vec<Term>,
+    terms: Vec<Term>,
 }
 
 impl fmt::Display for Predicate {
