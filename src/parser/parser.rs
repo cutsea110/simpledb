@@ -120,10 +120,6 @@ where
         .skip(spaces().silent())
 }
 
-/// let number = digit().map(|c: char| c.to_digit(10).unwrap());
-/// let sub = token('-').map(|_| |l: u32, r: u32| l - r);
-/// let mut parser = chainl1(number, sub);
-/// assert_eq!(parser.parse("9-3-5"), Ok((1, "")));
 fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
 where
     Input: Stream<Token = char>,
