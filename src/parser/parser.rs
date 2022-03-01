@@ -1,10 +1,33 @@
 use combine::error::{ParseError, StdParseResult};
-use combine::parser::char::{char, digit, letter, spaces};
+use combine::parser::char::{alpha_num, char, digit, letter, spaces};
 use combine::stream::position;
 use combine::stream::{Positioned, Stream};
-use combine::{between, choice, many1, optional, parser, sep_by, EasyParser, Parser};
+use combine::{
+    between, choice, many, many1, optional, parser, satisfy, sep_by, EasyParser, Parser,
+};
 
-pub fn i32_tok<Input>() -> impl Parser<Input, Output = i32>
+fn id_tok<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    letter()
+        .and(many(alpha_num().or(char('_'))))
+        .map(|(x, mut xs): (char, Vec<char>)| {
+            xs.insert(0, x);
+            xs.into_iter().collect()
+        })
+}
+
+fn field<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    id_tok().skip(spaces().silent())
+}
+
+fn i32_tok<Input>() -> impl Parser<Input, Output = i32>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -21,24 +44,55 @@ where
         })
 }
 
+fn str_tok<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    between(
+        char('\''),
+        char('\''),
+        many(satisfy(|c| c != '\'')).map(|v: Vec<char>| v.into_iter().collect::<String>()),
+    )
+}
+
 #[cfg(test)]
 mod tests {
+
+    use combine::error::StringStreamError;
 
     use super::*;
 
     #[test]
     fn unit_test() {
-        let mut parser = i32_tok();
+        let mut parser = id_tok();
+        assert_eq!(parser.parse("a42"), Ok(("a42".to_string(), "")));
+        assert_eq!(parser.parse("foo_id "), Ok(("foo_id".to_string(), " ")));
+        assert_eq!(
+            parser.parse("'Hey, man!' I said."),
+            Err(StringStreamError::UnexpectedParse)
+        );
 
+        let mut parser = i32_tok();
         assert_eq!(parser.parse("42"), Ok((42, "")));
+        assert_eq!(parser.parse("42 "), Ok((42, " ")));
+        assert_eq!(parser.parse("-42 "), Ok((-42, " ")));
+
+        let mut parser = str_tok();
+        assert_eq!(
+            parser.parse("'Hey, man!' He said."),
+            Ok(("Hey, man!".to_string(), " He said."))
+        );
+        assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
     }
 }
 
 #[cfg(test)]
 mod tests2 {
     use combine::parser::char::digit;
-    use combine::parser::char::{char, letter, spaces, string, string_cmp};
-    use combine::{many, many1, optional, sep_by, Parser};
+    use combine::parser::char::{alpha_num, char, letter, spaces, string, string_cmp};
+    use combine::{between, many, many1, none_of, optional, satisfy, sep_by, Parser};
+
     #[test]
     fn unit_test() {
         let word = many1(letter());
@@ -82,5 +136,23 @@ mod tests2 {
         assert_eq!(parser.parse("-1234  "), Ok((-1234, "  ")));
         assert_eq!(parser.parse("123    "), Ok((123, "    ")));
         assert_eq!(parser.parse("+123   "), Ok((123, "   ")));
+
+        let mut parser = letter()
+            .and(many(alpha_num()))
+            .map(|(x, mut xs): (char, Vec<char>)| {
+                xs.insert(0, x);
+                xs.into_iter().collect()
+            });
+        assert_eq!(parser.parse("a42"), Ok(("a42".to_string(), "")));
+
+        let mut parser = between(
+            char('\''),
+            char('\''),
+            many(satisfy(|c| c != '\'')).map(|v: Vec<char>| v.into_iter().collect::<String>()),
+        );
+        assert_eq!(
+            parser.parse("'Hey man!' he said."),
+            Ok(("Hey man!".to_string(), " he said."))
+        );
     }
 }
