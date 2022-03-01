@@ -1,16 +1,23 @@
-use combine::error::{ParseError, StdParseResult, StreamError};
+use combine::error::ParseError;
 use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
-use combine::parser::combinator::AndThen;
-use combine::stream::position;
-use combine::stream::{Positioned, Stream};
-use combine::{
-    between, chainl1, choice, many, many1, optional, parser, satisfy, sep_by, EasyParser, Parser,
-};
+use combine::stream::Stream;
+use combine::{between, chainl1, many, many1, optional, satisfy, Parser};
 
 use crate::query::constant::Constant;
 use crate::query::expression::Expression;
 use crate::query::predicate::Predicate;
 use crate::query::term::Term;
+
+fn keyword<Input>(s: &'static str) -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    string_cmp(s, |x, y| x.eq_ignore_ascii_case(&y))
+        .map(|x| x.to_string())
+        // lexeme
+        .skip(spaces().silent())
+}
 
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
 where
@@ -114,8 +121,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    string_cmp("AND", |x, y| x.eq_ignore_ascii_case(&y))
-        .map(|x| x.to_string())
+    keyword("and")
         // lexeme
         .skip(spaces().silent())
 }
