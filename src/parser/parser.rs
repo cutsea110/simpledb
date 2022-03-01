@@ -1,9 +1,44 @@
+use combine::error::{ParseError, StdParseResult};
+use combine::parser::char::{char, digit, letter, spaces};
+use combine::stream::position;
+use combine::stream::{Positioned, Stream};
+use combine::{between, choice, many1, optional, parser, sep_by, EasyParser, Parser};
+
+pub fn i32_tok<Input>() -> impl Parser<Input, Output = i32>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    optional(char('-').or(char('+')))
+        .and(many1(digit()).map(|s: String| s.parse::<i32>()))
+        .map(|(s, v)| {
+            if let Some(sign) = s {
+                if sign == '-' {
+                    return v.unwrap_or_default() * -1;
+                }
+            }
+            v.unwrap_or_default()
+        })
+}
+
 #[cfg(test)]
 mod tests {
+
+    use super::*;
+
+    #[test]
+    fn unit_test() {
+        let mut parser = i32_tok();
+
+        assert_eq!(parser.parse("42"), Ok((42, "")));
+    }
+}
+
+#[cfg(test)]
+mod tests2 {
     use combine::parser::char::digit;
     use combine::parser::char::{char, letter, spaces, string, string_cmp};
     use combine::{many, many1, optional, sep_by, Parser};
-
     #[test]
     fn unit_test() {
         let word = many1(letter());
