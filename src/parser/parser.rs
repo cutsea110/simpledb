@@ -9,6 +9,7 @@ use combine::{
 
 use crate::query::constant::Constant;
 use crate::query::expression::Expression;
+use crate::query::term::Term;
 
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
 where
@@ -21,6 +22,8 @@ where
             xs.insert(0, x);
             xs.into_iter().collect()
         })
+        // lexeme
+        .skip(spaces().silent())
 }
 
 fn field<Input>() -> impl Parser<Input, Output = String>
@@ -28,7 +31,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    id_tok().skip(spaces().silent())
+    id_tok()
 }
 
 fn i32_tok<Input>() -> impl Parser<Input, Output = i32>
@@ -46,6 +49,8 @@ where
             }
             v.unwrap_or_default()
         })
+        // lexeme
+        .skip(spaces().silent())
 }
 
 fn str_tok<Input>() -> impl Parser<Input, Output = String>
@@ -58,6 +63,8 @@ where
         char('\''),
         many(satisfy(|c| c != '\'')).map(|v: Vec<char>| v.into_iter().collect::<String>()),
     )
+    // lexeme
+    .skip(spaces().silent())
 }
 
 fn constant<Input>() -> impl Parser<Input, Output = Constant>
@@ -80,6 +87,27 @@ where
         .or(constant().map(|c| Expression::Val(c)))
 }
 
+fn eq<Input>() -> impl Parser<Input, Output = char>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    char('=')
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn term<Input>() -> impl Parser<Input, Output = Term>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    expression()
+        .skip(eq())
+        .and(expression())
+        .map(|(lhs, rhs)| Term::new(lhs, rhs))
+}
+
 #[cfg(test)]
 mod tests {
     use combine::error::StringStreamError;
@@ -90,7 +118,7 @@ mod tests {
     fn unit_test() {
         let mut parser = id_tok();
         assert_eq!(parser.parse("a42"), Ok(("a42".to_string(), "")));
-        assert_eq!(parser.parse("foo_id "), Ok(("foo_id".to_string(), " ")));
+        assert_eq!(parser.parse("foo_id "), Ok(("foo_id".to_string(), "")));
         assert_eq!(
             parser.parse("'Hey, man!' I said."),
             Err(StringStreamError::UnexpectedParse)
@@ -98,13 +126,13 @@ mod tests {
 
         let mut parser = i32_tok();
         assert_eq!(parser.parse("42"), Ok((42, "")));
-        assert_eq!(parser.parse("42 "), Ok((42, " ")));
-        assert_eq!(parser.parse("-42 "), Ok((-42, " ")));
+        assert_eq!(parser.parse("42 "), Ok((42, "")));
+        assert_eq!(parser.parse("-42 "), Ok((-42, "")));
 
         let mut parser = str_tok();
         assert_eq!(
             parser.parse("'Hey, man!' He said."),
-            Ok(("Hey, man!".to_string(), " He said."))
+            Ok(("Hey, man!".to_string(), "He said."))
         );
         assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
 
