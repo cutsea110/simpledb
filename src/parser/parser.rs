@@ -142,5 +142,145 @@ mod tests {
             parser.parse("'joje'"),
             Ok((Constant::String("joje".to_string()), ""))
         );
+
+        let mut parser = expression();
+        assert_eq!(
+            parser.parse("user_name"),
+            Ok((Expression::Fldname("user_name".to_string()), ""))
+        );
+        assert_eq!(
+            parser.parse("user_id   "),
+            Ok((Expression::Fldname("user_id".to_string()), ""))
+        );
+        assert_eq!(
+            parser.parse("42   "),
+            Ok((Expression::Val(Constant::I32(42)), ""))
+        );
+        assert_eq!(
+            parser.parse("'bob'   "),
+            Ok((Expression::Val(Constant::String("bob".to_string())), ""))
+        );
+
+        let mut parser = term();
+        assert_eq!(
+            parser.parse("age=42"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("age".to_string()),
+                    Expression::Val(Constant::I32(42))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("age =42"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("age".to_string()),
+                    Expression::Val(Constant::I32(42))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("age= 42"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("age".to_string()),
+                    Expression::Val(Constant::I32(42))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("age = 42"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("age".to_string()),
+                    Expression::Val(Constant::I32(42))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("age   =    42"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("age".to_string()),
+                    Expression::Val(Constant::I32(42))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("42   =    age"),
+            Ok((
+                Term::new(
+                    Expression::Val(Constant::I32(42)),
+                    Expression::Fldname("age".to_string())
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("name='joe'"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("name".to_string()),
+                    Expression::Val(Constant::String("joe".to_string()))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("name ='joe'"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("name".to_string()),
+                    Expression::Val(Constant::String("joe".to_string()))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("name= 'joe'"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("name".to_string()),
+                    Expression::Val(Constant::String("joe".to_string()))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("name = 'joe'"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("name".to_string()),
+                    Expression::Val(Constant::String("joe".to_string()))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("name   =    'joe'"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("name".to_string()),
+                    Expression::Val(Constant::String("joe".to_string()))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("'joe' = name"),
+            Ok((
+                Term::new(
+                    Expression::Val(Constant::String("joe".to_string())),
+                    Expression::Fldname("name".to_string())
+                ),
+                ""
+            ))
+        );
     }
 }
