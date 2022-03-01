@@ -653,11 +653,11 @@ mod tests {
         assert_eq!(
             parser.parse(
                 "SELECT name, age \
-                            FROM student, dept \
-                           WHERE age = 18 \
-                             AND name = 'joe' \
-                             AND sex = 'male' \
-                             AND dev_id = major_id"
+                   FROM student, dept \
+                  WHERE age = 18 \
+                    AND name = 'joe' \
+                    AND sex = 'male' \
+                    AND dev_id = major_id"
             ),
             Ok((
                 QueryData::new(
@@ -671,9 +671,9 @@ mod tests {
         assert_eq!(
             parser.parse(
                 "SELECT name, age \
-                            FROM student, dept \
-                           WHERE age = 18 AND name = 'joe' \
-                           WHERE sex = 'male' AND dev_id = major_id"
+                   FROM student, dept \
+                  WHERE age = 18 AND name = 'joe' \
+                  WHERE sex = 'male' AND dev_id = major_id"
             ),
             Ok((
                 QueryData::new(
