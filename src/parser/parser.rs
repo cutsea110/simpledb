@@ -1,14 +1,15 @@
 use combine::error::{ParseError, StdParseResult, StreamError};
-use combine::parser::char::{alpha_num, char, digit, letter, spaces};
+use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
 use combine::parser::combinator::AndThen;
 use combine::stream::position;
 use combine::stream::{Positioned, Stream};
 use combine::{
-    between, choice, many, many1, optional, parser, satisfy, sep_by, EasyParser, Parser,
+    between, chainl1, choice, many, many1, optional, parser, satisfy, sep_by, EasyParser, Parser,
 };
 
 use crate::query::constant::Constant;
 use crate::query::expression::Expression;
+use crate::query::predicate::Predicate;
 use crate::query::term::Term;
 
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
@@ -106,6 +107,37 @@ where
         .skip(eq())
         .and(expression())
         .map(|(lhs, rhs)| Term::new(lhs, rhs))
+}
+
+fn and<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    string_cmp("AND", |x, y| x.eq_ignore_ascii_case(&y))
+        .map(|x| x.to_string())
+        // lexeme
+        .skip(spaces().silent())
+}
+
+/// let number = digit().map(|c: char| c.to_digit(10).unwrap());
+/// let sub = token('-').map(|_| |l: u32, r: u32| l - r);
+/// let mut parser = chainl1(number, sub);
+/// assert_eq!(parser.parse("9-3-5"), Ok((1, "")));
+fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let pred1 = term().map(|t| Predicate::new(t));
+    let conjoin = and().map(|_| {
+        |mut l: Predicate, mut r: Predicate| {
+            l.conjoin_with(&mut r);
+            l
+        }
+    });
+
+    chainl1(pred1, conjoin)
 }
 
 #[cfg(test)]
@@ -279,6 +311,64 @@ mod tests {
                     Expression::Val(Constant::String("joe".to_string())),
                     Expression::Fldname("name".to_string())
                 ),
+                ""
+            ))
+        );
+
+        let mut parser = predicate();
+        assert_eq!(
+            parser.parse("age = 18"),
+            Ok((
+                Predicate {
+                    terms: vec![Term {
+                        lhs: Expression::Fldname("age".to_string()),
+                        rhs: Expression::Val(Constant::I32(18))
+                    }]
+                },
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("age = 18 and name = 'joe'"),
+            Ok((
+                Predicate {
+                    terms: vec![
+                        Term {
+                            lhs: Expression::Fldname("age".to_string()),
+                            rhs: Expression::Val(Constant::I32(18))
+                        },
+                        Term {
+                            lhs: Expression::Fldname("name".to_string()),
+                            rhs: Expression::Val(Constant::String("joe".to_string()))
+                        }
+                    ]
+                },
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("age = 18 and name = 'joe' AND sex = 'male' And dev_id = major_id"),
+            Ok((
+                Predicate {
+                    terms: vec![
+                        Term {
+                            lhs: Expression::Fldname("age".to_string()),
+                            rhs: Expression::Val(Constant::I32(18))
+                        },
+                        Term {
+                            lhs: Expression::Fldname("name".to_string()),
+                            rhs: Expression::Val(Constant::String("joe".to_string()))
+                        },
+                        Term {
+                            lhs: Expression::Fldname("sex".to_string()),
+                            rhs: Expression::Val(Constant::String("male".to_string()))
+                        },
+                        Term {
+                            lhs: Expression::Fldname("dev_id".to_string()),
+                            rhs: Expression::Fldname("major_id".to_string())
+                        }
+                    ]
+                },
                 ""
             ))
         );

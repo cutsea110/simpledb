@@ -10,8 +10,8 @@ use crate::{plan::plan::Plan, record::schema::Schema};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Term {
-    lhs: Expression,
-    rhs: Expression,
+    pub lhs: Expression,
+    pub rhs: Expression,
 }
 
 impl fmt::Display for Term {
