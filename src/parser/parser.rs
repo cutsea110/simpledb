@@ -1,10 +1,13 @@
-use combine::error::{ParseError, StdParseResult};
+use combine::error::{ParseError, StdParseResult, StreamError};
 use combine::parser::char::{alpha_num, char, digit, letter, spaces};
+use combine::parser::combinator::AndThen;
 use combine::stream::position;
 use combine::stream::{Positioned, Stream};
 use combine::{
     between, choice, many, many1, optional, parser, satisfy, sep_by, EasyParser, Parser,
 };
+
+use crate::query::constant::Constant;
 
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
 where
@@ -56,9 +59,18 @@ where
     )
 }
 
+fn constant<Input>() -> impl Parser<Input, Output = Constant>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    str_tok()
+        .map(|sval| Constant::new_string(sval))
+        .or(i32_tok().map(|ival| Constant::new_i32(ival)))
+}
+
 #[cfg(test)]
 mod tests {
-
     use combine::error::StringStreamError;
 
     use super::*;
@@ -84,6 +96,13 @@ mod tests {
             Ok(("Hey, man!".to_string(), " He said."))
         );
         assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
+
+        let mut parser = constant();
+        assert_eq!(parser.parse("42"), Ok((Constant::I32(42), "")));
+        assert_eq!(
+            parser.parse("'joje'"),
+            Ok((Constant::String("joje".to_string()), ""))
+        );
     }
 }
 
