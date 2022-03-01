@@ -613,11 +613,11 @@ mod tests {
         assert_eq!(
             parser.parse("SELECT name, age FROM student"),
             Ok((
-                QueryData {
-                    fields: vec!["name".to_string(), "age".to_string()],
-                    tables: vec!["student".to_string()],
-                    pred: Predicate { terms: vec![] }
-                },
+                QueryData::new(
+                    vec!["name".to_string(), "age".to_string()],
+                    vec!["student".to_string()],
+                    Predicate::new_empty(),
+                ),
                 ""
             ))
         );

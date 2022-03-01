@@ -4,9 +4,9 @@ use crate::query::predicate::Predicate;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct QueryData {
-    pub fields: Vec<String>,
-    pub tables: Vec<String>,
-    pub pred: Predicate,
+    fields: Vec<String>,
+    tables: Vec<String>,
+    pred: Predicate,
 }
 
 impl fmt::Display for QueryData {
