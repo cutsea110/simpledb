@@ -3,6 +3,7 @@ use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
 use combine::stream::Stream;
 use combine::{between, chainl1, many, many1, optional, satisfy, Parser};
 
+use super::querydata::QueryData;
 use crate::query::constant::Constant;
 use crate::query::expression::Expression;
 use crate::query::predicate::Predicate;
@@ -189,6 +190,16 @@ where
         .skip(spaces().silent())
 }
 
+fn delim_comma<Input>() -> impl Parser<Input, Output = char>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    char(',')
+        // lexeme
+        .skip(spaces().silent())
+}
+
 fn binop_eq<Input>() -> impl Parser<Input, Output = char>
 where
     Input: Stream<Token = char>,
@@ -303,6 +314,60 @@ where
     chainl1(pred1, conjoin)
 }
 
+fn select_list<Input>() -> impl Parser<Input, Output = Vec<String>>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let fld1 = field().map(|f| vec![f]);
+    let sep = delim_comma().map(|_| {
+        |mut x: Vec<String>, mut y: Vec<String>| {
+            x.append(&mut y);
+            x
+        }
+    });
+
+    chainl1(fld1, sep)
+}
+
+fn table_list<Input>() -> impl Parser<Input, Output = Vec<String>>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let id_tok1 = id_tok().map(|f| vec![f]);
+    let sep = delim_comma().map(|_| {
+        |mut x: Vec<String>, mut y: Vec<String>| {
+            x.append(&mut y);
+            x
+        }
+    });
+
+    chainl1(id_tok1, sep)
+}
+
+fn query<Input>() -> impl Parser<Input, Output = QueryData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let fields = keyword_select().with(select_list());
+    let tables = keyword_from().with(table_list());
+    let where_clause = keyword_where().with(predicate());
+    let where_clauses = many(where_clause).map(|mut cs: Vec<Predicate>| {
+        cs.iter_mut()
+            .fold(Predicate::new_empty(), |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            })
+    });
+
+    fields
+        .and(tables)
+        .and(where_clauses)
+        .map(|((fs, ts), pred)| QueryData::new(fs, ts, pred))
+}
+
 #[cfg(test)]
 mod tests {
     use combine::error::StringStreamError;
@@ -312,6 +377,7 @@ mod tests {
     #[test]
     fn unit_test() {
         let mut parser = id_tok();
+        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
         assert_eq!(parser.parse("a42"), Ok(("a42".to_string(), "")));
         assert_eq!(parser.parse("foo_id "), Ok(("foo_id".to_string(), "")));
         assert_eq!(
@@ -320,11 +386,13 @@ mod tests {
         );
 
         let mut parser = i32_tok();
+        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(parser.parse("42"), Ok((42, "")));
         assert_eq!(parser.parse("42 "), Ok((42, "")));
         assert_eq!(parser.parse("-42 "), Ok((-42, "")));
 
         let mut parser = str_tok();
+        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
             parser.parse("'Hey, man!' He said."),
             Ok(("Hey, man!".to_string(), "He said."))
@@ -332,6 +400,7 @@ mod tests {
         assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
 
         let mut parser = constant();
+        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(parser.parse("42"), Ok((Constant::I32(42), "")));
         assert_eq!(
             parser.parse("'joje'"),
@@ -339,6 +408,7 @@ mod tests {
         );
 
         let mut parser = expression();
+        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
             parser.parse("user_name"),
             Ok((Expression::Fldname("user_name".to_string()), ""))
@@ -357,6 +427,7 @@ mod tests {
         );
 
         let mut parser = term();
+        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
             parser.parse("age=42"),
             Ok((
@@ -479,6 +550,7 @@ mod tests {
         );
 
         let mut parser = predicate();
+        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
             parser.parse("age = 18"),
             Ok((
@@ -531,6 +603,20 @@ mod tests {
                             rhs: Expression::Fldname("major_id".to_string())
                         }
                     ]
+                },
+                ""
+            ))
+        );
+
+        let mut parser = query();
+        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
+        assert_eq!(
+            parser.parse("SELECT name, age FROM student"),
+            Ok((
+                QueryData {
+                    fields: vec!["name".to_string(), "age".to_string()],
+                    tables: vec!["student".to_string()],
+                    pred: Predicate { terms: vec![] }
                 },
                 ""
             ))

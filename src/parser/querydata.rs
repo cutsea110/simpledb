@@ -1,15 +1,12 @@
 use core::fmt;
-use std::borrow::Borrow;
-
-use itertools::Itertools;
 
 use crate::query::predicate::Predicate;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct QueryData {
-    fields: Vec<String>,
-    tables: Vec<String>,
-    pred: Predicate,
+    pub fields: Vec<String>,
+    pub tables: Vec<String>,
+    pub pred: Predicate,
 }
 
 impl fmt::Display for QueryData {
