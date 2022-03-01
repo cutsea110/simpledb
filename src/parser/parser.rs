@@ -19,6 +19,26 @@ where
         .skip(spaces().silent())
 }
 
+fn eq<Input>() -> impl Parser<Input, Output = char>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    char('=')
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn and<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("and")
+        // lexeme
+        .skip(spaces().silent())
+}
+
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -32,14 +52,6 @@ where
         })
         // lexeme
         .skip(spaces().silent())
-}
-
-fn field<Input>() -> impl Parser<Input, Output = String>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    id_tok()
 }
 
 fn i32_tok<Input>() -> impl Parser<Input, Output = i32>
@@ -69,10 +81,19 @@ where
     between(
         char('\''),
         char('\''),
+        // TODO: escape character
         many(satisfy(|c| c != '\'')).map(|v: Vec<char>| v.into_iter().collect::<String>()),
     )
     // lexeme
     .skip(spaces().silent())
+}
+
+fn field<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    id_tok()
 }
 
 fn constant<Input>() -> impl Parser<Input, Output = Constant>
@@ -95,16 +116,6 @@ where
         .or(constant().map(|c| Expression::Val(c)))
 }
 
-fn eq<Input>() -> impl Parser<Input, Output = char>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    char('=')
-        // lexeme
-        .skip(spaces().silent())
-}
-
 fn term<Input>() -> impl Parser<Input, Output = Term>
 where
     Input: Stream<Token = char>,
@@ -114,16 +125,6 @@ where
         .skip(eq())
         .and(expression())
         .map(|(lhs, rhs)| Term::new(lhs, rhs))
-}
-
-fn and<Input>() -> impl Parser<Input, Output = String>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    keyword("and")
-        // lexeme
-        .skip(spaces().silent())
 }
 
 fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
