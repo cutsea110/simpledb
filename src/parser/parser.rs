@@ -19,22 +19,182 @@ where
         .skip(spaces().silent())
 }
 
-fn eq<Input>() -> impl Parser<Input, Output = char>
+fn keyword_select<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("SELECT")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_from<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("FROM")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_where<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("WHERE")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_and<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("AND")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn into<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("INTO")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_values<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("VALUES")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_delete<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("DELETE")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_update<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("UPDATE")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_set<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("SET")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_create<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("CREATE")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_table<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("TABLE")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_varchar<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("VARCHAR")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_int32<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("INT32")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_view<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("VIEW")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_as<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("AS")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_index<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("INDEX")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_on<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("ON")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn binop_eq<Input>() -> impl Parser<Input, Output = char>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     char('=')
-        // lexeme
-        .skip(spaces().silent())
-}
-
-fn and<Input>() -> impl Parser<Input, Output = String>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    keyword("and")
         // lexeme
         .skip(spaces().silent())
 }
@@ -122,7 +282,7 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     expression()
-        .skip(eq())
+        .skip(binop_eq())
         .and(expression())
         .map(|(lhs, rhs)| Term::new(lhs, rhs))
 }
@@ -133,7 +293,7 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     let pred1 = term().map(|t| Predicate::new(t));
-    let conjoin = and().map(|_| {
+    let conjoin = keyword_and().map(|_| {
         |mut l: Predicate, mut r: Predicate| {
             l.conjoin_with(&mut r);
             l
