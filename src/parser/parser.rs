@@ -9,8 +9,8 @@ use combine::{
 
 use super::{
     createindexdata::CreateIndexData, createtabledata::CreateTableData,
-    createviewdata::CreateViewData, deletedata::DeleteData, insertdata::InsertData,
-    modifydata::ModifyData, querydata::QueryData,
+    createviewdata::CreateViewData, ddl::DDL, deletedata::DeleteData, dml::DML,
+    insertdata::InsertData, modifydata::ModifyData, querydata::QueryData, sql::SQL,
 };
 use crate::{
     query::{constant::Constant, expression::Expression, predicate::Predicate, term::Term},
@@ -411,8 +411,39 @@ where
 }
 
 /// Methods for parsing the various update commands
+pub fn update_cmd<Input>() -> impl Parser<Input, Output = SQL>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    dml()
+        .map(|dml| SQL::DML(dml))
+        .or(ddl().map(|ddl| SQL::DDL(ddl)))
+}
 
-// TODO: updateCmd
+fn dml<Input>() -> impl Parser<Input, Output = DML>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    query()
+        .map(|q| DML::Query(q))
+        .or(insert().map(|i| DML::Insert(i)))
+        .or(delete().map(|d| DML::Delete(d)))
+        .or(modify().map(|m| DML::Modify(m)))
+}
+
+fn ddl<Input>() -> impl Parser<Input, Output = DDL>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    create_table()
+        .map(|t| DDL::Table(t))
+        .or(create_view().map(|v| DDL::View(v)))
+        .or(create_index().map(|i| DDL::Index(i)))
+}
+
 // TODO: create
 
 /// Method for parsing delete commands
