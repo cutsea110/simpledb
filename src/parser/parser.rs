@@ -934,5 +934,16 @@ mod tests {
                 ""
             ))
         );
+
+        let mut parser = create_table();
+        let mut expected = Schema::new();
+        expected.add_i32_field("SId");
+        expected.add_string_field("SName", 10);
+        expected.add_i32_field("GradYear");
+        expected.add_i32_field("MajorId");
+
+        assert_eq!(parser.parse(
+	    "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32 )"
+	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
     }
 }
