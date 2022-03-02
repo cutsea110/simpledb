@@ -411,7 +411,17 @@ where
 }
 
 /// Methods for parsing the various update commands
+
+// [DEPRECATED]
 pub fn update_cmd<Input>() -> impl Parser<Input, Output = SQL>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    sql()
+}
+
+pub fn sql<Input>() -> impl Parser<Input, Output = SQL>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
