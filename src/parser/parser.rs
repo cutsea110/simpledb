@@ -5,13 +5,14 @@ use combine::{between, chainl1, many, many1, optional, satisfy, sep_by1, Parser}
 
 use super::deletedata::DeleteData;
 use super::insertdata::InsertData;
+use super::modifydata::ModifyData;
 use super::querydata::QueryData;
 use crate::query::constant::Constant;
 use crate::query::expression::Expression;
 use crate::query::predicate::Predicate;
 use crate::query::term::Term;
 
-// primitive parser
+/// primitive parser
 
 fn keyword<Input>(s: &'static str) -> impl Parser<Input, Output = String>
 where
@@ -244,7 +245,7 @@ where
         .skip(spaces().silent())
 }
 
-// token
+/// token
 
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
 where
@@ -295,7 +296,7 @@ where
     .skip(spaces().silent())
 }
 
-// Methods for parsing predicates and their components
+/// Methods for parsing predicates and their components
 
 pub fn field<Input>() -> impl Parser<Input, Output = String>
 where
@@ -352,7 +353,7 @@ where
     chainl1(pred1, conjoin)
 }
 
-// Methods for parsing queries
+/// Methods for parsing queries
 
 pub fn query<Input>() -> impl Parser<Input, Output = QueryData>
 where
@@ -404,12 +405,12 @@ where
     chainl1(id_tok1, sep)
 }
 
-// Methods for parsing the various update commands
+/// Methods for parsing the various update commands
 
 // TODO: updateCmd
 // TODO: create
 
-// Method for parsing delete commands
+/// Method for parsing delete commands
 
 pub fn delete<Input>() -> impl Parser<Input, Output = DeleteData>
 where
@@ -428,7 +429,7 @@ where
         })
 }
 
-// Methods for parsing insert commands
+/// Methods for parsing insert commands
 
 pub fn insert<Input>() -> impl Parser<Input, Output = InsertData>
 where
@@ -460,6 +461,26 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     sep_by1(constant(), delim_comma())
+}
+
+/// Method for parsing modify commands
+
+pub fn modify<Input>() -> impl Parser<Input, Output = ModifyData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let sets = keyword_set().with(field().skip(binop_eq()).and(expression()));
+    let where_clause = keyword_where().with(predicate());
+
+    keyword_update()
+        .with(id_tok())
+        .and(sets)
+        .and(optional(where_clause))
+        .map(|((t, (f, e)), op)| {
+            let pred = op.unwrap_or(Predicate::new_empty());
+            ModifyData::new(t, f, e, pred)
+        })
 }
 
 #[cfg(test)]
@@ -799,6 +820,64 @@ mod tests {
                 ),
                 ""
             ))
-        )
+        );
+
+        let mut parser = modify();
+        assert_eq!(
+            parser.parse("UPDATE STUDENT SET age = 22"),
+            Ok((
+                ModifyData::new(
+                    "STUDENT".to_string(),
+                    "age".to_string(),
+                    Expression::Val(Constant::I32(22)),
+                    Predicate::new_empty(),
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("UPDATE STUDENT SET age = 22 WHERE age = 21"),
+            Ok((
+                ModifyData::new(
+                    "STUDENT".to_string(),
+                    "age".to_string(),
+                    Expression::Val(Constant::I32(22)),
+                    Predicate::new(Term::new(
+                        Expression::Fldname("age".to_string()),
+                        Expression::Val(Constant::I32(21))
+                    ))
+                ),
+                ""
+            ))
+        );
+        let terms = vec![
+            Term::new(
+                Expression::Fldname("dep".to_string()),
+                Expression::Val(Constant::String("math".to_string())),
+            ),
+            Term::new(
+                Expression::Fldname("score".to_string()),
+                Expression::Val(Constant::I32(100)),
+            ),
+        ];
+        let expected = terms.iter().map(|t| Predicate::new(t.clone())).fold(
+            Predicate::new_empty(),
+            |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            },
+        );
+        assert_eq!(
+            parser.parse("UPDATE STUDENT SET grade = 'A+' WHERE dep = 'math' AND score = 100"),
+            Ok((
+                ModifyData::new(
+                    "STUDENT".to_string(),
+                    "grade".to_string(),
+                    Expression::Val(Constant::String("A+".to_string())),
+                    expected,
+                ),
+                ""
+            ))
+        );
     }
 }
