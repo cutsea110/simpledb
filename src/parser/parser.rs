@@ -30,7 +30,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_select<Input>() -> impl Parser<Input, Output = String>
+fn kw_select<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -40,7 +40,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_from<Input>() -> impl Parser<Input, Output = String>
+fn kw_from<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -50,7 +50,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_where<Input>() -> impl Parser<Input, Output = String>
+fn kw_where<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -60,7 +60,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_and<Input>() -> impl Parser<Input, Output = String>
+fn kw_and<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -70,7 +70,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_insert<Input>() -> impl Parser<Input, Output = String>
+fn kw_insert<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -80,7 +80,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_into<Input>() -> impl Parser<Input, Output = String>
+fn kw_into<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -90,7 +90,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_values<Input>() -> impl Parser<Input, Output = String>
+fn kw_values<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -100,7 +100,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_delete<Input>() -> impl Parser<Input, Output = String>
+fn kw_delete<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -110,7 +110,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_update<Input>() -> impl Parser<Input, Output = String>
+fn kw_update<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -120,7 +120,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_set<Input>() -> impl Parser<Input, Output = String>
+fn kw_set<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -130,7 +130,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_create<Input>() -> impl Parser<Input, Output = String>
+fn kw_create<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -140,7 +140,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_table<Input>() -> impl Parser<Input, Output = String>
+fn kw_table<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -150,7 +150,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_varchar<Input>() -> impl Parser<Input, Output = String>
+fn kw_varchar<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -160,7 +160,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_int32<Input>() -> impl Parser<Input, Output = String>
+fn kw_int32<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -170,7 +170,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_view<Input>() -> impl Parser<Input, Output = String>
+fn kw_view<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -180,7 +180,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_as<Input>() -> impl Parser<Input, Output = String>
+fn kw_as<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -190,7 +190,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_index<Input>() -> impl Parser<Input, Output = String>
+fn kw_index<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -200,7 +200,7 @@ where
         .skip(spaces().silent())
 }
 
-fn keyword_on<Input>() -> impl Parser<Input, Output = String>
+fn kw_on<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -348,7 +348,7 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     let pred1 = term().map(|t| Predicate::new(t));
-    let conjoin = keyword_and().map(|_| {
+    let conjoin = kw_and().map(|_| {
         |mut l: Predicate, mut r: Predicate| {
             l.conjoin_with(&mut r);
             l
@@ -365,9 +365,9 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let fields = keyword_select().with(select_list());
-    let tables = keyword_from().with(table_list());
-    let where_clause = keyword_where().with(predicate());
+    let fields = kw_select().with(select_list());
+    let tables = kw_from().with(table_list());
+    let where_clause = kw_where().with(predicate());
 
     fields
         .and(tables)
@@ -463,8 +463,8 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let prelude = keyword_delete().and(keyword_from());
-    let where_clause = keyword_where().with(predicate());
+    let prelude = kw_delete().and(kw_from());
+    let where_clause = kw_where().with(predicate());
 
     prelude
         .with(id_tok())
@@ -482,9 +482,9 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let prelude = keyword_insert().and(keyword_into());
+    let prelude = kw_insert().and(kw_into());
     let fields = between(delim_parenl(), delim_parenr(), field_list());
-    let vals = keyword_values().with(between(delim_parenl(), delim_parenr(), const_list()));
+    let vals = kw_values().with(between(delim_parenl(), delim_parenr(), const_list()));
 
     prelude
         .with(id_tok())
@@ -516,10 +516,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let sets = keyword_set().with(field().skip(binop_eq()).and(expression()));
-    let where_clause = keyword_where().with(predicate());
+    let sets = kw_set().with(field().skip(binop_eq()).and(expression()));
+    let where_clause = kw_where().with(predicate());
 
-    keyword_update()
+    kw_update()
         .with(id_tok())
         .and(sets)
         .and(optional(where_clause))
@@ -536,7 +536,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let prelude = keyword_create().and(keyword_table());
+    let prelude = kw_create().and(kw_table());
     let field_defs = between(delim_parenl(), delim_parenr(), field_defs());
 
     prelude
@@ -572,8 +572,8 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let int32_def = keyword_int32().map(|_| FieldInfo::new(FieldType::INTEGER, 0));
-    let varchar_def = keyword_varchar()
+    let int32_def = kw_int32().map(|_| FieldInfo::new(FieldType::INTEGER, 0));
+    let varchar_def = kw_varchar()
         .with(between(delim_parenl(), delim_parenr(), i32_tok()))
         .map(|n| FieldInfo::new(FieldType::VARCHAR, n as usize));
 
@@ -587,11 +587,11 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let prelude = keyword_create().and(keyword_view());
+    let prelude = kw_create().and(kw_view());
 
     prelude
         .with(id_tok())
-        .and(keyword_as().with(query()))
+        .and(kw_as().with(query()))
         .map(|(v, vq)| CreateViewData::new(v, vq))
 }
 
@@ -602,11 +602,11 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    let prelude = keyword_create().and(keyword_index());
+    let prelude = kw_create().and(kw_index());
 
     prelude
         .with(id_tok())
-        .and(keyword_on().with(id_tok()))
+        .and(kw_on().with(id_tok()))
         .and(between(delim_parenl(), delim_parenr(), field()))
         .map(|((idxname, tblname), fldname)| CreateIndexData::new(idxname, tblname, fldname))
 }
@@ -618,7 +618,7 @@ mod tests {
     use combine::error::StringStreamError;
 
     #[test]
-    fn unit_test() {
+    fn id_tok_test() {
         let mut parser = id_tok();
         assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
         assert_eq!(parser.parse("a42"), Ok(("a42".to_string(), "")));
@@ -627,13 +627,19 @@ mod tests {
             parser.parse("'Hey, man!' I said."),
             Err(StringStreamError::UnexpectedParse)
         );
+    }
 
+    #[test]
+    fn i32_tok_test() {
         let mut parser = i32_tok();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(parser.parse("42"), Ok((42, "")));
         assert_eq!(parser.parse("42 "), Ok((42, "")));
         assert_eq!(parser.parse("-42 "), Ok((-42, "")));
+    }
 
+    #[test]
+    fn str_tok_test() {
         let mut parser = str_tok();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
@@ -641,7 +647,10 @@ mod tests {
             Ok(("Hey, man!".to_string(), "He said."))
         );
         assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
+    }
 
+    #[test]
+    fn constant_test() {
         let mut parser = constant();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(parser.parse("42"), Ok((Constant::I32(42), "")));
@@ -649,7 +658,10 @@ mod tests {
             parser.parse("'joje'"),
             Ok((Constant::String("joje".to_string()), ""))
         );
+    }
 
+    #[test]
+    fn expressin_test() {
         let mut parser = expression();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
@@ -668,7 +680,10 @@ mod tests {
             parser.parse("'bob'   "),
             Ok((Expression::Val(Constant::String("bob".to_string())), ""))
         );
+    }
 
+    #[test]
+    fn term_test() {
         let mut parser = term();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
@@ -791,7 +806,10 @@ mod tests {
                 ""
             ))
         );
+    }
 
+    #[test]
+    fn predicate_test() {
         let mut parser = predicate();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
@@ -855,6 +873,40 @@ mod tests {
             Ok((expected, ""))
         );
 
+        assert_eq!(
+            parser.parse("1 = 1"),
+            Ok((
+                Predicate::new(Term::new(
+                    Expression::Val(Constant::I32(1)),
+                    Expression::Val(Constant::I32(1))
+                )),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("'julio' = 'willy'"),
+            Ok((
+                Predicate::new(Term::new(
+                    Expression::Val(Constant::String("julio".to_string())),
+                    Expression::Val(Constant::String("willy".to_string()))
+                )),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("DId = MajorId"),
+            Ok((
+                Predicate::new(Term::new(
+                    Expression::Fldname("DId".to_string()),
+                    Expression::Fldname("MajorId".to_string())
+                )),
+                ""
+            ))
+        );
+    }
+
+    #[test]
+    fn query_test() {
         let mut parser = query();
         assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
         assert_eq!(
@@ -909,7 +961,10 @@ mod tests {
                 ""
             ))
         );
+    }
 
+    #[test]
+    fn delete_test() {
         let mut parser = delete();
         assert_eq!(
             parser.parse("DELETE FROM STUDENT"),
@@ -932,7 +987,10 @@ mod tests {
                 ""
             ))
         );
+    }
 
+    #[test]
+    fn insert_test() {
         let mut parser = insert();
         assert_eq!(
             parser.parse("INSERT INTO STUDENT (name, age, sex) VALUES ('Darci', 20, 'female')"),
@@ -949,7 +1007,10 @@ mod tests {
                 ""
             ))
         );
+    }
 
+    #[test]
+    fn modify_test() {
         let mut parser = modify();
         assert_eq!(
             parser.parse("UPDATE STUDENT SET age = 22"),
@@ -1007,7 +1068,10 @@ mod tests {
                 ""
             ))
         );
+    }
 
+    #[test]
+    fn create_table_test() {
         let mut parser = create_table();
         let mut expected = Schema::new();
         expected.add_i32_field("SId");
@@ -1018,7 +1082,10 @@ mod tests {
         assert_eq!(parser.parse(
 	    "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32 )"
 	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
+    }
 
+    #[test]
+    fn create_view_test() {
         let mut parser = create_view();
         assert_eq!(
             parser
@@ -1038,7 +1105,10 @@ mod tests {
                 ""
             ))
         );
+    }
 
+    #[test]
+    fn create_index_test() {
         let mut parser = create_index();
         assert_eq!(
             parser.parse("CREATE INDEX idx_grad_year ON STUDENT (GradYear)"),
