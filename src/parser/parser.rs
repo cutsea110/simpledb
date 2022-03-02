@@ -1,9 +1,10 @@
 use combine::error::ParseError;
 use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
 use combine::stream::Stream;
-use combine::{between, chainl1, many, many1, optional, satisfy, Parser};
+use combine::{between, chainl1, many, many1, optional, satisfy, sep_by1, Parser};
 
 use super::deletedata::DeleteData;
+use super::insertdata::InsertData;
 use super::querydata::QueryData;
 use crate::query::constant::Constant;
 use crate::query::expression::Expression;
@@ -63,7 +64,17 @@ where
         .skip(spaces().silent())
 }
 
-fn into<Input>() -> impl Parser<Input, Output = String>
+fn keyword_insert<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("INSERT")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn keyword_into<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -189,6 +200,26 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     keyword("ON")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn delim_parenl<Input>() -> impl Parser<Input, Output = char>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    char('(')
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn delim_parenr<Input>() -> impl Parser<Input, Output = char>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    char(')')
         // lexeme
         .skip(spaces().silent())
 }
@@ -395,6 +426,40 @@ where
             let pred = opred.unwrap_or(Predicate::new_empty());
             DeleteData::new(tblname, pred)
         })
+}
+
+// Methods for parsing insert commands
+
+pub fn insert<Input>() -> impl Parser<Input, Output = InsertData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let prelude = keyword_insert().and(keyword_into());
+    let fields = between(delim_parenl(), delim_parenr(), field_list());
+    let vals = keyword_values().with(between(delim_parenl(), delim_parenr(), const_list()));
+
+    prelude
+        .with(id_tok())
+        .and(fields)
+        .and(vals)
+        .map(|((t, fs), vs)| InsertData::new(t, fs, vs))
+}
+
+fn field_list<Input>() -> impl Parser<Input, Output = Vec<String>>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    sep_by1(field(), delim_comma())
+}
+
+fn const_list<Input>() -> impl Parser<Input, Output = Vec<Constant>>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    sep_by1(constant(), delim_comma())
 }
 
 #[cfg(test)]
@@ -718,5 +783,22 @@ mod tests {
                 ""
             ))
         );
+
+        let mut parser = insert();
+        assert_eq!(
+            parser.parse("INSERT INTO STUDENT (name, age, sex) VALUES ('Darci', 20, 'female')"),
+            Ok((
+                InsertData::new(
+                    "STUDENT".to_string(),
+                    vec!["name".to_string(), "age".to_string(), "sex".to_string()],
+                    vec![
+                        Constant::String("Darci".to_string()),
+                        Constant::I32(20),
+                        Constant::String("female".to_string())
+                    ]
+                ),
+                ""
+            ))
+        )
     }
 }
