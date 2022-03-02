@@ -1,22 +1,21 @@
 use std::usize;
 
-use combine::error::ParseError;
-use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
-use combine::stream::Stream;
-use combine::{between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser};
+use combine::{
+    error::ParseError,
+    parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
+    stream::Stream,
+    {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
+};
 
-use super::createindexdata::CreateIndexData;
-use super::createtabledata::CreateTableData;
-use super::createviewdata::CreateViewData;
-use super::deletedata::DeleteData;
-use super::insertdata::InsertData;
-use super::modifydata::ModifyData;
-use super::querydata::QueryData;
-use crate::query::constant::Constant;
-use crate::query::expression::Expression;
-use crate::query::predicate::Predicate;
-use crate::query::term::Term;
-use crate::record::schema::{FieldInfo, FieldType, Schema};
+use super::{
+    createindexdata::CreateIndexData, createtabledata::CreateTableData,
+    createviewdata::CreateViewData, deletedata::DeleteData, insertdata::InsertData,
+    modifydata::ModifyData, querydata::QueryData,
+};
+use crate::{
+    query::{constant::Constant, expression::Expression, predicate::Predicate, term::Term},
+    record::schema::{FieldInfo, FieldType, Schema},
+};
 
 /// primitive parser
 
@@ -573,9 +572,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use combine::error::StringStreamError;
-
     use super::*;
+
+    use combine::error::StringStreamError;
 
     #[test]
     fn unit_test() {
