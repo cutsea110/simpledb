@@ -5,6 +5,7 @@ use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
 use combine::stream::Stream;
 use combine::{between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser};
 
+use super::createindexdata::CreateIndexData;
 use super::createtabledata::CreateTableData;
 use super::createviewdata::CreateViewData;
 use super::deletedata::DeleteData;
@@ -554,6 +555,22 @@ where
         .map(|(v, vq)| CreateViewData::new(v, vq))
 }
 
+/// Method for parsing create index commands
+
+pub fn create_index<Input>() -> impl Parser<Input, Output = CreateIndexData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let prelude = keyword_create().and(keyword_index());
+
+    prelude
+        .with(id_tok())
+        .and(keyword_on().with(id_tok()))
+        .and(between(delim_parenl(), delim_parenr(), field()))
+        .map(|((idxname, tblname), fldname)| CreateIndexData::new(idxname, tblname, fldname))
+}
+
 #[cfg(test)]
 mod tests {
     use combine::error::StringStreamError;
@@ -977,6 +994,19 @@ mod tests {
                             Expression::Fldname("DId".to_string())
                         ))
                     )
+                ),
+                ""
+            ))
+        );
+
+        let mut parser = create_index();
+        assert_eq!(
+            parser.parse("CREATE INDEX idx_grad_year ON STUDENT (GradYear)"),
+            Ok((
+                CreateIndexData::new(
+                    "idx_grad_year".to_string(),
+                    "STUDENT".to_string(),
+                    "GradYear".to_string()
                 ),
                 ""
             ))
