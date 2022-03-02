@@ -1,6 +1,7 @@
 use std::usize;
 
 use combine::{
+    any, attempt,
     error::ParseError,
     parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
     stream::Stream,
@@ -291,11 +292,15 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
+    let almost = satisfy(|c| c != '\'' && c != '\\');
+    let escaped = attempt(char('\\').with(any()));
+    let quote_quote = attempt(char('\'').skip(char('\'')));
+    let internal_string = almost.or(escaped).or(quote_quote);
+
     between(
         char('\''),
         char('\''),
-        // TODO: escape character
-        many(satisfy(|c| c != '\'')).map(|v: Vec<char>| v.into_iter().collect::<String>()),
+        many(internal_string).map(|v: Vec<char>| v.into_iter().collect::<String>()),
     )
     // lexeme
     .skip(spaces().silent())
@@ -453,8 +458,6 @@ where
         .or(create_view().map(|v| DDL::View(v)))
         .or(create_index().map(|i| DDL::Index(i)))
 }
-
-// TODO: create
 
 /// Method for parsing delete commands
 
@@ -616,6 +619,7 @@ mod tests {
     use super::*;
 
     use combine::error::StringStreamError;
+    use combine::Parser;
 
     #[test]
     fn id_tok_test() {
@@ -646,6 +650,14 @@ mod tests {
             parser.parse("'Hey, man!' He said."),
             Ok(("Hey, man!".to_string(), "He said."))
         );
+        assert_eq!(
+            parser.parse("'He is joe''s sun.'"),
+            Ok(("He is joe's sun.".to_string(), ""))
+        );
+        assert_eq!(
+            parser.parse("'What\\'s up?'"),
+            Ok(("What's up?".to_string(), ""))
+        );
         assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
     }
 
@@ -655,8 +667,8 @@ mod tests {
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(parser.parse("42"), Ok((Constant::I32(42), "")));
         assert_eq!(
-            parser.parse("'joje'"),
-            Ok((Constant::String("joje".to_string()), ""))
+            parser.parse("'joe'"),
+            Ok((Constant::String("joe".to_string()), ""))
         );
     }
 
