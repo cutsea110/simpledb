@@ -56,13 +56,13 @@ pub enum FieldType {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-struct FieldInfo {
-    fld_type: FieldType,
-    length: usize,
+pub struct FieldInfo {
+    pub fld_type: FieldType,
+    pub length: usize,
 }
 
 impl FieldInfo {
-    fn new(fld_type: FieldType, length: usize) -> Self {
+    pub fn new(fld_type: FieldType, length: usize) -> Self {
         Self { fld_type, length }
     }
 }

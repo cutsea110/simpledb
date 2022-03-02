@@ -1,8 +1,11 @@
+use std::usize;
+
 use combine::error::ParseError;
 use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
 use combine::stream::Stream;
-use combine::{between, chainl1, many, many1, optional, satisfy, sep_by1, Parser};
+use combine::{between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser};
 
+use super::createtabledata::CreateTableData;
 use super::deletedata::DeleteData;
 use super::insertdata::InsertData;
 use super::modifydata::ModifyData;
@@ -11,6 +14,7 @@ use crate::query::constant::Constant;
 use crate::query::expression::Expression;
 use crate::query::predicate::Predicate;
 use crate::query::term::Term;
+use crate::record::schema::{FieldInfo, FieldType, Schema};
 
 /// primitive parser
 
@@ -481,6 +485,57 @@ where
             let pred = op.unwrap_or(Predicate::new_empty());
             ModifyData::new(t, f, e, pred)
         })
+}
+
+/// Method for parsing create table commands
+
+pub fn create_table<Input>() -> impl Parser<Input, Output = CreateTableData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let prelude = keyword_create().and(keyword_table());
+    let field_defs = between(delim_parenl(), delim_parenr(), field_defs());
+
+    prelude
+        .with(id_tok())
+        .and(field_defs)
+        .map(|(tblname, fdefs)| {
+            let mut sch = Schema::new();
+            for (fldname, fi) in fdefs.iter() {
+                sch.add_field(fldname, fi.fld_type, fi.length)
+            }
+            CreateTableData::new(tblname, sch)
+        })
+}
+
+fn field_defs<Input>() -> impl Parser<Input, Output = Vec<(String, FieldInfo)>>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    sep_by(field_def(), delim_comma())
+}
+
+fn field_def<Input>() -> impl Parser<Input, Output = (String, FieldInfo)>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    id_tok().and(type_def())
+}
+
+fn type_def<Input>() -> impl Parser<Input, Output = FieldInfo>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let int32_def = keyword_int32().map(|_| FieldInfo::new(FieldType::INTEGER, 0));
+    let varchar_def = keyword_varchar()
+        .with(between(delim_parenl(), delim_parenr(), i32_tok()))
+        .map(|n| FieldInfo::new(FieldType::VARCHAR, n as usize));
+
+    int32_def.or(varchar_def)
 }
 
 #[cfg(test)]
