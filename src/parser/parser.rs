@@ -646,6 +646,7 @@ mod tests {
     fn str_tok_test() {
         let mut parser = str_tok();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
+        assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
         assert_eq!(
             parser.parse("'Hey, man!' He said."),
             Ok(("Hey, man!".to_string(), "He said."))
@@ -658,7 +659,6 @@ mod tests {
             parser.parse("'What\\'s up?'"),
             Ok(("What's up?".to_string(), ""))
         );
-        assert_eq!(parser.parse("a42"), Err(StringStreamError::UnexpectedParse));
     }
 
     #[test]
