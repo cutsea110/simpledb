@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::query::predicate::Predicate;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct QueryData {
     fields: Vec<String>,
     tables: Vec<String>,

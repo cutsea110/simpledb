@@ -1,5 +1,6 @@
 use super::querydata::QueryData;
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CreateViewData {
     viewname: String,
     qrydata: QueryData,

@@ -3,6 +3,7 @@ use combine::parser::char::{alpha_num, char, digit, letter, spaces, string_cmp};
 use combine::stream::Stream;
 use combine::{between, chainl1, many, many1, optional, satisfy, Parser};
 
+use super::deletedata::DeleteData;
 use super::querydata::QueryData;
 use crate::query::constant::Constant;
 use crate::query::expression::Expression;
@@ -334,8 +335,8 @@ where
     fields
         .and(tables)
         .and(optional(where_clause))
-        .map(|((fs, ts), p)| {
-            let pred = p.unwrap_or(Predicate::new_empty());
+        .map(|((fs, ts), op)| {
+            let pred = op.unwrap_or(Predicate::new_empty());
             QueryData::new(fs, ts, pred)
         })
 }
@@ -378,6 +379,23 @@ where
 // TODO: create
 
 // Method for parsing delete commands
+
+pub fn delete<Input>() -> impl Parser<Input, Output = DeleteData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let prelude = keyword_delete().and(keyword_from());
+    let where_clause = keyword_where().with(predicate());
+
+    prelude
+        .with(id_tok())
+        .and(optional(where_clause))
+        .map(|(tblname, opred)| {
+            let pred = opred.unwrap_or(Predicate::new_empty());
+            DeleteData::new(tblname, pred)
+        })
+}
 
 #[cfg(test)]
 mod tests {
@@ -673,6 +691,29 @@ mod tests {
                     vec!["name".to_string(), "age".to_string()],
                     vec!["student".to_string(), "dept".to_string()],
                     expected.clone(),
+                ),
+                ""
+            ))
+        );
+
+        let mut parser = delete();
+        assert_eq!(
+            parser.parse("DELETE FROM STUDENT"),
+            Ok((
+                DeleteData::new("STUDENT".to_string(), Predicate::new_empty()),
+                ""
+            ))
+        );
+        let mut parser = delete();
+        assert_eq!(
+            parser.parse("DELETE FROM STUDENT WHERE name = 'joe'"),
+            Ok((
+                DeleteData::new(
+                    "STUDENT".to_string(),
+                    Predicate::new(Term::new(
+                        Expression::Fldname("name".to_string()),
+                        Expression::Val(Constant::String("joe".to_string()))
+                    ))
                 ),
                 ""
             ))

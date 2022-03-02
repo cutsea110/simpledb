@@ -1,5 +1,6 @@
 use crate::query::{expression::Expression, predicate::Predicate};
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ModifyData {
     tblname: String,
     fldname: String,

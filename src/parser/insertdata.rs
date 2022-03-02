@@ -1,7 +1,6 @@
-use itertools::Itertools;
-
 use crate::query::constant::Constant;
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct InsertData {
     tblname: String,
     flds: Vec<String>,

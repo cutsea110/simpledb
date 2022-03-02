@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct CreateIndexData {
     idxname: String,
     tblname: String,

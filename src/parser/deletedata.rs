@@ -1,5 +1,6 @@
 use crate::query::predicate::Predicate;
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct DeleteData {
     tblname: String,
     pred: Predicate,
