@@ -6,6 +6,7 @@ use combine::stream::Stream;
 use combine::{between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser};
 
 use super::createtabledata::CreateTableData;
+use super::createviewdata::CreateViewData;
 use super::deletedata::DeleteData;
 use super::insertdata::InsertData;
 use super::modifydata::ModifyData;
@@ -538,6 +539,21 @@ where
     int32_def.or(varchar_def)
 }
 
+/// Method for parsing create view commands
+
+pub fn create_view<Input>() -> impl Parser<Input, Output = CreateViewData>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    let prelude = keyword_create().and(keyword_view());
+
+    prelude
+        .with(id_tok())
+        .and(keyword_as().with(query()))
+        .map(|(v, vq)| CreateViewData::new(v, vq))
+}
+
 #[cfg(test)]
 mod tests {
     use combine::error::StringStreamError;
@@ -945,5 +961,25 @@ mod tests {
         assert_eq!(parser.parse(
 	    "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32 )"
 	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
+
+        let mut parser = create_view();
+        assert_eq!(
+            parser
+                .parse("CREATE VIEW name_dep AS SELECT SName, DName FROM STUDENT, DEPT WHERE MajorId = DId"),
+            Ok((
+                CreateViewData::new(
+                    "name_dep".to_string(),
+                    QueryData::new(
+                        vec!["SName".to_string(), "DName".to_string()],
+                        vec!["STUDENT".to_string(), "DEPT".to_string()],
+                        Predicate::new(Term::new(
+                            Expression::Fldname("MajorId".to_string()),
+                            Expression::Fldname("DId".to_string())
+                        ))
+                    )
+                ),
+                ""
+            ))
+        );
     }
 }
