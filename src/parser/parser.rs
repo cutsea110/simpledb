@@ -412,7 +412,7 @@ where
 
 /// Methods for parsing the various update commands
 
-// [DEPRECATED]
+#[deprecated(note = "you should use sql() method instead of this.")]
 pub fn update_cmd<Input>() -> impl Parser<Input, Output = SQL>
 where
     Input: Stream<Token = char>,
