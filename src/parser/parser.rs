@@ -330,18 +330,14 @@ where
     let fields = keyword_select().with(select_list());
     let tables = keyword_from().with(table_list());
     let where_clause = keyword_where().with(predicate());
-    let where_clauses = many(where_clause).map(|mut cs: Vec<Predicate>| {
-        cs.iter_mut()
-            .fold(Predicate::new_empty(), |mut p1, mut p2| {
-                p1.conjoin_with(&mut p2);
-                p1
-            })
-    });
 
     fields
         .and(tables)
-        .and(where_clauses)
-        .map(|((fs, ts), pred)| QueryData::new(fs, ts, pred))
+        .and(optional(where_clause))
+        .map(|((fs, ts), p)| {
+            let pred = p.unwrap_or(Predicate::new_empty());
+            QueryData::new(fs, ts, pred)
+        })
 }
 
 fn select_list<Input>() -> impl Parser<Input, Output = Vec<String>>
@@ -669,26 +665,8 @@ mod tests {
             parser.parse(
                 "SELECT name, age \
                    FROM student, dept \
-                  WHERE age = 18 \
-                    AND name = 'joe' \
-                    AND sex = 'male' \
-                    AND dev_id = major_id"
-            ),
-            Ok((
-                QueryData::new(
-                    vec!["name".to_string(), "age".to_string()],
-                    vec!["student".to_string(), "dept".to_string()],
-                    expected.clone(),
-                ),
-                ""
-            ))
-        );
-        assert_eq!(
-            parser.parse(
-                "SELECT name, age \
-                   FROM student, dept \
                   WHERE age = 18 AND name = 'joe' \
-                  WHERE sex = 'male' AND dev_id = major_id"
+                    AND sex = 'male' AND dev_id = major_id"
             ),
             Ok((
                 QueryData::new(
