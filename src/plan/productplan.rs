@@ -33,6 +33,7 @@ impl ProductPlan {
         let mut schema = Schema::new();
         schema.add_all(p1.schema());
         schema.add_all(p2.schema());
+
         Self {
             p1,
             p2,
