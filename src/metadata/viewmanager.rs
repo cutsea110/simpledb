@@ -10,7 +10,7 @@ use crate::{
 
 pub const MAX_VIEWDEF: usize = 100; // max view def chars
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ViewMgr {
     tbl_mgr: TableMgr,
 }

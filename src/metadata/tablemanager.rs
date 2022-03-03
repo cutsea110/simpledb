@@ -15,7 +15,7 @@ use crate::{
 // table or field name
 pub const MAX_NAME: usize = 16;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TableMgr {
     tcat_layout: Arc<Layout>,
     fcat_layout: Arc<Layout>,

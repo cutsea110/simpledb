@@ -13,6 +13,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct BasicQueryPlanner {
     mdm: MetadataMgr,
 }
@@ -37,8 +38,8 @@ impl BasicQueryPlanner {
                 plans.push(self.create_plan(viewdata, Arc::clone(&tx))?);
             } else {
                 plans.push(Arc::new(TablePlan::new(
-                    Arc::clone(&tx),
                     tblname,
+                    Arc::clone(&tx),
                     self.mdm.clone(),
                 )?))
             }

@@ -16,7 +16,7 @@ use super::{
     viewmanager::ViewMgr,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct MetadataMgr {
     tblmgr: TableMgr,
     viewmgr: ViewMgr,

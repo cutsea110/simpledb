@@ -16,7 +16,7 @@ use super::{
     tablemanager::{TableMgr, MAX_NAME},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct IndexMgr {
     layout: Arc<Layout>,
     tblmgr: TableMgr,

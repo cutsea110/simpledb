@@ -3,7 +3,7 @@ use std::{collections::HashMap, mem, sync::Arc};
 use super::schema::{FieldType, Schema};
 use crate::file::page::Page;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Layout {
     schema: Arc<Schema>,
     offsets: HashMap<String, usize>,

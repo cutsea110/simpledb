@@ -11,7 +11,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StatMgr {
     tbl_mgr: TableMgr,
     tablestats: HashMap<String, StatInfo>,
@@ -87,7 +87,7 @@ impl StatMgr {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct StatInfo {
     num_blocks: i32,
     num_recs: i32,
