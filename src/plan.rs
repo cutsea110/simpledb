@@ -1,3 +1,4 @@
+pub mod basicqueryplanner;
 pub mod plan;
 pub mod productplan;
 pub mod projectplan;
