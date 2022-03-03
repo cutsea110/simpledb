@@ -54,7 +54,7 @@ impl Scan for SelectScan {
         self.s.lock().unwrap().close()
     }
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
-        Err(From::from(SelectScanError::DowncastError))
+        Ok(self)
     }
 }
 
