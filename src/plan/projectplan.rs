@@ -3,35 +3,47 @@ use std::sync::{Arc, Mutex};
 
 use super::{plan::Plan, selectplan::SelectPlan};
 use crate::{
-    query::{scan::Scan, selectscan::SelectScan},
+    query::{projectscan::ProjectScan, scan::Scan, selectscan::SelectScan},
     record::schema::Schema,
 };
 
 pub struct ProjectPlan {
     p: Arc<dyn Plan>,
-    schema: Schema,
+    schema: Arc<Schema>,
 }
 
 impl Plan for ProjectPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
-        panic!("TODO")
+        let s = self.p.open()?;
+        Ok(Arc::new(Mutex::new(ProjectScan::new(
+            s,
+            self.schema.fields().clone(),
+        ))))
     }
     fn blocks_accessed(&self) -> i32 {
-        panic!("TODO")
+        self.p.blocks_accessed()
     }
     fn records_output(&self) -> i32 {
-        panic!("TODO")
+        self.p.records_output()
     }
     fn distinct_values(&self, fldname: &str) -> i32 {
-        panic!("TODO")
+        self.p.distinct_values(fldname)
     }
     fn schema(&self) -> Arc<Schema> {
-        panic!("TODO")
+        Arc::clone(&self.schema)
     }
 }
 
 impl ProjectPlan {
     pub fn new(p: Arc<dyn Plan>, fieldlist: Vec<String>) -> Self {
-        panic!("TODO")
+        let mut schema = Schema::new();
+        for fldname in fieldlist {
+            schema.add(&fldname, &p.schema())
+        }
+
+        Self {
+            p,
+            schema: Arc::new(schema),
+        }
     }
 }
