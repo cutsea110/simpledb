@@ -5,10 +5,7 @@ use std::sync::{Arc, Mutex};
 use super::plan::Plan;
 use crate::{
     metadata::manager::MetadataMgr,
-    parser::{
-        parser::{create_view, query},
-        querydata::QueryData,
-    },
+    parser::{parser::query, querydata::QueryData},
     plan::{
         productplan::ProductPlan, projectplan::ProjectPlan, selectplan::SelectPlan,
         tableplan::TablePlan,

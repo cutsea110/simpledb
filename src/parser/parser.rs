@@ -1,13 +1,5 @@
 use std::usize;
 
-use combine::{
-    any, attempt,
-    error::ParseError,
-    parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
-    stream::Stream,
-    {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
-};
-
 use super::{
     createindexdata::CreateIndexData, createtabledata::CreateTableData,
     createviewdata::CreateViewData, ddl::DDL, deletedata::DeleteData, dml::DML,
@@ -16,6 +8,13 @@ use super::{
 use crate::{
     query::{constant::Constant, expression::Expression, predicate::Predicate, term::Term},
     record::schema::{FieldInfo, FieldType, Schema},
+};
+use combine::{
+    any, attempt,
+    error::ParseError,
+    parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
+    stream::Stream,
+    {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
 
 /// primitive parser

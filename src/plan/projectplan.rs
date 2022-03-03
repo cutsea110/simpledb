@@ -1,9 +1,9 @@
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
-use super::{plan::Plan, selectplan::SelectPlan};
+use super::plan::Plan;
 use crate::{
-    query::{projectscan::ProjectScan, scan::Scan, selectscan::SelectScan},
+    query::{projectscan::ProjectScan, scan::Scan},
     record::schema::Schema,
 };
 
