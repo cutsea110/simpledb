@@ -42,11 +42,11 @@ impl QueryData {
             pred,
         }
     }
-    pub fn fields(&self) -> Vec<&String> {
-        self.fields.iter().collect()
+    pub fn fields(&self) -> &Vec<String> {
+        &self.fields
     }
-    pub fn tables(&self) -> Vec<&String> {
-        self.tables.iter().collect()
+    pub fn tables(&self) -> &Vec<String> {
+        &self.tables
     }
     pub fn pred(&self) -> &Predicate {
         &self.pred
