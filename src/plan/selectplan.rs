@@ -40,7 +40,7 @@ impl Plan for SelectPlan {
         self.p.distinct_values(fldname)
     }
     fn schema(&self) -> Arc<Schema> {
-        self.p.schema()
+        Arc::clone(&self.p.schema())
     }
 }
 

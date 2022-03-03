@@ -36,7 +36,7 @@ impl Plan for TablePlan {
         self.si.distinct_values(fldname)
     }
     fn schema(&self) -> Arc<Schema> {
-        self.layout.schema()
+        Arc::clone(&self.layout.schema())
     }
 }
 

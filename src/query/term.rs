@@ -29,8 +29,8 @@ impl Term {
         let rhsval = self.rhs.evaluate(Arc::clone(&s));
         lhsval.unwrap() == rhsval.unwrap()
     }
-    pub fn applies_to(&self, sch: &Schema) -> bool {
-        self.lhs.applies_to(sch) && self.rhs.applies_to(sch)
+    pub fn applies_to(&self, sch: Arc<Schema>) -> bool {
+        self.lhs.applies_to(Arc::clone(&sch)) && self.rhs.applies_to(Arc::clone(&sch))
     }
     pub fn reduction_factor(&self, p: Arc<dyn Plan>) -> i32 {
         match (&self.lhs, &self.rhs) {

@@ -45,10 +45,10 @@ impl Predicate {
         }
         factor
     }
-    pub fn select_sub_pred(&self, sch: &Schema) -> Option<Predicate> {
+    pub fn select_sub_pred(&self, sch: Arc<Schema>) -> Option<Predicate> {
         let mut result = Predicate::new_empty();
         for t in self.terms.iter() {
-            if t.applies_to(sch) {
+            if t.applies_to(Arc::clone(&sch)) {
                 result.terms.push(t.clone());
             }
         }
@@ -58,13 +58,16 @@ impl Predicate {
             return Some(result);
         }
     }
-    pub fn join_sub_pred(&self, sch1: &Schema, sch2: &Schema) -> Option<Predicate> {
+    pub fn join_sub_pred(&self, sch1: Arc<Schema>, sch2: Arc<Schema>) -> Option<Predicate> {
         let mut result = Predicate::new_empty();
         let mut newsch = Schema::new();
-        newsch.add_all(sch1);
-        newsch.add_all(sch2);
+        newsch.add_all(Arc::clone(&sch1));
+        newsch.add_all(Arc::clone(&sch2));
         for t in self.terms.iter() {
-            if !t.applies_to(sch1) && !t.applies_to(sch2) && t.applies_to(&newsch) {
+            if !t.applies_to(Arc::clone(&sch1))
+                && !t.applies_to(Arc::clone(&sch2))
+                && t.applies_to(Arc::new(newsch.clone()))
+            {
                 result.terms.push(t.clone());
             }
         }

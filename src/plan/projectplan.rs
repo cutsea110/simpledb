@@ -38,7 +38,7 @@ impl ProjectPlan {
     pub fn new(p: Arc<dyn Plan>, fieldlist: Vec<String>) -> Self {
         let mut schema = Schema::new();
         for fldname in fieldlist {
-            schema.add(&fldname, &p.schema())
+            schema.add(&fldname, p.schema())
         }
 
         Self {

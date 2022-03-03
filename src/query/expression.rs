@@ -67,7 +67,7 @@ impl Expression {
             Expression::Fldname(fldname) => s.lock().unwrap().get_val(fldname),
         }
     }
-    pub fn applies_to(&self, sch: &Schema) -> bool {
+    pub fn applies_to(&self, sch: Arc<Schema>) -> bool {
         match self {
             Expression::Val(_) => true,
             Expression::Fldname(fldname) => sch.has_field(fldname),

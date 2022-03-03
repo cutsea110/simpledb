@@ -1,5 +1,5 @@
 use num_derive::FromPrimitive;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Schema {
@@ -25,14 +25,14 @@ impl Schema {
     pub fn add_string_field(&mut self, fldname: &str, length: usize) {
         self.add_field(fldname, FieldType::VARCHAR, length)
     }
-    pub fn add(&mut self, fldname: &str, sch: &Schema) {
+    pub fn add(&mut self, fldname: &str, sch: Arc<Schema>) {
         let fld_type = sch.field_type(fldname.clone());
         let length = sch.length(fldname.clone());
         self.add_field(fldname, fld_type, length)
     }
-    pub fn add_all(&mut self, sch: &Schema) {
-        for fldname in sch.fields() {
-            self.add(fldname, sch)
+    pub fn add_all(&mut self, sch: Arc<Schema>) {
+        for fldname in sch.fields().iter() {
+            self.add(fldname, Arc::clone(&sch))
         }
     }
     pub fn fields(&self) -> &Vec<String> {
