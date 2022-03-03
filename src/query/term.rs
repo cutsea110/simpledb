@@ -32,7 +32,7 @@ impl Term {
     pub fn applies_to(&self, sch: &Schema) -> bool {
         self.lhs.applies_to(sch) && self.rhs.applies_to(sch)
     }
-    pub fn reduction_factor(&self, p: &mut dyn Plan) -> Result<i32> {
+    pub fn reduction_factor(&self, p: Arc<dyn Plan>) -> Result<i32> {
         match (&self.lhs, &self.rhs) {
             (Expression::Fldname(lhs_name), Expression::Fldname(rhs_name)) => {
                 return Ok(max(

@@ -38,10 +38,10 @@ impl Predicate {
         }
         true
     }
-    pub fn reduction_factor(&self, p: &mut dyn Plan) -> Result<i32> {
+    pub fn reduction_factor(&self, p: Arc<dyn Plan>) -> Result<i32> {
         let mut factor = 1;
         for t in self.terms.iter() {
-            factor *= t.reduction_factor(p)?;
+            factor *= t.reduction_factor(Arc::clone(&p))?;
         }
         Ok(factor)
     }
