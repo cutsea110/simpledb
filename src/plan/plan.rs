@@ -5,5 +5,5 @@ pub trait Plan {
     fn blocks_accessed(&self) -> i32;
     fn records_output(&self) -> i32;
     fn distinct_values(&self, fldname: &str) -> i32;
-    fn schema(&self) -> Schema;
+    fn schema(&self) -> &Schema;
 }
