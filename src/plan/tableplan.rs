@@ -1,14 +1,13 @@
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
+use super::plan::Plan;
 use crate::{
     metadata::{manager::MetadataMgr, statmanager::StatInfo},
     query::scan::Scan,
     record::{layout::Layout, schema::Schema, tablescan::TableScan},
     tx::transaction::Transaction,
 };
-
-use super::plan::Plan;
 
 pub struct TablePlan {
     tx: Arc<Mutex<Transaction>>,
