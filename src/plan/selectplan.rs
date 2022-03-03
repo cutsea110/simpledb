@@ -43,3 +43,9 @@ impl Plan for SelectPlan {
         self.p.schema()
     }
 }
+
+impl SelectPlan {
+    pub fn new(p: Arc<dyn Plan>, pred: Predicate) -> Self {
+        Self { p, pred }
+    }
+}
