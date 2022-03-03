@@ -23,7 +23,7 @@ impl Plan for SelectPlan {
         self.p.blocks_accessed()
     }
     fn records_output(&self) -> i32 {
-        self.p.records_output() / self.pred.reduction_factor(Arc::clone(&self.p)).unwrap()
+        self.p.records_output() / self.pred.reduction_factor(Arc::clone(&self.p))
     }
     fn distinct_values(&self, fldname: &str) -> i32 {
         if self.pred.equates_with_constant(fldname).is_some() {

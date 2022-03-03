@@ -38,12 +38,12 @@ impl Predicate {
         }
         true
     }
-    pub fn reduction_factor(&self, p: Arc<dyn Plan>) -> Result<i32> {
+    pub fn reduction_factor(&self, p: Arc<dyn Plan>) -> i32 {
         let mut factor = 1;
         for t in self.terms.iter() {
-            factor *= t.reduction_factor(Arc::clone(&p))?;
+            factor *= t.reduction_factor(Arc::clone(&p));
         }
-        Ok(factor)
+        factor
     }
     pub fn select_sub_pred(&self, sch: &Schema) -> Option<Predicate> {
         let mut result = Predicate::new_empty();

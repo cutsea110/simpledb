@@ -32,25 +32,22 @@ impl Term {
     pub fn applies_to(&self, sch: &Schema) -> bool {
         self.lhs.applies_to(sch) && self.rhs.applies_to(sch)
     }
-    pub fn reduction_factor(&self, p: Arc<dyn Plan>) -> Result<i32> {
+    pub fn reduction_factor(&self, p: Arc<dyn Plan>) -> i32 {
         match (&self.lhs, &self.rhs) {
             (Expression::Fldname(lhs_name), Expression::Fldname(rhs_name)) => {
-                return Ok(max(
-                    p.distinct_values(&lhs_name),
-                    p.distinct_values(&rhs_name),
-                ));
+                return max(p.distinct_values(&lhs_name), p.distinct_values(&rhs_name));
             }
             (Expression::Fldname(lhs_name), Expression::Val(_)) => {
-                return Ok(p.distinct_values(&lhs_name));
+                return p.distinct_values(&lhs_name);
             }
             (Expression::Val(_), Expression::Fldname(rhs_name)) => {
-                return Ok(p.distinct_values(&rhs_name));
+                return p.distinct_values(&rhs_name);
             }
             (Expression::Val(lhs_val), Expression::Val(rhs_val)) => {
                 if lhs_val == rhs_val {
-                    return Ok(1);
+                    return 1;
                 } else {
-                    return Ok(i32::MAX);
+                    return i32::MAX;
                 }
             }
         }
