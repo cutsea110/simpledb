@@ -1,7 +1,8 @@
-use std::cmp::*;
-use std::sync::{Arc, Mutex};
-
 use anyhow::Result;
+use std::{
+    cmp::*,
+    sync::{Arc, Mutex},
+};
 
 use super::plan::Plan;
 use crate::{
