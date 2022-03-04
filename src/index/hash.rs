@@ -1,12 +1,11 @@
 use std::sync::{Arc, Mutex};
 
+use super::Index;
 use crate::{
     query::constant::Constant,
     record::{layout::Layout, tablescan::TableScan},
     tx::transaction::Transaction,
 };
-
-use super::Index;
 
 pub const NUM_BUCKETS: i32 = 100;
 

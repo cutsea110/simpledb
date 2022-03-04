@@ -1,6 +1,5 @@
-use std::sync::{Arc, Mutex};
-
 use anyhow::Result;
+use std::sync::{Arc, Mutex};
 
 use super::{constant::Constant, scan::Scan};
 use crate::record::rid::RID;

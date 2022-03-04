@@ -5,9 +5,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
-
 use super::{LogRecord, TxType};
+use crate::{file::page::Page, log::manager::LogMgr, tx::transaction::Transaction};
 
 pub struct StartRecord {
     txnum: i32,

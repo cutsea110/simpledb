@@ -98,12 +98,11 @@ mod tests {
     use std::{fs, path::Path};
 
     use super::*;
-    use crate::query::expression::Expression;
-    use crate::query::predicate::Predicate;
-    use crate::query::selectscan::SelectScan;
-    use crate::query::term::Term;
     use crate::{
-        metadata::manager::MetadataMgr, record::tablescan::TableScan, server::simpledb::SimpleDB,
+        metadata::manager::MetadataMgr,
+        query::{expression::Expression, predicate::Predicate, selectscan::SelectScan, term::Term},
+        record::tablescan::TableScan,
+        server::simpledb::SimpleDB,
         tests,
     };
 

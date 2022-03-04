@@ -2,17 +2,16 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
+use super::logrecord::{
+    self, checkpoint_record::CheckpointRecord, commit_record::CommitRecord,
+    rollback_record::RollbackRecord, set_i32_record::SetI32Record,
+    set_string_record::SetStringRecord, TxType,
+};
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
     log::manager::LogMgr,
     tx::recovery::logrecord::start_record::StartRecord,
     tx::transaction::Transaction,
-};
-
-use super::logrecord::{
-    self, checkpoint_record::CheckpointRecord, commit_record::CommitRecord,
-    rollback_record::RollbackRecord, set_i32_record::SetI32Record,
-    set_string_record::SetStringRecord, TxType,
 };
 
 #[derive(Debug)]

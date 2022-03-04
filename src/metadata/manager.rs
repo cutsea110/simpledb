@@ -4,16 +4,15 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{
-    record::{layout::Layout, schema::Schema},
-    tx::transaction::Transaction,
-};
-
 use super::{
     indexmanager::{IndexInfo, IndexMgr},
     statmanager::{StatInfo, StatMgr},
     tablemanager::TableMgr,
     viewmanager::ViewMgr,
+};
+use crate::{
+    record::{layout::Layout, schema::Schema},
+    tx::transaction::Transaction,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]

@@ -5,13 +5,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use super::{LogRecord, TxType};
 use crate::{
     file::{block_id::BlockId, page::Page},
     log::manager::LogMgr,
     tx::transaction::Transaction,
 };
-
-use super::{LogRecord, TxType};
 
 pub struct SetI32Record {
     txnum: i32,

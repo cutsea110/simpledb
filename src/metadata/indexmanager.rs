@@ -4,16 +4,15 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use super::{
+    statmanager::{StatInfo, StatMgr},
+    tablemanager::{TableMgr, MAX_NAME},
+};
 use crate::{
     index::{hash::HashIndex, Index},
     query::{scan::Scan, updatescan::UpdateScan},
     record::{layout::Layout, schema::FieldType, schema::Schema, tablescan::TableScan},
     tx::transaction::Transaction,
-};
-
-use super::{
-    statmanager::{StatInfo, StatMgr},
-    tablemanager::{TableMgr, MAX_NAME},
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
