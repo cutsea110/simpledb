@@ -85,3 +85,41 @@ impl Planner {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use crate::{
+        metadata::manager::MetadataMgr,
+        plan::{basicqueryplanner::BasicQueryPlanner, basicupdateplanner::BasicUpdatePlanner},
+        query::{expression::Expression, term::Term},
+        record::tablescan::TableScan,
+        server::simpledb::SimpleDB,
+        tests,
+    };
+
+    use super::*;
+    use crate::tests::init_sampledb;
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_test/selectscan").exists() {
+            fs::remove_dir_all("_test/selectscan")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/selectscan", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        let mdm = Arc::new(Mutex::new(MetadataMgr::new(true, Arc::clone(&tx))?));
+
+        tests::init_sampledb(Arc::clone(&mdm), Arc::clone(&tx))?;
+
+        let qp = Arc::new(Mutex::new(BasicQueryPlanner::new(Arc::clone(&mdm))));
+        let up = Arc::new(Mutex::new(BasicUpdatePlanner::new(Arc::clone(&mdm))));
+        let planner = Planner::new(qp, up);
+
+        Ok(())
+    }
+}
