@@ -55,13 +55,16 @@ impl Planner {
         match data {
             SQL::DML(dml) => match dml {
                 DML::Insert(idata) => {
-                    return self.uplanner.lock().unwrap().execute_insert(idata, tx);
+                    let planner = self.uplanner.lock().unwrap();
+                    return planner.execute_insert(idata, tx);
                 }
                 DML::Delete(ddata) => {
-                    return self.uplanner.lock().unwrap().execute_delete(ddata, tx);
+                    let planner = self.uplanner.lock().unwrap();
+                    return planner.execute_delete(ddata, tx);
                 }
                 DML::Modify(mdata) => {
-                    return self.uplanner.lock().unwrap().execute_modify(mdata, tx);
+                    let planner = self.uplanner.lock().unwrap();
+                    return planner.execute_modify(mdata, tx);
                 }
                 _ => return Err(From::from(PlannerError::InvalidExecuteCommand)),
             },
