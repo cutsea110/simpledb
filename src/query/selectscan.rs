@@ -111,9 +111,9 @@ mod tests {
         query::{expression::Expression, term::Term},
         record::tablescan::TableScan,
         server::simpledb::SimpleDB,
+        tests,
     };
 
-    use super::super::tests;
     use super::*;
 
     #[test]

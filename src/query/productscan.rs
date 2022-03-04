@@ -97,16 +97,15 @@ mod tests {
     use anyhow::Result;
     use std::{fs, path::Path};
 
+    use super::*;
     use crate::query::expression::Expression;
     use crate::query::predicate::Predicate;
     use crate::query::selectscan::SelectScan;
     use crate::query::term::Term;
     use crate::{
         metadata::manager::MetadataMgr, record::tablescan::TableScan, server::simpledb::SimpleDB,
+        tests,
     };
-
-    use super::super::tests;
-    use super::*;
 
     #[test]
     fn unit_test() -> Result<()> {
