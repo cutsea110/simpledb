@@ -86,11 +86,12 @@ mod tests {
     use anyhow::Result;
     use std::{fs, path::Path};
 
-    use super::*;
     use crate::{
         metadata::manager::MetadataMgr, record::tablescan::TableScan, server::simpledb::SimpleDB,
-        tests,
     };
+
+    use super::super::tests;
+    use super::*;
 
     #[test]
     fn unit_test() -> Result<()> {

@@ -97,13 +97,13 @@ mod tests {
     use anyhow::Result;
     use std::{fs, path::Path};
 
+    use super::super::tests;
     use super::*;
     use crate::{
         metadata::manager::MetadataMgr,
         query::{expression::Expression, predicate::Predicate, selectscan::SelectScan, term::Term},
         record::tablescan::TableScan,
         server::simpledb::SimpleDB,
-        tests,
     };
 
     #[test]

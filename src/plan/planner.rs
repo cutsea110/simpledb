@@ -94,14 +94,10 @@ mod tests {
     use crate::{
         metadata::manager::MetadataMgr,
         plan::{basicqueryplanner::BasicQueryPlanner, basicupdateplanner::BasicUpdatePlanner},
-        query::{expression::Expression, term::Term},
-        record::tablescan::TableScan,
         server::simpledb::SimpleDB,
-        tests,
     };
 
     use super::*;
-    use crate::tests::init_sampledb;
 
     #[test]
     fn unit_test() -> Result<()> {
@@ -114,11 +110,9 @@ mod tests {
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         let mdm = Arc::new(Mutex::new(MetadataMgr::new(true, Arc::clone(&tx))?));
 
-        tests::init_sampledb(Arc::clone(&mdm), Arc::clone(&tx))?;
-
         let qp = Arc::new(Mutex::new(BasicQueryPlanner::new(Arc::clone(&mdm))));
         let up = Arc::new(Mutex::new(BasicUpdatePlanner::new(Arc::clone(&mdm))));
-        let planner = Planner::new(qp, up);
+        let _planner = Planner::new(qp, up);
 
         Ok(())
     }
