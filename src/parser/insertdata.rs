@@ -18,10 +18,10 @@ impl InsertData {
     pub fn table_name(&self) -> &str {
         &self.tblname
     }
-    pub fn fields(&self) -> Vec<&String> {
-        self.flds.iter().collect()
+    pub fn fields(&self) -> &Vec<String> {
+        &self.flds
     }
-    pub fn vals(&self) -> Vec<&Constant> {
-        self.vals.iter().collect()
+    pub fn vals(&self) -> &Vec<Constant> {
+        &self.vals
     }
 }
