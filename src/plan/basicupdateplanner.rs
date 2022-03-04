@@ -65,25 +65,21 @@ impl BasicUpdatePlanner {
         Err(From::from(BasicUpdatePlannerError::DeleteAbort))
     }
     pub fn execute_modify(&self, data: ModifyData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
-        panic!("TODO")
-        /*
-                let p1 = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
-                let p2 = SelectPlan::new(p1, data.pred().clone());
-                if let Ok(s) = p2.open() {
-                    if let Ok(us) = s.lock().unwrap().to_update_scan() {
-                        let mut count = 0;
-                        while us.next() {
-                            let scan: Arc<Mutex<dyn Scan>> = &*us;
-                            let val = data.new_value().evaluate(scan)?;
-                            us.set_val(data.target_field(), val)?;
-                            count += 1;
-                        }
-                        us.close()?;
-                        return Ok(count);
-                    }
+        let p1 = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
+        let p2 = SelectPlan::new(p1, data.pred().clone());
+        if let Ok(s) = p2.open() {
+            if let Ok(us) = s.lock().unwrap().to_update_scan() {
+                let mut count = 0;
+                while us.next() {
+                    let val = data.new_value().evaluate(us.to_scan()?)?;
+                    us.set_val(data.target_field(), val)?;
+                    count += 1;
                 }
-                Err(From::from(BasicUpdatePlannerError::ModifyAbort))
-        */
+                us.close()?;
+                return Ok(count);
+            }
+        }
+        Err(From::from(BasicUpdatePlannerError::ModifyAbort))
     }
     pub fn execute_insert(&self, data: InsertData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
         let p = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);

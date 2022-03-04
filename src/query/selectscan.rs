@@ -53,6 +53,7 @@ impl Scan for SelectScan {
     fn close(&mut self) -> Result<()> {
         self.s.lock().unwrap().close()
     }
+    // downcast
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
         Ok(self)
     }
@@ -86,6 +87,10 @@ impl UpdateScan for SelectScan {
     fn move_to_rid(&mut self, rid: RID) -> Result<()> {
         let mut us = self.s.lock().unwrap();
         us.to_update_scan()?.move_to_rid(rid)
+    }
+    // upcast
+    fn to_scan(&self) -> Result<Arc<Mutex<dyn Scan>>> {
+        panic!("TODO")
     }
 }
 

@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use anyhow::Result;
 
 use super::{constant::Constant, scan::Scan};
@@ -11,4 +13,6 @@ pub trait UpdateScan: Scan {
     fn delete(&mut self) -> Result<()>;
     fn get_rid(&self) -> Result<RID>;
     fn move_to_rid(&mut self, rid: RID) -> Result<()>;
+
+    fn to_scan(&self) -> Result<Arc<Mutex<dyn Scan>>>;
 }

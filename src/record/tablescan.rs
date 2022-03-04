@@ -165,6 +165,10 @@ impl UpdateScan for TableScan {
 
         Ok(rid)
     }
+    // upcast
+    fn to_scan(&self) -> Result<Arc<Mutex<dyn Scan>>> {
+        panic!("TODO")
+    }
 }
 
 impl TableScan {
