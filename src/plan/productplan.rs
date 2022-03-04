@@ -7,6 +7,7 @@ use crate::{
     record::schema::Schema,
 };
 
+#[derive(Clone)]
 pub struct ProductPlan {
     p1: Arc<dyn Plan>,
     p2: Arc<dyn Plan>,

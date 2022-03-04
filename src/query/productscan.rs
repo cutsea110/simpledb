@@ -24,6 +24,7 @@ impl fmt::Display for ProductScanError {
     }
 }
 
+#[derive(Clone)]
 pub struct ProductScan {
     s1: Arc<Mutex<dyn Scan>>,
     s2: Arc<Mutex<dyn Scan>>,

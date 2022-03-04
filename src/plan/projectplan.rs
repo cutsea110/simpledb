@@ -7,6 +7,7 @@ use crate::{
     record::schema::Schema,
 };
 
+#[derive(Clone)]
 pub struct ProjectPlan {
     p: Arc<dyn Plan>,
     schema: Arc<Schema>,

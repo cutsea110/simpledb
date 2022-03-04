@@ -24,6 +24,7 @@ impl fmt::Display for ProjectScanError {
     }
 }
 
+#[derive(Clone)]
 pub struct ProjectScan {
     s: Arc<Mutex<dyn Scan>>,
     fieldlist: Vec<String>,

@@ -10,6 +10,7 @@ use crate::{
     record::schema::Schema,
 };
 
+#[derive(Clone)]
 pub struct SelectPlan {
     p: Arc<dyn Plan>,
     pred: Predicate,

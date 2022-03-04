@@ -11,7 +11,6 @@ use crate::{
         modifydata::ModifyData,
     },
     plan::plan::Plan,
-    query::scan::Scan,
     tx::transaction::Transaction,
 };
 

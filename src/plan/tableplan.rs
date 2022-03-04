@@ -9,6 +9,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Debug, Clone)]
 pub struct TablePlan {
     tx: Arc<Mutex<Transaction>>,
     tblname: String,
