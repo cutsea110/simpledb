@@ -6,3 +6,4 @@ pub mod projectplan;
 pub mod queryplanner;
 pub mod selectplan;
 pub mod tableplan;
+pub mod updateplanner;

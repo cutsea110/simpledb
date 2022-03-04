@@ -2,7 +2,7 @@ use anyhow::Result;
 use combine::Parser;
 use std::sync::{Arc, Mutex};
 
-use super::plan::Plan;
+use super::{plan::Plan, queryplanner::QueryPlanner};
 use crate::{
     metadata::manager::MetadataMgr,
     parser::{parser::query, querydata::QueryData},
@@ -18,11 +18,8 @@ pub struct BasicQueryPlanner {
     mdm: MetadataMgr,
 }
 
-impl BasicQueryPlanner {
-    pub fn new(mdm: MetadataMgr) -> Self {
-        Self { mdm }
-    }
-    pub fn create_plan(
+impl QueryPlanner for BasicQueryPlanner {
+    fn create_plan(
         &mut self,
         data: QueryData,
         tx: Arc<Mutex<Transaction>>,
@@ -54,5 +51,11 @@ impl BasicQueryPlanner {
 
         // Step 4: Project on the field names
         Ok(Arc::new(ProjectPlan::new(p, data.fields().clone())))
+    }
+}
+
+impl BasicQueryPlanner {
+    pub fn new(mdm: MetadataMgr) -> Self {
+        Self { mdm }
     }
 }

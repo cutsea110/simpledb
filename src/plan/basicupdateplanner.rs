@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
-use super::{selectplan::SelectPlan, tableplan::TablePlan};
+use super::{selectplan::SelectPlan, tableplan::TablePlan, updateplanner::UpdatePlanner};
 use crate::{
     metadata::manager::MetadataMgr,
     parser::{
@@ -43,11 +43,8 @@ pub struct BasicUpdatePlanner {
     mdm: MetadataMgr,
 }
 
-impl BasicUpdatePlanner {
-    pub fn new(mdm: MetadataMgr) -> Self {
-        Self { mdm }
-    }
-    pub fn execute_delete(&self, data: DeleteData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
+impl UpdatePlanner for BasicUpdatePlanner {
+    fn execute_delete(&self, data: DeleteData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
         let p1 = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
         let p2 = SelectPlan::new(p1, data.pred().clone());
         if let Ok(s) = p2.open() {
@@ -63,7 +60,7 @@ impl BasicUpdatePlanner {
         }
         Err(From::from(BasicUpdatePlannerError::DeleteAbort))
     }
-    pub fn execute_modify(&self, data: ModifyData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
+    fn execute_modify(&self, data: ModifyData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
         let p1 = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
         let p2 = SelectPlan::new(p1, data.pred().clone());
         if let Ok(s) = p2.open() {
@@ -80,7 +77,7 @@ impl BasicUpdatePlanner {
         }
         Err(From::from(BasicUpdatePlannerError::ModifyAbort))
     }
-    pub fn execute_insert(&self, data: InsertData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
+    fn execute_insert(&self, data: InsertData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
         let p = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
         if let Ok(s) = p.open() {
             if let Ok(us) = s.lock().unwrap().to_update_scan() {
@@ -95,7 +92,7 @@ impl BasicUpdatePlanner {
         }
         Err(From::from(BasicUpdatePlannerError::InsertAbort))
     }
-    pub fn execute_create_table(
+    fn execute_create_table(
         &self,
         data: CreateTableData,
         tx: Arc<Mutex<Transaction>>,
@@ -104,7 +101,7 @@ impl BasicUpdatePlanner {
             .create_table(data.table_name(), Arc::new(data.new_schema().clone()), tx)?;
         Ok(0)
     }
-    pub fn execute_create_view(
+    fn execute_create_view(
         &self,
         data: CreateViewData,
         tx: Arc<Mutex<Transaction>>,
@@ -113,7 +110,7 @@ impl BasicUpdatePlanner {
             .create_view(data.view_name(), &data.view_def(), tx)?;
         Ok(0)
     }
-    pub fn execute_create_index(
+    fn execute_create_index(
         &self,
         data: CreateIndexData,
         tx: Arc<Mutex<Transaction>>,
@@ -121,5 +118,11 @@ impl BasicUpdatePlanner {
         self.mdm
             .create_index(data.index_name(), data.table_name(), data.field_name(), tx)?;
         Ok(0)
+    }
+}
+
+impl BasicUpdatePlanner {
+    pub fn new(mdm: MetadataMgr) -> Self {
+        Self { mdm }
     }
 }
