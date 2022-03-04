@@ -1137,6 +1137,10 @@ mod tests {
     fn update_cmd_test() {
         let mut parser = update_cmd();
         assert_eq!(
+            parser.parse("select name, age from student where majorid = 20"),
+            Err(StringStreamError::UnexpectedParse),
+        );
+        assert_eq!(
             parser.parse("insert into student (name, age) values ('Calvin', 9)"),
             Ok((
                 SQL::DML(DML::Insert(InsertData::new(
@@ -1168,6 +1172,49 @@ mod tests {
                     "age".to_string(),
                     Expression::Val(Constant::I32(10)),
                     Predicate::new_empty(),
+                ))),
+                ""
+            ))
+        );
+        let mut expected = Schema::new();
+        expected.add_string_field("name", 10);
+        expected.add_i32_field("age");
+        assert_eq!(
+            parser.parse("create table student (name varchar(10), age int32)"),
+            Ok((
+                SQL::DDL(DDL::Table(CreateTableData::new(
+                    "student".to_string(),
+                    expected
+                ))),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse(
+                "create view name_dep AS select name, dep_name from student, dept where mid = did"
+            ),
+            Ok((
+                SQL::DDL(DDL::View(CreateViewData::new(
+                    "name_dep".to_string(),
+                    QueryData::new(
+                        vec!["name".to_string(), "dep_name".to_string()],
+                        vec!["student".to_string(), "dept".to_string()],
+                        Predicate::new(Term::new(
+                            Expression::Fldname("mid".to_string()),
+                            Expression::Fldname("did".to_string())
+                        ))
+                    )
+                ))),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("create index idx_age on student (age)"),
+            Ok((
+                SQL::DDL(DDL::Index(CreateIndexData::new(
+                    "idx_age".to_string(),
+                    "student".to_string(),
+                    "age".to_string()
                 ))),
                 ""
             ))
