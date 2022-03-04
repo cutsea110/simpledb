@@ -42,9 +42,14 @@ impl Plan for TablePlan {
 }
 
 impl TablePlan {
-    pub fn new(tblname: &str, tx: Arc<Mutex<Transaction>>, mut md: MetadataMgr) -> Result<Self> {
-        let layout = md.get_layout(tblname, Arc::clone(&tx))?;
-        let si = md.get_stat_info(tblname, Arc::clone(&layout), Arc::clone(&tx))?;
+    pub fn new(
+        tblname: &str,
+        tx: Arc<Mutex<Transaction>>,
+        md: Arc<Mutex<MetadataMgr>>,
+    ) -> Result<Self> {
+        let mut mdm = md.lock().unwrap();
+        let layout = mdm.get_layout(tblname, Arc::clone(&tx))?;
+        let si = mdm.get_stat_info(tblname, Arc::clone(&layout), Arc::clone(&tx))?;
 
         Ok(Self {
             tx,

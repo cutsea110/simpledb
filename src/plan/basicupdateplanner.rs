@@ -38,9 +38,9 @@ impl fmt::Display for BasicUpdatePlannerError {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct BasicUpdatePlanner {
-    mdm: MetadataMgr,
+    mdm: Arc<Mutex<MetadataMgr>>,
 }
 
 impl UpdatePlanner for BasicUpdatePlanner {
@@ -97,8 +97,8 @@ impl UpdatePlanner for BasicUpdatePlanner {
         data: CreateTableData,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<i32> {
-        self.mdm
-            .create_table(data.table_name(), Arc::new(data.new_schema().clone()), tx)?;
+        let mdm = self.mdm.lock().unwrap();
+        mdm.create_table(data.table_name(), Arc::new(data.new_schema().clone()), tx)?;
         Ok(0)
     }
     fn execute_create_view(
@@ -106,8 +106,8 @@ impl UpdatePlanner for BasicUpdatePlanner {
         data: CreateViewData,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<i32> {
-        self.mdm
-            .create_view(data.view_name(), &data.view_def(), tx)?;
+        let mdm = self.mdm.lock().unwrap();
+        mdm.create_view(data.view_name(), &data.view_def(), tx)?;
         Ok(0)
     }
     fn execute_create_index(
@@ -115,14 +115,14 @@ impl UpdatePlanner for BasicUpdatePlanner {
         data: CreateIndexData,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<i32> {
-        self.mdm
-            .create_index(data.index_name(), data.table_name(), data.field_name(), tx)?;
+        let mdm = self.mdm.lock().unwrap();
+        mdm.create_index(data.index_name(), data.table_name(), data.field_name(), tx)?;
         Ok(0)
     }
 }
 
 impl BasicUpdatePlanner {
-    pub fn new(mdm: MetadataMgr) -> Self {
+    pub fn new(mdm: Arc<Mutex<MetadataMgr>>) -> Self {
         Self { mdm }
     }
 }

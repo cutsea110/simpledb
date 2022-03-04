@@ -13,9 +13,9 @@ use crate::{
     tx::transaction::Transaction,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct BasicQueryPlanner {
-    mdm: MetadataMgr,
+    mdm: Arc<Mutex<MetadataMgr>>,
 }
 
 impl QueryPlanner for BasicQueryPlanner {
@@ -27,7 +27,11 @@ impl QueryPlanner for BasicQueryPlanner {
         // Step 1: Create a plan for each mentioned table or view
         let mut plans: Vec<Arc<dyn Plan>> = vec![];
         for tblname in data.tables() {
-            let viewdef = self.mdm.get_view_def(tblname, Arc::clone(&tx))?;
+            let viewdef = self
+                .mdm
+                .lock()
+                .unwrap()
+                .get_view_def(tblname, Arc::clone(&tx))?;
             if !viewdef.is_empty() {
                 // Recursively plan the view.
                 let mut parser = query();
@@ -55,7 +59,7 @@ impl QueryPlanner for BasicQueryPlanner {
 }
 
 impl BasicQueryPlanner {
-    pub fn new(mdm: MetadataMgr) -> Self {
+    pub fn new(mdm: Arc<Mutex<MetadataMgr>>) -> Self {
         Self { mdm }
     }
 }
