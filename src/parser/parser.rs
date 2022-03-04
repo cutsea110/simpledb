@@ -416,13 +416,16 @@ where
 
 /// Methods for parsing the various update commands
 
-#[deprecated(note = "you should use sql() method instead of this.")]
 pub fn update_cmd<Input>() -> impl Parser<Input, Output = SQL>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    sql()
+    insert()
+        .map(|i| SQL::DML(DML::Insert(i)))
+        .or(delete().map(|d| SQL::DML(DML::Delete(d))))
+        .or(modify().map(|m| SQL::DML(DML::Modify(m))))
+        .or(dml().map(|dml| SQL::DML(dml)))
 }
 
 pub fn sql<Input>() -> impl Parser<Input, Output = SQL>
