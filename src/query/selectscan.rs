@@ -21,6 +21,7 @@ impl fmt::Display for SelectScanError {
     }
 }
 
+#[derive(Clone)]
 pub struct SelectScan {
     s: Arc<Mutex<dyn Scan>>,
     pred: Predicate,
@@ -90,7 +91,7 @@ impl UpdateScan for SelectScan {
     }
     // upcast
     fn to_scan(&self) -> Result<Arc<Mutex<dyn Scan>>> {
-        panic!("TODO")
+        Ok(Arc::new(Mutex::new(self.clone())))
     }
 }
 

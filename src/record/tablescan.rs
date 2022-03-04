@@ -167,7 +167,7 @@ impl UpdateScan for TableScan {
     }
     // upcast
     fn to_scan(&self) -> Result<Arc<Mutex<dyn Scan>>> {
-        panic!("TODO")
+        Ok(Arc::new(Mutex::new(self.clone())))
     }
 }
 
