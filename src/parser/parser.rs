@@ -421,11 +421,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    insert()
-        .map(|i| SQL::DML(DML::Insert(i)))
-        .or(delete().map(|d| SQL::DML(DML::Delete(d))))
-        .or(modify().map(|m| SQL::DML(DML::Modify(m))))
-        .or(dml().map(|dml| SQL::DML(dml)))
+    attempt(insert().map(|i| SQL::DML(DML::Insert(i))))
+        .or(attempt(delete().map(|d| SQL::DML(DML::Delete(d)))))
+        .or(attempt(modify().map(|m| SQL::DML(DML::Modify(m)))))
+        .or(ddl().map(|ddl| SQL::DDL(ddl)))
 }
 
 pub fn sql<Input>() -> impl Parser<Input, Output = SQL>
@@ -443,11 +442,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    query()
-        .map(|q| DML::Query(q))
-        .or(insert().map(|i| DML::Insert(i)))
-        .or(delete().map(|d| DML::Delete(d)))
-        .or(modify().map(|m| DML::Modify(m)))
+    attempt(query().map(|q| DML::Query(q)))
+        .or(attempt(insert().map(|i| DML::Insert(i))))
+        .or(attempt(delete().map(|d| DML::Delete(d))))
+        .or(attempt(modify().map(|m| DML::Modify(m))))
 }
 
 fn ddl<Input>() -> impl Parser<Input, Output = DDL>
@@ -455,10 +453,9 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    create_table()
-        .map(|t| DDL::Table(t))
-        .or(create_view().map(|v| DDL::View(v)))
-        .or(create_index().map(|i| DDL::Index(i)))
+    attempt(create_table().map(|t| DDL::Table(t)))
+        .or(attempt(create_view().map(|v| DDL::View(v))))
+        .or(attempt(create_index().map(|i| DDL::Index(i))))
 }
 
 /// Method for parsing delete commands
@@ -1094,7 +1091,7 @@ mod tests {
         expected.add_i32_field("MajorId");
 
         assert_eq!(parser.parse(
-	    "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32 )"
+	    "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32)"
 	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
     }
 
@@ -1132,6 +1129,46 @@ mod tests {
                     "STUDENT".to_string(),
                     "GradYear".to_string()
                 ),
+                ""
+            ))
+        );
+    }
+    #[test]
+    fn update_cmd_test() {
+        let mut parser = update_cmd();
+        assert_eq!(
+            parser.parse("insert into student (name, age) values ('Calvin', 9)"),
+            Ok((
+                SQL::DML(DML::Insert(InsertData::new(
+                    "student".to_string(),
+                    vec!["name".to_string(), "age".to_string()],
+                    vec![Constant::String("Calvin".to_string()), Constant::I32(9)]
+                ))),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("delete from student where name = 'joe'"),
+            Ok((
+                SQL::DML(DML::Delete(DeleteData::new(
+                    "student".to_string(),
+                    Predicate::new(Term::new(
+                        Expression::Fldname("name".to_string()),
+                        Expression::Val(Constant::String("joe".to_string()))
+                    ))
+                ))),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("update student set age = 10"),
+            Ok((
+                SQL::DML(DML::Modify(ModifyData::new(
+                    "student".to_string(),
+                    "age".to_string(),
+                    Expression::Val(Constant::I32(10)),
+                    Predicate::new_empty(),
+                ))),
                 ""
             ))
         );
