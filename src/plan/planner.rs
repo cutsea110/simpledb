@@ -122,6 +122,7 @@ mod tests {
             "CREATE TABLE COURSE (CId int32, Title varchar(16), DeptId int32)",
             "CREATE TABLE SECTION (SectId int32, CourseId int32, Prof varchar(10), YearOffered int32)",
             "CREATE TABLE ENROLL (EId int32, StudentId int32, SectionId int32, Grade varchar(2))",
+	    "CREATE VIEW name_dep AS SELECT SName, DName FROM STUDENT, DEPT WHERE MajorId = DId",
             "CREATE INDEX idx_grad_year ON STUDENT (GradYear)",
             // STUDENT
             "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (1, 'joe', 2021, 10)",
@@ -163,6 +164,26 @@ mod tests {
             planner.execute_update(sql, Arc::clone(&tx))?;
             println!("Done");
         }
+
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        println!("Query: {} ... ", query);
+        let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
+        let scan = plan.open()?;
+        let mut rows = 0;
+        let mut iter = scan.lock().unwrap();
+        println!("SName     DName     GradYear");
+        println!("----------------------------");
+        while iter.next() {
+            rows += 1;
+            let name = iter.get_string("SName")?;
+            let dep = iter.get_string("DName")?;
+            let year = iter.get_i32("GradYear")?;
+            println!("{:<10} {:<10} {:>}", name, dep, year);
+        }
+        println!("Rows = {}", rows);
+
+        // important
+        tx.lock().unwrap().commit()?;
 
         Ok(())
     }
