@@ -115,6 +115,7 @@ mod tests {
         let up = Arc::new(Mutex::new(BasicUpdatePlanner::new(Arc::clone(&mdm))));
         let mut planner = Planner::new(qp, up);
 
+        // Setting Schema and Insert Init data
         let sqls = vec![
             // DDL
             "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32)",
@@ -122,7 +123,7 @@ mod tests {
             "CREATE TABLE COURSE (CId int32, Title varchar(16), DeptId int32)",
             "CREATE TABLE SECTION (SectId int32, CourseId int32, Prof varchar(10), YearOffered int32)",
             "CREATE TABLE ENROLL (EId int32, StudentId int32, SectionId int32, Grade varchar(2))",
-	    "CREATE VIEW name_dep AS SELECT SName, DName FROM STUDENT, DEPT WHERE MajorId = DId",
+	    "CREATE VIEW name_dep AS SELECT SName, DName, GradYear, MajorId FROM STUDENT, DEPT WHERE MajorId = DId",
             "CREATE INDEX idx_grad_year ON STUDENT (GradYear)",
             // STUDENT
             "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (1, 'joe', 2021, 10)",
@@ -165,8 +166,9 @@ mod tests {
             println!("Done");
         }
 
+        // SELECT Table
         let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
-        println!("Query: {} ... ", query);
+        println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
         let mut rows = 0;
@@ -178,7 +180,42 @@ mod tests {
             let name = iter.get_string("SName")?;
             let dep = iter.get_string("DName")?;
             let year = iter.get_i32("GradYear")?;
-            println!("{:<10} {:<10} {:>}", name, dep, year);
+            println!("{:<10}{:<10}{:>}", name, dep, year);
+        }
+        println!("Rows = {}", rows);
+
+        // SELECT View
+        let query = "SELECT SName, DName FROM name_dep WHERE GradYear = 2020";
+        println!("Query: {}", query);
+        let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
+        let scan = plan.open()?;
+        let mut rows = 0;
+        let mut iter = scan.lock().unwrap();
+        println!("SName     DName");
+        println!("-------------------");
+        while iter.next() {
+            rows += 1;
+            let name = iter.get_string("SName")?;
+            let dep = iter.get_string("DName")?;
+            println!("{:<10}{:<10}", name, dep);
+        }
+        println!("Rows = {}", rows);
+
+        // SELECT View + Table
+        let query = "SELECT SName, DName, Title FROM name_dep, COURSE WHERE MajorId = DeptId";
+        println!("Query: {}", query);
+        let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
+        let scan = plan.open()?;
+        let mut rows = 0;
+        let mut iter = scan.lock().unwrap();
+        println!("SName     DName    Title");
+        println!("-----------------------------------");
+        while iter.next() {
+            rows += 1;
+            let name = iter.get_string("SName")?;
+            let dep = iter.get_string("DName")?;
+            let title = iter.get_string("Title")?;
+            println!("{:<10}{:<10}{:<16}", name, dep, title);
         }
         println!("Rows = {}", rows);
 
