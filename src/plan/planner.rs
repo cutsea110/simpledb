@@ -267,6 +267,7 @@ mod tests {
 
         // important
         tx.lock().unwrap().commit()?;
+        // tx.lock().unwrap().rollback()?;
 
         Ok(())
     }
