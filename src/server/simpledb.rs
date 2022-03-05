@@ -1,4 +1,5 @@
 use anyhow::Result;
+use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use crate::{
@@ -6,8 +7,28 @@ use crate::{
     file::manager::FileMgr,
     log::manager::LogMgr,
     metadata::manager::MetadataMgr,
+    plan::{
+        basicqueryplanner::BasicQueryPlanner, basicupdateplanner::BasicUpdatePlanner,
+        planner::Planner, queryplanner::QueryPlanner, updateplanner::UpdatePlanner,
+    },
     tx::{concurrency::locktable::LockTable, transaction::Transaction},
 };
+
+#[derive(Debug)]
+pub enum SimpleDBError {
+    NoPlanner,
+}
+
+impl std::error::Error for SimpleDBError {}
+impl fmt::Display for SimpleDBError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &SimpleDBError::NoPlanner => {
+                write!(f, "no planner")
+            }
+        }
+    }
+}
 
 pub const LOG_FILE: &str = "simpledb.log";
 pub const BLOCK_SIZE: i32 = 400;
@@ -28,6 +49,8 @@ pub struct SimpleDB {
     lm: Arc<Mutex<LogMgr>>,
     bm: Arc<Mutex<BufferMgr>>,
     mdm: Option<Arc<Mutex<MetadataMgr>>>,
+    qp: Option<Arc<Mutex<dyn QueryPlanner>>>,
+    up: Option<Arc<Mutex<dyn UpdatePlanner>>>,
 }
 
 impl SimpleDB {
@@ -42,7 +65,13 @@ impl SimpleDB {
             tx.lock().unwrap().recover()?;
         }
         let meta = MetadataMgr::new(isnew, Arc::clone(&tx))?;
-        db.mdm = Arc::new(Mutex::new(meta)).into();
+        db.mdm = Some(Arc::new(Mutex::new(meta)));
+        let qp = BasicQueryPlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
+        db.qp = Some(Arc::new(Mutex::new(qp)));
+        let up = BasicUpdatePlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
+        db.up = Some(Arc::new(Mutex::new(up)));
+
+        tx.lock().unwrap().commit()?;
 
         Ok(db)
     }
@@ -69,6 +98,8 @@ impl SimpleDB {
             lm,
             bm,
             mdm: None,
+            qp: None,
+            up: None,
         }
     }
     pub fn file_mgr(&self) -> Arc<Mutex<FileMgr>> {
@@ -88,5 +119,13 @@ impl SimpleDB {
             Arc::clone(&self.lm),
             Arc::clone(&self.bm),
         )
+    }
+    pub fn planner(&self) -> Result<Planner> {
+        if let Some(qp) = self.qp.as_ref() {
+            if let Some(up) = self.up.as_ref() {
+                return Ok(Planner::new(Arc::clone(qp), Arc::clone(up)));
+            }
+        }
+        Err(From::from(SimpleDBError::NoPlanner))
     }
 }

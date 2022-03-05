@@ -92,13 +92,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
     use std::{fs, path::Path};
 
-    use crate::{
-        metadata::manager::MetadataMgr,
-        plan::{basicqueryplanner::BasicQueryPlanner, basicupdateplanner::BasicUpdatePlanner},
-        server::simpledb::SimpleDB,
-    };
-
-    use super::*;
+    use crate::server::simpledb::SimpleDB;
 
     #[test]
     fn unit_test() -> Result<()> {
@@ -106,14 +100,10 @@ mod tests {
             fs::remove_dir_all("_test/planner")?;
         }
 
-        let simpledb = SimpleDB::new_with("_test/planner", 400, 8);
+        let simpledb = SimpleDB::new("_test/planner")?;
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
-        let mdm = Arc::new(Mutex::new(MetadataMgr::new(true, Arc::clone(&tx))?));
-
-        let qp = Arc::new(Mutex::new(BasicQueryPlanner::new(Arc::clone(&mdm))));
-        let up = Arc::new(Mutex::new(BasicUpdatePlanner::new(Arc::clone(&mdm))));
-        let mut planner = Planner::new(qp, up);
+        let mut planner = simpledb.planner()?;
 
         // Setting Schema and Insert Init data
         let sqls = vec![
