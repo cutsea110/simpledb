@@ -182,6 +182,7 @@ mod tests {
             let year = iter.get_i32("GradYear")?;
             println!("{:<10}{:<10}{:>8}", name, dep, year);
         }
+        iter.close()?;
         println!("Rows = {}", rows);
 
         // SELECT View
@@ -199,6 +200,7 @@ mod tests {
             let dep = iter.get_string("DName")?;
             println!("{:<10}{:<10}", name, dep);
         }
+        iter.close()?;
         println!("Rows = {}", rows);
 
         // SELECT View + Table
@@ -217,6 +219,7 @@ mod tests {
             let title = iter.get_string("Title")?;
             println!("{:<10}{:<10}{:<16}", name, dep, title);
         }
+        iter.close()?;
         println!("Rows = {}", rows);
 
         // UPDATE
@@ -240,6 +243,7 @@ mod tests {
             let year = iter.get_i32("GradYear")?;
             println!("{:<10}{:<10}{:>8}", name, dep, year);
         }
+        iter.close()?;
         println!("Rows = {}", rows);
 
         // DELETE
@@ -263,6 +267,7 @@ mod tests {
             let year = iter.get_i32("GradYear")?;
             println!("{:<10}{:<10}{:>8}", name, dep, year);
         }
+        iter.close()?;
         println!("Rows = {}", rows);
 
         // important
