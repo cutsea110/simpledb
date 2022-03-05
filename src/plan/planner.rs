@@ -180,7 +180,7 @@ mod tests {
             let name = iter.get_string("SName")?;
             let dep = iter.get_string("DName")?;
             let year = iter.get_i32("GradYear")?;
-            println!("{:<10}{:<10}{:>}", name, dep, year);
+            println!("{:<10}{:<10}{:>8}", name, dep, year);
         }
         println!("Rows = {}", rows);
 
@@ -216,6 +216,52 @@ mod tests {
             let dep = iter.get_string("DName")?;
             let title = iter.get_string("Title")?;
             println!("{:<10}{:<10}{:<16}", name, dep, title);
+        }
+        println!("Rows = {}", rows);
+
+        // UPDATE
+        let update = "UPDATE STUDENT SET MajorId = 30 WHERE GradYear = 2020";
+        print!("Execute: {} ... ", update);
+        let c = planner.execute_update(update, Arc::clone(&tx))?;
+        println!("Affected rows = {}", c);
+        // SELECT After UPDATE
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        println!("Query: {}", query);
+        let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
+        let scan = plan.open()?;
+        let mut rows = 0;
+        let mut iter = scan.lock().unwrap();
+        println!("SName     DName     GradYear");
+        println!("----------------------------");
+        while iter.next() {
+            rows += 1;
+            let name = iter.get_string("SName")?;
+            let dep = iter.get_string("DName")?;
+            let year = iter.get_i32("GradYear")?;
+            println!("{:<10}{:<10}{:>8}", name, dep, year);
+        }
+        println!("Rows = {}", rows);
+
+        // DELETE
+        let update = "DELETE FROM STUDENT WHERE MajorId = 30";
+        print!("Execute: {} ... ", update);
+        let c = planner.execute_update(update, Arc::clone(&tx))?;
+        println!("Affected rows = {}", c);
+        // SELECT After DELETE
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        println!("Query: {}", query);
+        let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
+        let scan = plan.open()?;
+        let mut rows = 0;
+        let mut iter = scan.lock().unwrap();
+        println!("SName     DName     GradYear");
+        println!("----------------------------");
+        while iter.next() {
+            rows += 1;
+            let name = iter.get_string("SName")?;
+            let dep = iter.get_string("DName")?;
+            let year = iter.get_i32("GradYear")?;
+            println!("{:<10}{:<10}{:>8}", name, dep, year);
         }
         println!("Rows = {}", rows);
 
