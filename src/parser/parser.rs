@@ -427,27 +427,6 @@ where
         .or(ddl().map(|ddl| SQL::DDL(ddl)))
 }
 
-pub fn sql<Input>() -> impl Parser<Input, Output = SQL>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    dml()
-        .map(|dml| SQL::DML(dml))
-        .or(ddl().map(|ddl| SQL::DDL(ddl)))
-}
-
-fn dml<Input>() -> impl Parser<Input, Output = DML>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    attempt(query().map(|q| DML::Query(q)))
-        .or(attempt(insert().map(|i| DML::Insert(i))))
-        .or(attempt(delete().map(|d| DML::Delete(d))))
-        .or(attempt(modify().map(|m| DML::Modify(m))))
-}
-
 fn ddl<Input>() -> impl Parser<Input, Output = DDL>
 where
     Input: Stream<Token = char>,
