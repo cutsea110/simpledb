@@ -45,7 +45,11 @@ pub struct BasicUpdatePlanner {
 
 impl UpdatePlanner for BasicUpdatePlanner {
     fn execute_delete(&self, data: DeleteData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
-        let p1 = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
+        let p1 = Arc::new(TablePlan::new(
+            data.table_name(),
+            tx,
+            Arc::clone(&self.mdm),
+        )?);
         let p2 = SelectPlan::new(p1, data.pred().clone());
         if let Ok(s) = p2.open() {
             if let Ok(us) = s.lock().unwrap().to_update_scan() {
@@ -61,7 +65,11 @@ impl UpdatePlanner for BasicUpdatePlanner {
         Err(From::from(BasicUpdatePlannerError::DeleteAbort))
     }
     fn execute_modify(&self, data: ModifyData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
-        let p1 = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
+        let p1 = Arc::new(TablePlan::new(
+            data.table_name(),
+            tx,
+            Arc::clone(&self.mdm),
+        )?);
         let p2 = SelectPlan::new(p1, data.pred().clone());
         if let Ok(s) = p2.open() {
             if let Ok(us) = s.lock().unwrap().to_update_scan() {
@@ -78,7 +86,11 @@ impl UpdatePlanner for BasicUpdatePlanner {
         Err(From::from(BasicUpdatePlannerError::ModifyAbort))
     }
     fn execute_insert(&self, data: InsertData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
-        let p = Arc::new(TablePlan::new(data.table_name(), tx, self.mdm.clone())?);
+        let p = Arc::new(TablePlan::new(
+            data.table_name(),
+            tx,
+            Arc::clone(&self.mdm),
+        )?);
         if let Ok(s) = p.open() {
             if let Ok(us) = s.lock().unwrap().to_update_scan() {
                 us.insert()?;
@@ -88,6 +100,8 @@ impl UpdatePlanner for BasicUpdatePlanner {
                         us.set_val(fldname, val.clone())?;
                     }
                 }
+                us.close()?;
+                return Ok(1);
             }
         }
         Err(From::from(BasicUpdatePlannerError::InsertAbort))
