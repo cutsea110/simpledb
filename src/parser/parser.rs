@@ -2,7 +2,6 @@ use combine::{
     any, attempt,
     error::ParseError,
     parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
-    skip_many,
     stream::Stream,
     {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
@@ -19,38 +18,6 @@ use crate::{
 };
 
 /// primitive parser
-
-fn unnecessary<Input>() -> impl Parser<Input, Output = ()>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    skip_many(spaces().or(comment()))
-}
-
-fn comment<Input>() -> impl Parser<Input, Output = ()>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    line_comment().or(block_comment())
-}
-
-fn line_comment<Input>() -> impl Parser<Input, Output = ()>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    spaces() // TODO
-}
-
-fn block_comment<Input>() -> impl Parser<Input, Output = ()>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    spaces() // TODO
-}
 
 fn keyword<Input>(s: &'static str) -> impl Parser<Input, Output = String>
 where
