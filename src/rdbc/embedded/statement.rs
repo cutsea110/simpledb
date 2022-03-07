@@ -24,4 +24,8 @@ impl Statement for EmbeddedStatement {
     }
 }
 
-impl StatementAdapter for EmbeddedStatement {}
+impl StatementAdapter for EmbeddedStatement {
+    fn close(&mut self) -> Result<()> {
+        Err(From::from(Error::General("not implemented".to_string())))
+    }
+}

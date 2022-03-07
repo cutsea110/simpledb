@@ -40,4 +40,17 @@ impl Connection for EmbeddedConnection {
     }
 }
 
-impl ConnectionAdapter for EmbeddedConnection {}
+impl ConnectionAdapter for EmbeddedConnection {
+    fn close(&mut self) -> Result<()> {
+        Err(From::from(Error::General("not implemented".to_string())))
+    }
+    fn commit(&mut self) -> Result<()> {
+        Err(From::from(Error::General("not implemented".to_string())))
+    }
+    fn rollback(&mut self) -> Result<()> {
+        Err(From::from(Error::General("not implemented".to_string())))
+    }
+    fn get_transaction(&self) -> Result<Arc<Mutex<Transaction>>> {
+        Err(From::from(Error::General("not implemented".to_string())))
+    }
+}

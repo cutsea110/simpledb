@@ -38,4 +38,8 @@ impl ResultSet for EmbeddedResultSet {
     }
 }
 
-impl ResultSetAdapter for EmbeddedResultSet {}
+impl ResultSetAdapter for EmbeddedResultSet {
+    fn close(&mut self) -> Result<()> {
+        Err(From::from(Error::General("not implemented".to_string())))
+    }
+}

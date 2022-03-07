@@ -24,4 +24,11 @@ impl Driver for EmbeddedDriver {
     }
 }
 
-impl DriverAdapter for EmbeddedDriver {}
+impl DriverAdapter for EmbeddedDriver {
+    fn get_major_version(&self) -> i32 {
+        0
+    }
+    fn get_minor_version(&self) -> i32 {
+        1
+    }
+}

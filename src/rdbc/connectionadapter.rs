@@ -1,3 +1,12 @@
-use rdbc::Connection;
+use std::sync::{Arc, Mutex};
 
-pub trait ConnectionAdapter: Connection {}
+use rdbc::{Connection, Result};
+
+use crate::tx::transaction::Transaction;
+
+pub trait ConnectionAdapter: Connection {
+    fn close(&mut self) -> Result<()>;
+    fn commit(&mut self) -> Result<()>;
+    fn rollback(&mut self) -> Result<()>;
+    fn get_transaction(&self) -> Result<Arc<Mutex<Transaction>>>;
+}

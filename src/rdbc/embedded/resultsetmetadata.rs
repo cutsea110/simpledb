@@ -1,4 +1,4 @@
-use rdbc::{DataType, ResultSetMetaData};
+use rdbc::{DataType, Error, Result, ResultSetMetaData};
 
 use crate::rdbc::resultsetmetadataadapter::ResultSetMetaDataAdapter;
 
@@ -16,4 +16,8 @@ impl ResultSetMetaData for EmbeddedResultSetMetaData {
     }
 }
 
-impl ResultSetMetaDataAdapter for EmbeddedResultSetMetaData {}
+impl ResultSetMetaDataAdapter for EmbeddedResultSetMetaData {
+    fn get_column_display_size(&self, column: i32) -> Result<usize> {
+        Err(From::from(Error::General("not implemented".to_string())))
+    }
+}
