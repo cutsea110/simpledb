@@ -1,6 +1,8 @@
 use rdbc::{Error, Result, ResultSet, Statement, Value};
 use std::{cell::RefCell, rc::Rc};
 
+use crate::rdbc::statementadapter::StatementAdapter;
+
 pub struct EmbeddedStatement {
     sql: String,
 }
@@ -21,3 +23,5 @@ impl Statement for EmbeddedStatement {
         Err(From::from(Error::General("not implemented".to_string())))
     }
 }
+
+impl StatementAdapter for EmbeddedStatement {}

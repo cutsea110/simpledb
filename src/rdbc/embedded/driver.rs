@@ -1,10 +1,8 @@
+use rdbc::{Connection, Driver, Error, Result};
 use std::{cell::RefCell, rc::Rc};
 
-use rdbc::{Connection, Driver, Error, Result};
-
-use crate::server::simpledb::SimpleDB;
-
 use super::connection::EmbeddedConnection;
+use crate::{rdbc::driveradapter::DriverAdapter, server::simpledb::SimpleDB};
 
 pub struct EmbeddedDriver {}
 
@@ -25,3 +23,5 @@ impl Driver for EmbeddedDriver {
         )))
     }
 }
+
+impl DriverAdapter for EmbeddedDriver {}

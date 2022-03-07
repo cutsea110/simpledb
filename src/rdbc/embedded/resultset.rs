@@ -1,6 +1,8 @@
 use rdbc::{Error, Result, ResultSet, ResultSetMetaData};
 use std::rc::Rc;
 
+use crate::rdbc::resultsetadapter::ResultSetAdapter;
+
 pub struct EmbeddedResultSet {}
 
 impl ResultSet for EmbeddedResultSet {
@@ -35,3 +37,5 @@ impl ResultSet for EmbeddedResultSet {
         Err(From::from(Error::General("not implemented".to_string())))
     }
 }
+
+impl ResultSetAdapter for EmbeddedResultSet {}

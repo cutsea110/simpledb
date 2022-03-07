@@ -5,7 +5,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{plan::planner::Planner, server::simpledb::SimpleDB, tx::transaction::Transaction};
+use crate::{
+    plan::planner::Planner, rdbc::connectionadapter::ConnectionAdapter, server::simpledb::SimpleDB,
+    tx::transaction::Transaction,
+};
 
 use super::statement::EmbeddedStatement;
 
@@ -36,3 +39,5 @@ impl Connection for EmbeddedConnection {
         Err(From::from(Error::General("not implemented".to_string())))
     }
 }
+
+impl ConnectionAdapter for EmbeddedConnection {}

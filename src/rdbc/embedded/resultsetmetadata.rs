@@ -1,5 +1,7 @@
 use rdbc::{DataType, ResultSetMetaData};
 
+use crate::rdbc::resultsetmetadataadapter::ResultSetMetaDataAdapter;
+
 pub struct EmbeddedResultSetMetaData {}
 
 impl ResultSetMetaData for EmbeddedResultSetMetaData {
@@ -13,3 +15,5 @@ impl ResultSetMetaData for EmbeddedResultSetMetaData {
         DataType::Integer
     }
 }
+
+impl ResultSetMetaDataAdapter for EmbeddedResultSetMetaData {}
