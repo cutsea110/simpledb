@@ -1,7 +1,17 @@
 use rdbc::{Error, Result, ResultSet, Statement, Value};
 use std::{cell::RefCell, rc::Rc};
 
-pub struct EmbeddedStatement {}
+pub struct EmbeddedStatement {
+    sql: String,
+}
+
+impl EmbeddedStatement {
+    pub fn new(sql: &str) -> Self {
+        Self {
+            sql: sql.to_string(),
+        }
+    }
+}
 
 impl Statement for EmbeddedStatement {
     fn execute_query(&mut self, params: &[Value]) -> Result<Rc<RefCell<dyn ResultSet + '_>>> {
