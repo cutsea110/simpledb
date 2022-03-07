@@ -1,21 +1,11 @@
 use std::{cell::RefCell, rc::Rc};
 
-use rdbc::{Connection, Driver, Result};
+use rdbc::{Connection, Driver, Error, Result};
 
-use crate::server::simpledb::SimpleDB;
-
-pub struct EmbeddedDriver {
-    db: SimpleDB,
-}
-
-impl EmbeddedDriver {
-    fn new(db: SimpleDB) -> Self {
-        Self { db }
-    }
-}
+pub struct EmbeddedDriver {}
 
 impl Driver for EmbeddedDriver {
     fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn Connection>>> {
-        panic!("TODO")
+        Err(From::from(Error::General("not implemented".to_string())))
     }
 }

@@ -28,14 +28,14 @@ impl fmt::Display for PlannerError {
 
 #[derive(Clone)]
 pub struct Planner {
-    qplanner: Arc<Mutex<dyn QueryPlanner + Sync + Send>>,
-    uplanner: Arc<Mutex<dyn UpdatePlanner + Sync + Send>>,
+    qplanner: Arc<Mutex<dyn QueryPlanner>>,
+    uplanner: Arc<Mutex<dyn UpdatePlanner>>,
 }
 
 impl Planner {
     pub fn new(
-        qplanner: Arc<Mutex<dyn QueryPlanner + Sync + Send>>,
-        uplanner: Arc<Mutex<dyn UpdatePlanner + Sync + Send>>,
+        qplanner: Arc<Mutex<dyn QueryPlanner>>,
+        uplanner: Arc<Mutex<dyn UpdatePlanner>>,
     ) -> Self {
         Self { qplanner, uplanner }
     }
