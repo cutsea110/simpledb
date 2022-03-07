@@ -49,8 +49,8 @@ pub struct SimpleDB {
     lm: Arc<Mutex<LogMgr>>,
     bm: Arc<Mutex<BufferMgr>>,
     mdm: Option<Arc<Mutex<MetadataMgr>>>,
-    qp: Option<Arc<Mutex<dyn QueryPlanner>>>,
-    up: Option<Arc<Mutex<dyn UpdatePlanner>>>,
+    qp: Option<Arc<Mutex<dyn QueryPlanner + Sync + Send>>>,
+    up: Option<Arc<Mutex<dyn UpdatePlanner + Sync + Send>>>,
 }
 
 impl SimpleDB {
