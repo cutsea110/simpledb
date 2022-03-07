@@ -6,6 +6,7 @@ pub mod metadata;
 pub mod parser;
 pub mod plan;
 pub mod query;
+pub mod rdbc;
 pub mod record;
 pub mod server;
 pub mod tx;
