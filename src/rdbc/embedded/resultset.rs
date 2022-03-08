@@ -54,7 +54,9 @@ impl<'a> ResultSet for EmbeddedResultSet<'a> {
             return Ok(Some(ival));
         }
 
-        Err(From::from(Error::General("failed to get i32".to_string())))
+        Err(From::from(Error::General(
+            "failed to get i32 value".to_string(),
+        )))
     }
     fn get_i64(&self, i: u64) -> Result<Option<i64>> {
         Err(From::from(Error::General("not implemented".to_string())))
@@ -72,7 +74,7 @@ impl<'a> ResultSet for EmbeddedResultSet<'a> {
         }
 
         Err(From::from(Error::General(
-            "failed to get string".to_string(),
+            "failed to get string value".to_string(),
         )))
     }
     fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>> {
