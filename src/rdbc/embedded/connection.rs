@@ -42,15 +42,41 @@ impl Connection for EmbeddedConnection {
 
 impl ConnectionAdapter for EmbeddedConnection {
     fn close(&mut self) -> Result<()> {
-        Err(From::from(Error::General("not implemented".to_string())))
+        self.commit()
     }
     fn commit(&mut self) -> Result<()> {
-        Err(From::from(Error::General("not implemented".to_string())))
+        if self.current_tx.lock().unwrap().commit().is_err() {
+            return Err(From::from(Error::General(
+                "failed to commit current transaction.".to_string(),
+            )));
+        }
+        if let Ok(tx) = self.db.new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
+        } else {
+            return Err(From::from(Error::General(
+                "failed to start new transaction.".to_string(),
+            )));
+        }
+
+        Ok(())
     }
     fn rollback(&mut self) -> Result<()> {
-        Err(From::from(Error::General("not implemented".to_string())))
+        if self.current_tx.lock().unwrap().rollback().is_err() {
+            return Err(From::from(Error::General(
+                "failed to rollback current transaction.".to_string(),
+            )));
+        }
+        if let Ok(tx) = self.db.new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
+        } else {
+            return Err(From::from(Error::General(
+                "failed to start new transaction.".to_string(),
+            )));
+        }
+
+        Ok(())
     }
     fn get_transaction(&self) -> Result<Arc<Mutex<Transaction>>> {
-        Err(From::from(Error::General("not implemented".to_string())))
+        Ok(Arc::clone(&self.current_tx))
     }
 }
