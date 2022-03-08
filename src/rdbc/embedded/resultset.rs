@@ -5,11 +5,13 @@ use std::{
 };
 
 use crate::{
-    plan::plan::Plan, query::scan::Scan, rdbc::resultsetadapter::ResultSetAdapter,
+    plan::plan::Plan,
+    query::scan::Scan,
+    rdbc::{connectionadapter::ConnectionAdapter, resultsetadapter::ResultSetAdapter},
     record::schema::Schema,
 };
 
-use super::connection::EmbeddedConnection;
+use super::{connection::EmbeddedConnection, resultsetmetadata::EmbeddedResultSetMetaData};
 
 pub struct EmbeddedResultSet<'a> {
     s: Arc<Mutex<dyn Scan>>,
@@ -37,7 +39,9 @@ impl<'a> EmbeddedResultSet<'a> {
 
 impl<'a> ResultSet for EmbeddedResultSet<'a> {
     fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData>> {
-        Err(From::from(Error::General("not implemented".to_string())))
+        Ok(Rc::new(EmbeddedResultSetMetaData::new(Arc::clone(
+            &self.sch,
+        ))))
     }
     fn next(&mut self) -> bool {
         self.s.lock().unwrap().next()
@@ -85,7 +89,7 @@ impl<'a> ResultSet for EmbeddedResultSet<'a> {
 impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     fn close(&mut self) -> Result<()> {
         if let Ok(_) = self.s.lock().unwrap().close() {
-            return Ok(());
+            return self.conn.commit();
         }
 
         Err(From::from(Error::General("failed to close".to_string())))
