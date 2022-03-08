@@ -18,12 +18,20 @@ impl EmbeddedResultSetMetaData {
 
 impl ResultSetMetaDataAdapter for EmbeddedResultSetMetaData {
     fn get_column_count(&self) -> usize {
-        panic!("TODO")
+        self.sch.fields().len()
     }
-    fn get_column_type(&self, fldname: &str) -> Result<DataType> {
-        panic!("TODO")
+    fn get_column_type(&self, fldname: &str) -> DataType {
+        match self.sch.field_type(fldname) {
+            FieldType::INTEGER => DataType::Int32,
+            FieldType::VARCHAR => DataType::Varchar,
+        }
     }
-    fn get_column_display_size(&self, fldname: &str) -> Result<usize> {
-        panic!("TODO")
+    fn get_column_display_size(&self, fldname: &str) -> usize {
+        let fldlength = match self.sch.field_type(fldname) {
+            FieldType::INTEGER => 6,
+            FieldType::VARCHAR => self.sch.length(fldname),
+        };
+
+        max(fldname.len(), fldlength) + 1
     }
 }

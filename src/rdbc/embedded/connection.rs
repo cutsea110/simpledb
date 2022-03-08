@@ -5,20 +5,25 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use super::statement::EmbeddedStatement;
 use crate::{
-    rdbc::{connectionadapter::ConnectionAdapter, statementadapter::StatementAdapter},
+    rdbc::{
+        connectionadapter::{ConnectionAdapter, ConnectionError},
+        statementadapter::StatementAdapter,
+    },
     server::simpledb::SimpleDB,
     tx::transaction::Transaction,
 };
 
+#[derive(Clone)]
 pub struct EmbeddedConnection {
-    db: SimpleDB,
+    db: Rc<RefCell<SimpleDB>>,
     current_tx: Arc<Mutex<Transaction>>,
 }
 
 impl EmbeddedConnection {
-    pub fn new(db: SimpleDB) -> Self {
-        let tx = db.new_tx().unwrap();
+    pub fn new(db: Rc<RefCell<SimpleDB>>) -> Self {
+        let tx = db.borrow_mut().new_tx().unwrap();
 
         Self {
             db,
@@ -29,18 +34,36 @@ impl EmbeddedConnection {
 
 impl ConnectionAdapter for EmbeddedConnection {
     fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter>>> {
-        panic!("TODO")
+        let conn = self.clone();
+        let planner = self.db.borrow_mut().planner()?;
+        Ok(Rc::new(RefCell::new(EmbeddedStatement::new(
+            Rc::new(RefCell::new(conn)),
+            planner,
+            sql,
+        ))))
     }
     fn close(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.commit()
     }
     fn commit(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.current_tx.lock().unwrap().commit()?;
+        if let Ok(tx) = self.db.borrow_mut().new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
+            return Ok(());
+        }
+
+        Err(From::from(ConnectionError::StartNewTransactionFailed))
     }
     fn rollback(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.current_tx.lock().unwrap().rollback()?;
+        if let Ok(tx) = self.db.borrow_mut().new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
+            return Ok(());
+        }
+
+        Err(From::from(ConnectionError::StartNewTransactionFailed))
     }
     fn get_transaction(&self) -> Result<Arc<Mutex<Transaction>>> {
-        panic!("TODO")
+        Ok(Arc::clone(&self.current_tx))
     }
 }

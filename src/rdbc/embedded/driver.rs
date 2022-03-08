@@ -21,7 +21,8 @@ impl EmbeddedDriver {
 impl DriverAdapter for EmbeddedDriver {
     fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn ConnectionAdapter>>> {
         if let Ok(db) = SimpleDB::new(url) {
-            return Ok(Rc::new(RefCell::new(EmbeddedConnection::new(db))));
+            let edb = Rc::new(RefCell::new(db));
+            return Ok(Rc::new(RefCell::new(EmbeddedConnection::new(edb))));
         }
 
         Err(From::from(DriverError::ConnectFailed))

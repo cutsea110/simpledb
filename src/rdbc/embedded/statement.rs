@@ -2,18 +2,20 @@ use anyhow::Result;
 use std::{cell::RefCell, rc::Rc};
 
 use super::connection::EmbeddedConnection;
+use super::resultset::EmbeddedResultSet;
 use crate::plan::planner::Planner;
+use crate::rdbc::connectionadapter::ConnectionAdapter;
 use crate::rdbc::resultsetadapter::ResultSetAdapter;
 use crate::rdbc::statementadapter::StatementAdapter;
 
-pub struct EmbeddedStatement<'a> {
-    conn: &'a mut EmbeddedConnection,
+pub struct EmbeddedStatement {
+    conn: Rc<RefCell<EmbeddedConnection>>,
     planner: Planner,
     sql: String,
 }
 
-impl<'a> EmbeddedStatement<'a> {
-    pub fn new(conn: &'a mut EmbeddedConnection, planner: Planner, sql: &str) -> Self {
+impl EmbeddedStatement {
+    pub fn new(conn: Rc<RefCell<EmbeddedConnection>>, planner: Planner, sql: &str) -> Self {
         Self {
             conn,
             planner,
@@ -22,14 +24,20 @@ impl<'a> EmbeddedStatement<'a> {
     }
 }
 
-impl<'a> StatementAdapter for EmbeddedStatement<'a> {
+impl StatementAdapter for EmbeddedStatement {
     fn execute_query(&mut self) -> Result<Rc<RefCell<dyn ResultSetAdapter>>> {
-        panic!("TODO")
+        let tx = self.conn.borrow_mut().get_transaction()?;
+        let pln = self.planner.create_query_plan(&self.sql, tx)?;
+        Ok(Rc::new(RefCell::new(EmbeddedResultSet::new(
+            pln,
+            Rc::clone(&self.conn),
+        )?)))
     }
     fn execute_update(&mut self) -> Result<i32> {
-        panic!("TODO")
+        let tx = self.conn.borrow_mut().get_transaction()?;
+        self.planner.execute_update(&self.sql, tx)
     }
     fn close(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.conn.borrow_mut().close()
     }
 }
