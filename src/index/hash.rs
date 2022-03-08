@@ -1,9 +1,10 @@
+use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
 use super::Index;
 use crate::{
     query::constant::Constant,
-    record::{layout::Layout, tablescan::TableScan},
+    record::{layout::Layout, rid::RID, tablescan::TableScan},
     tx::transaction::Transaction,
 };
 
@@ -27,30 +28,22 @@ impl HashIndex {
 }
 
 impl Index for HashIndex {
-    fn before_first(&self, searchkey: Constant) -> anyhow::Result<()> {
+    fn before_first(&self, searchkey: Constant) -> Result<()> {
         panic!("TODO")
     }
     fn next(&self) -> bool {
         panic!("TODO")
     }
-    fn get_data_rid(&self) -> anyhow::Result<crate::record::rid::RID> {
+    fn get_data_rid(&self) -> Result<RID> {
         panic!("TODO")
     }
-    fn insert(
-        &mut self,
-        dataval: Constant,
-        datarid: crate::record::rid::RID,
-    ) -> anyhow::Result<()> {
+    fn insert(&mut self, dataval: Constant, datarid: RID) -> Result<()> {
         panic!("TODO")
     }
-    fn delete(
-        &mut self,
-        dataval: Constant,
-        datarid: crate::record::rid::RID,
-    ) -> anyhow::Result<()> {
+    fn delete(&mut self, dataval: Constant, datarid: RID) -> Result<()> {
         panic!("TODO")
     }
-    fn close(&mut self) -> anyhow::Result<()> {
+    fn close(&mut self) -> Result<()> {
         panic!("TODO")
     }
 }
