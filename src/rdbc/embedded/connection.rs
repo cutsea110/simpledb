@@ -1,4 +1,4 @@
-use rdbc::{Connection, Error, Result, Statement};
+use anyhow::Result;
 use std::{
     cell::RefCell,
     rc::Rc,
@@ -6,11 +6,10 @@ use std::{
 };
 
 use crate::{
-    rdbc::connectionadapter::ConnectionAdapter, server::simpledb::SimpleDB,
+    rdbc::{connectionadapter::ConnectionAdapter, statementadapter::StatementAdapter},
+    server::simpledb::SimpleDB,
     tx::transaction::Transaction,
 };
-
-use super::statement::EmbeddedStatement;
 
 pub struct EmbeddedConnection {
     db: SimpleDB,
@@ -28,60 +27,20 @@ impl EmbeddedConnection {
     }
 }
 
-impl Connection for EmbeddedConnection {
-    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>> {
-        if let Ok(planner) = self.db.planner() {
-            return Ok(Rc::new(RefCell::new(EmbeddedStatement::new(
-                self, planner, sql,
-            ))));
-        }
-
-        Err(From::from(Error::General(
-            "couldn't get planner".to_string(),
-        )))
-    }
-    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>> {
-        Err(From::from(Error::General("not implemented".to_string())))
-    }
-}
-
 impl ConnectionAdapter for EmbeddedConnection {
+    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter>>> {
+        panic!("TODO")
+    }
     fn close(&mut self) -> Result<()> {
-        self.commit()
+        panic!("TODO")
     }
     fn commit(&mut self) -> Result<()> {
-        if self.current_tx.lock().unwrap().commit().is_err() {
-            return Err(From::from(Error::General(
-                "failed to commit current transaction.".to_string(),
-            )));
-        }
-        if let Ok(tx) = self.db.new_tx() {
-            self.current_tx = Arc::new(Mutex::new(tx));
-        } else {
-            return Err(From::from(Error::General(
-                "failed to start new transaction.".to_string(),
-            )));
-        }
-
-        Ok(())
+        panic!("TODO")
     }
     fn rollback(&mut self) -> Result<()> {
-        if self.current_tx.lock().unwrap().rollback().is_err() {
-            return Err(From::from(Error::General(
-                "failed to rollback current transaction.".to_string(),
-            )));
-        }
-        if let Ok(tx) = self.db.new_tx() {
-            self.current_tx = Arc::new(Mutex::new(tx));
-        } else {
-            return Err(From::from(Error::General(
-                "failed to start new transaction.".to_string(),
-            )));
-        }
-
-        Ok(())
+        panic!("TODO")
     }
     fn get_transaction(&self) -> Result<Arc<Mutex<Transaction>>> {
-        Ok(Arc::clone(&self.current_tx))
+        panic!("TODO")
     }
 }

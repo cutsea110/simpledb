@@ -1,8 +1,14 @@
-use rdbc::{Connection, Driver, Error, Result};
+use anyhow::Result;
 use std::{cell::RefCell, rc::Rc};
 
 use super::connection::EmbeddedConnection;
-use crate::{rdbc::driveradapter::DriverAdapter, server::simpledb::SimpleDB};
+use crate::{
+    rdbc::{
+        connectionadapter::ConnectionAdapter,
+        driveradapter::{DriverAdapter, DriverError},
+    },
+    server::simpledb::SimpleDB,
+};
 
 pub struct EmbeddedDriver {}
 
@@ -12,19 +18,14 @@ impl EmbeddedDriver {
     }
 }
 
-impl Driver for EmbeddedDriver {
-    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn Connection>>> {
+impl DriverAdapter for EmbeddedDriver {
+    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn ConnectionAdapter>>> {
         if let Ok(db) = SimpleDB::new(url) {
             return Ok(Rc::new(RefCell::new(EmbeddedConnection::new(db))));
         }
 
-        Err(From::from(Error::General(
-            "couldn't connect database".to_string(),
-        )))
+        Err(From::from(DriverError::ConnectFailed))
     }
-}
-
-impl DriverAdapter for EmbeddedDriver {
     fn get_major_version(&self) -> i32 {
         0
     }
