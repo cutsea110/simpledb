@@ -159,6 +159,9 @@ impl Transaction {
     pub fn available_buffs(&self) -> usize {
         self.bm.lock().unwrap().available()
     }
+    pub fn tx_num(&self) -> i32 {
+        self.txnum
+    }
     fn next_tx_number(&mut self) -> i32 {
         let mut next_tx_num = self.next_tx_num.lock().unwrap();
         *next_tx_num += 1;

@@ -34,9 +34,6 @@ impl fmt::Display for ConnectionError {
             ConnectionError::RollbackFailed => {
                 write!(f, "failed to rollback")
             }
-            ConnectionError::CommitFailed => {
-                write!(f, "failed to commit")
-            }
             ConnectionError::CloseFailed => {
                 write!(f, "failed to close")
             }

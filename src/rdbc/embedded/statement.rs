@@ -35,7 +35,9 @@ impl StatementAdapter for EmbeddedStatement {
     }
     fn execute_update(&mut self) -> Result<i32> {
         let tx = self.conn.borrow_mut().get_transaction()?;
-        self.planner.execute_update(&self.sql, tx)
+        let result = self.planner.execute_update(&self.sql, tx)?;
+        self.conn.borrow_mut().commit()?;
+        Ok(result)
     }
     fn close(&mut self) -> Result<()> {
         self.conn.borrow_mut().close()
