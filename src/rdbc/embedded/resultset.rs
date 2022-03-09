@@ -1,9 +1,5 @@
 use anyhow::Result;
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use super::{connection::EmbeddedConnection, resultsetmetadata::EmbeddedResultSetMetaData};
 use crate::{
@@ -12,7 +8,6 @@ use crate::{
     rdbc::{
         connectionadapter::ConnectionAdapter,
         resultsetadapter::{ResultSetAdapter, ResultSetError},
-        resultsetmetadataadapter::ResultSetMetaDataAdapter,
     },
     record::schema::Schema,
 };
@@ -35,6 +30,8 @@ impl<'a> EmbeddedResultSet<'a> {
 }
 
 impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
+    type Meta = EmbeddedResultSetMetaData;
+
     fn next(&self) -> bool {
         self.s.lock().unwrap().next()
     }
@@ -44,10 +41,8 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     fn get_string(&self, fldname: &str) -> Result<String> {
         self.s.lock().unwrap().get_string(fldname)
     }
-    fn get_meta_data(&self) -> Result<Rc<RefCell<dyn ResultSetMetaDataAdapter>>> {
-        Ok(Rc::new(RefCell::new(EmbeddedResultSetMetaData::new(
-            Arc::clone(&self.sch),
-        ))))
+    fn get_meta_data(&self) -> Result<Self::Meta> {
+        Ok(EmbeddedResultSetMetaData::new(Arc::clone(&self.sch)))
     }
     fn close(&mut self) -> Result<()> {
         self.s.lock().unwrap().close()?;

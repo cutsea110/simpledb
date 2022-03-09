@@ -12,7 +12,7 @@ mod tests {
     use super::super::connectionadapter::ConnectionAdapter;
     use super::super::driveradapter::DriverAdapter;
     use super::super::resultsetadapter::ResultSetAdapter;
-    use super::super::resultsetmetadataadapter::DataType;
+    use super::super::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
     use super::super::statementadapter::StatementAdapter;
     use super::driver::EmbeddedDriver;
 
@@ -88,19 +88,19 @@ mod tests {
             if let Ok(results) = stmt.execute_query() {
                 if let Ok(meta) = results.get_meta_data() {
                     // print header
-                    for i in 0..meta.borrow().get_column_count() {
+                    for i in 0..meta.get_column_count() {
                         print!(
                             "{:width$} ",
-                            meta.borrow().get_column_name(i).unwrap(),
-                            width = meta.borrow().get_column_display_size(i).unwrap()
+                            meta.get_column_name(i).unwrap(),
+                            width = meta.get_column_display_size(i).unwrap()
                         );
                     }
                     println!("");
-                    for i in 0..meta.borrow().get_column_count() {
+                    for i in 0..meta.get_column_count() {
                         print!(
                             "{:-<width$}",
                             "",
-                            width = meta.borrow().get_column_display_size(i).unwrap() + 1
+                            width = meta.get_column_display_size(i).unwrap() + 1
                         );
                     }
                     println!("");
@@ -108,23 +108,21 @@ mod tests {
                     let mut c = 0;
                     while results.next() {
                         c += 1;
-                        for i in 0..meta.borrow().get_column_count() {
-                            if let Some(fldname) = meta.borrow().get_column_name(i) {
-                                match meta.borrow().get_column_type(i).unwrap() {
+                        for i in 0..meta.get_column_count() {
+                            if let Some(fldname) = meta.get_column_name(i) {
+                                match meta.get_column_type(i).unwrap() {
                                     DataType::Int32 => {
                                         print!(
                                             "{:width$} ",
                                             results.get_i32(fldname)?,
-                                            width =
-                                                meta.borrow().get_column_display_size(i).unwrap()
+                                            width = meta.get_column_display_size(i).unwrap()
                                         );
                                     }
                                     DataType::Varchar => {
                                         print!(
                                             "{:width$} ",
                                             results.get_string(fldname)?,
-                                            width =
-                                                meta.borrow().get_column_display_size(i).unwrap()
+                                            width = meta.get_column_display_size(i).unwrap()
                                         );
                                     }
                                 }
