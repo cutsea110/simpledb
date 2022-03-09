@@ -84,56 +84,53 @@ mod tests {
         let mut conn = d.connect("_test/rdbc")?;
         let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
         println!(" = {}", qry);
-        if let Ok(mut stmt) = conn.create(qry) {
-            if let Ok(results) = stmt.execute_query() {
-                if let Ok(meta) = results.get_meta_data() {
-                    // print header
-                    for i in 0..meta.get_column_count() {
-                        print!(
-                            "{:width$} ",
-                            meta.get_column_name(i).unwrap(),
-                            width = meta.get_column_display_size(i).unwrap()
-                        );
-                    }
-                    println!("");
-                    for i in 0..meta.get_column_count() {
-                        print!(
-                            "{:-<width$}",
-                            "",
-                            width = meta.get_column_display_size(i).unwrap() + 1
-                        );
-                    }
-                    println!("");
+        let mut stmt = conn.create(qry)?;
+        let results = stmt.execute_query()?;
+        let meta = results.get_meta_data()?;
+        // print header
+        for i in 0..meta.get_column_count() {
+            print!(
+                "{:width$} ",
+                meta.get_column_name(i).unwrap(),
+                width = meta.get_column_display_size(i).unwrap()
+            );
+        }
+        println!("");
+        for i in 0..meta.get_column_count() {
+            print!(
+                "{:-<width$}",
+                "",
+                width = meta.get_column_display_size(i).unwrap() + 1
+            );
+        }
+        println!("");
 
-                    let mut c = 0;
-                    while results.next() {
-                        c += 1;
-                        for i in 0..meta.get_column_count() {
-                            if let Some(fldname) = meta.get_column_name(i) {
-                                match meta.get_column_type(i).unwrap() {
-                                    DataType::Int32 => {
-                                        print!(
-                                            "{:width$} ",
-                                            results.get_i32(fldname)?,
-                                            width = meta.get_column_display_size(i).unwrap()
-                                        );
-                                    }
-                                    DataType::Varchar => {
-                                        print!(
-                                            "{:width$} ",
-                                            results.get_string(fldname)?,
-                                            width = meta.get_column_display_size(i).unwrap()
-                                        );
-                                    }
-                                }
-                            }
+        let mut c = 0;
+        while results.next() {
+            c += 1;
+            for i in 0..meta.get_column_count() {
+                if let Some(fldname) = meta.get_column_name(i) {
+                    match meta.get_column_type(i).unwrap() {
+                        DataType::Int32 => {
+                            print!(
+                                "{:width$} ",
+                                results.get_i32(fldname)?,
+                                width = meta.get_column_display_size(i).unwrap()
+                            );
                         }
-                        println!("");
+                        DataType::Varchar => {
+                            print!(
+                                "{:width$} ",
+                                results.get_string(fldname)?,
+                                width = meta.get_column_display_size(i).unwrap()
+                            );
+                        }
                     }
-                    println!("({} Rows)", c);
                 }
             }
+            println!("");
         }
+        println!("({} Rows)", c);
         conn.close()?;
 
         Ok(())
