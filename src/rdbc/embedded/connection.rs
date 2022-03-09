@@ -1,9 +1,5 @@
 use anyhow::Result;
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use super::statement::EmbeddedStatement;
 use crate::{
@@ -12,15 +8,14 @@ use crate::{
     tx::transaction::Transaction,
 };
 
-#[derive(Clone)]
 pub struct EmbeddedConnection {
-    db: Rc<RefCell<SimpleDB>>,
+    db: SimpleDB,
     current_tx: Arc<Mutex<Transaction>>,
 }
 
 impl EmbeddedConnection {
-    pub fn new(db: Rc<RefCell<SimpleDB>>) -> Self {
-        let tx = db.borrow_mut().new_tx().unwrap();
+    pub fn new(db: SimpleDB) -> Self {
+        let tx = db.new_tx().unwrap();
 
         Self {
             db,
@@ -33,7 +28,7 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     type State = EmbeddedStatement<'a>;
 
     fn create(&'a mut self, sql: &str) -> Result<Self::State> {
-        let planner = self.db.borrow_mut().planner()?;
+        let planner = self.db.planner()?;
         Ok(EmbeddedStatement::new(self, planner, sql))
     }
     fn close(&mut self) -> Result<()> {
@@ -41,7 +36,7 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     }
     fn commit(&mut self) -> Result<()> {
         self.current_tx.lock().unwrap().commit()?;
-        if let Ok(tx) = self.db.borrow_mut().new_tx() {
+        if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
             return Ok(());
         }
@@ -50,7 +45,7 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     }
     fn rollback(&mut self) -> Result<()> {
         self.current_tx.lock().unwrap().rollback()?;
-        if let Ok(tx) = self.db.borrow_mut().new_tx() {
+        if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
             return Ok(());
         }

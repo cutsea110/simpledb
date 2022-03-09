@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::{cell::RefCell, rc::Rc};
 
 use super::connection::EmbeddedConnection;
 use crate::{
@@ -20,8 +19,7 @@ impl DriverAdapter<'_> for EmbeddedDriver {
 
     fn connect(&self, url: &str) -> Result<Self::Con> {
         if let Ok(db) = SimpleDB::new(url) {
-            let edb = Rc::new(RefCell::new(db));
-            return Ok(EmbeddedConnection::new(edb));
+            return Ok(EmbeddedConnection::new(db));
         }
 
         Err(From::from(DriverError::ConnectFailed))
