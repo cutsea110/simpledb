@@ -11,7 +11,9 @@ mod tests {
 
     use super::super::connectionadapter::ConnectionAdapter;
     use super::super::driveradapter::DriverAdapter;
+    use super::super::resultsetadapter::ResultSetAdapter;
     use super::super::resultsetmetadataadapter::DataType;
+    use super::super::statementadapter::StatementAdapter;
     use super::driver::EmbeddedDriver;
 
     #[test]
@@ -72,7 +74,7 @@ mod tests {
         ];
         for sql in sqls {
             println!("Execute: {}", sql);
-            if let Ok(n) = conn.create(sql)?.borrow_mut().execute_update() {
+            if let Ok(n) = conn.create(sql)?.execute_update() {
                 println!("Affected {}", n);
             }
         }
@@ -82,9 +84,9 @@ mod tests {
         let mut conn = d.connect("_test/rdbc")?;
         let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
         println!(" = {}", qry);
-        if let Ok(stmt) = conn.create(qry) {
-            if let Ok(results) = stmt.borrow_mut().execute_query() {
-                if let Ok(meta) = results.borrow().get_meta_data() {
+        if let Ok(mut stmt) = conn.create(qry) {
+            if let Ok(results) = stmt.execute_query() {
+                if let Ok(meta) = results.get_meta_data() {
                     // print header
                     for i in 0..meta.borrow().get_column_count() {
                         print!(
@@ -104,7 +106,7 @@ mod tests {
                     println!("");
 
                     let mut c = 0;
-                    while results.borrow().next() {
+                    while results.next() {
                         c += 1;
                         for i in 0..meta.borrow().get_column_count() {
                             if let Some(fldname) = meta.borrow().get_column_name(i) {
@@ -112,7 +114,7 @@ mod tests {
                                     DataType::Int32 => {
                                         print!(
                                             "{:width$} ",
-                                            results.borrow().get_i32(fldname)?,
+                                            results.get_i32(fldname)?,
                                             width =
                                                 meta.borrow().get_column_display_size(i).unwrap()
                                         );
@@ -120,7 +122,7 @@ mod tests {
                                     DataType::Varchar => {
                                         print!(
                                             "{:width$} ",
-                                            results.borrow().get_string(fldname)?,
+                                            results.get_string(fldname)?,
                                             width =
                                                 meta.borrow().get_column_display_size(i).unwrap()
                                         );

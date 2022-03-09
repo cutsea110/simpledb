@@ -15,7 +15,7 @@ impl EmbeddedDriver {
     }
 }
 
-impl DriverAdapter for EmbeddedDriver {
+impl DriverAdapter<'_> for EmbeddedDriver {
     type Con = EmbeddedConnection;
 
     fn connect(&self, url: &str) -> Result<Self::Con> {

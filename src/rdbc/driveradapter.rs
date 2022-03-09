@@ -1,6 +1,5 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, rc::Rc};
 
 use super::connectionadapter::ConnectionAdapter;
 
@@ -20,8 +19,8 @@ impl fmt::Display for DriverError {
     }
 }
 
-pub trait DriverAdapter {
-    type Con: ConnectionAdapter;
+pub trait DriverAdapter<'a> {
+    type Con: ConnectionAdapter<'a>;
 
     fn connect(&self, url: &str) -> Result<Self::Con>;
     fn get_major_version(&self) -> i32;

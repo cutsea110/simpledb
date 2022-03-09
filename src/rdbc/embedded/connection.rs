@@ -7,10 +7,7 @@ use std::{
 
 use super::statement::EmbeddedStatement;
 use crate::{
-    rdbc::{
-        connectionadapter::{ConnectionAdapter, ConnectionError},
-        statementadapter::StatementAdapter,
-    },
+    rdbc::connectionadapter::{ConnectionAdapter, ConnectionError},
     server::simpledb::SimpleDB,
     tx::transaction::Transaction,
 };
@@ -32,12 +29,12 @@ impl EmbeddedConnection {
     }
 }
 
-impl ConnectionAdapter for EmbeddedConnection {
-    fn create<'a>(&'a mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter + 'a>>> {
+impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
+    type State = EmbeddedStatement<'a>;
+
+    fn create(&'a mut self, sql: &str) -> Result<Self::State> {
         let planner = self.db.borrow_mut().planner()?;
-        Ok(Rc::new(RefCell::new(EmbeddedStatement::new(
-            self, planner, sql,
-        ))))
+        Ok(EmbeddedStatement::new(self, planner, sql))
     }
     fn close(&mut self) -> Result<()> {
         self.commit()
