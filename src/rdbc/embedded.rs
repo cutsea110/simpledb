@@ -9,12 +9,16 @@ mod tests {
     use anyhow::Result;
     use std::{fs, path::Path};
 
-    use super::super::connectionadapter::ConnectionAdapter;
-    use super::super::driveradapter::DriverAdapter;
-    use super::super::resultsetadapter::ResultSetAdapter;
-    use super::super::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
-    use super::super::statementadapter::StatementAdapter;
-    use super::driver::EmbeddedDriver;
+    use super::{
+        super::{
+            connectionadapter::ConnectionAdapter,
+            driveradapter::DriverAdapter,
+            resultsetadapter::ResultSetAdapter,
+            resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
+            statementadapter::StatementAdapter,
+        },
+        driver::EmbeddedDriver,
+    };
 
     #[test]
     fn unit_test() -> Result<()> {
