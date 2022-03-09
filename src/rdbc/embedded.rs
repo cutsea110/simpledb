@@ -74,9 +74,9 @@ mod tests {
         let mut conn = d.connect("_test/rdbc")?;
         // init database
         for sql in sqls {
-            println!("Execute: {}", sql);
+            println!("< {}", sql);
             if let Ok(n) = conn.create(sql)?.execute_update() {
-                println!("Affected {}", n);
+                println!("> Affected {}", n);
             }
         }
         // close connection
@@ -85,7 +85,7 @@ mod tests {
         // new connect
         let mut conn = d.connect("_test/rdbc")?;
         let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
-        println!(" > {}", qry);
+        println!("> {}", qry);
         // statement
         let mut stmt = conn.create(qry)?;
         // resultset
@@ -126,6 +126,16 @@ mod tests {
             println!("");
         }
         println!("({} Rows)", c);
+
+        // update
+        let cmd = "update STUDENT set GradYear = 2023 where MajorId = 30";
+        println!("> {}", cmd);
+        // statement
+        let mut stmt = conn.create(cmd)?;
+        // affected
+        let affected = stmt.execute_update()?;
+        println!("> Affected {}", affected);
+
         // close connection
         conn.close()?;
 
