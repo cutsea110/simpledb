@@ -22,11 +22,6 @@ mod tests {
             fs::remove_dir_all("_test/rdbc")?;
         }
 
-        let d = EmbeddedDriver::new();
-
-        println!("Start new connection for setup database...");
-        let mut conn = d.connect("_test/rdbc")?;
-
         // Setting Schema and Insert Init data
         let sqls = vec![
             // DDL
@@ -72,21 +67,32 @@ mod tests {
             "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (54, 4, 53, 'A')",
             "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (64, 6, 53, 'A')",
         ];
+
+        // driver
+        let d = EmbeddedDriver::new();
+        // connect database
+        let mut conn = d.connect("_test/rdbc")?;
+        // init database
         for sql in sqls {
             println!("Execute: {}", sql);
             if let Ok(n) = conn.create(sql)?.execute_update() {
                 println!("Affected {}", n);
             }
         }
+        // close connection
         conn.close()?;
 
-        println!("Start new connection for query...");
+        // new connect
         let mut conn = d.connect("_test/rdbc")?;
         let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
         println!(" > {}", qry);
+        // statement
         let mut stmt = conn.create(qry)?;
+        // resultset
         let results = stmt.execute_query()?;
+        // resultset metadata
         let meta = results.get_meta_data()?;
+
         // print header
         for i in 0..meta.get_column_count() {
             let name = meta.get_column_name(i).unwrap();
@@ -94,12 +100,14 @@ mod tests {
             print!("{:width$} ", name, width = w);
         }
         println!("");
+        // separater
         for i in 0..meta.get_column_count() {
             let w = meta.get_column_display_size(i).unwrap();
             print!("{:-<width$}", "", width = w + 1);
         }
         println!("");
 
+        // scan record
         let mut c = 0;
         while results.next() {
             c += 1;
@@ -118,6 +126,7 @@ mod tests {
             println!("");
         }
         println!("({} Rows)", c);
+        // close connection
         conn.close()?;
 
         Ok(())
