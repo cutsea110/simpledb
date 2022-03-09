@@ -1,11 +1,9 @@
 use anyhow::Result;
-use std::{cell::RefCell, rc::Rc};
 
 use super::connection::EmbeddedConnection;
 use super::resultset::EmbeddedResultSet;
 use crate::plan::planner::Planner;
 use crate::rdbc::connectionadapter::ConnectionAdapter;
-use crate::rdbc::resultsetadapter::ResultSetAdapter;
 use crate::rdbc::statementadapter::StatementAdapter;
 
 pub struct EmbeddedStatement<'a> {
@@ -24,13 +22,13 @@ impl<'a> EmbeddedStatement<'a> {
     }
 }
 
-impl StatementAdapter for EmbeddedStatement<'_> {
-    fn execute_query<'a>(&'a mut self) -> Result<Rc<RefCell<dyn ResultSetAdapter + 'a>>> {
+impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
+    type Result = EmbeddedResultSet<'a>;
+
+    fn execute_query(&'a mut self) -> Result<Self::Result> {
         let tx = self.conn.get_transaction()?;
         let pln = self.planner.create_query_plan(&self.sql, tx)?;
-        Ok(Rc::new(RefCell::new(EmbeddedResultSet::new(
-            pln, self.conn,
-        )?)))
+        Ok(EmbeddedResultSet::new(pln, self.conn)?)
     }
     fn execute_update(&mut self) -> Result<i32> {
         let tx = self.conn.get_transaction()?;

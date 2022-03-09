@@ -1,10 +1,6 @@
 use anyhow::Result;
 use core::fmt;
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 use super::statementadapter::StatementAdapter;
 use crate::tx::transaction::Transaction;
@@ -41,8 +37,10 @@ impl fmt::Display for ConnectionError {
     }
 }
 
-pub trait ConnectionAdapter {
-    fn create<'a>(&'a mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter + 'a>>>;
+pub trait ConnectionAdapter<'a> {
+    type State: StatementAdapter<'a>;
+
+    fn create(&'a mut self, sql: &str) -> Result<Self::State>;
     fn close(&mut self) -> Result<()>;
     fn commit(&mut self) -> Result<()>;
     fn rollback(&mut self) -> Result<()>;

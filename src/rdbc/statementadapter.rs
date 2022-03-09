@@ -1,6 +1,5 @@
 use anyhow::Result;
 use core::fmt;
-use std::{cell::RefCell, rc::Rc};
 
 use super::resultsetadapter::ResultSetAdapter;
 
@@ -24,8 +23,10 @@ impl fmt::Display for StatementError {
     }
 }
 
-pub trait StatementAdapter {
-    fn execute_query<'a>(&'a mut self) -> Result<Rc<RefCell<dyn ResultSetAdapter + 'a>>>;
+pub trait StatementAdapter<'a> {
+    type Result: ResultSetAdapter;
+
+    fn execute_query(&'a mut self) -> Result<Self::Result>;
     fn execute_update(&mut self) -> Result<i32>;
     fn close(&mut self) -> Result<()>;
 }
