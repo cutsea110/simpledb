@@ -20,6 +20,8 @@ mod tests {
         }
 
         let d = EmbeddedDriver::new();
+
+        println!("Start new connection for setup database...");
         let conn = d.connect("_test/rdbc")?;
 
         // Setting Schema and Insert Init data
@@ -68,17 +70,15 @@ mod tests {
             "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (64, 6, 53, 'A')",
         ];
         for sql in sqls {
-            let current_tx = conn.borrow_mut().get_transaction()?;
-            println!("> Tx {}", current_tx.lock().unwrap().tx_num());
-            println!(" = {}", sql);
+            println!("Execute: {}", sql);
             if let Ok(n) = conn.borrow_mut().create(sql)?.borrow_mut().execute_update() {
                 println!("Affected {}", n);
             }
         }
+        conn.borrow_mut().close()?;
 
+        println!("Start new connection for query...");
         let conn = d.connect("_test/rdbc")?;
-        let current_tx = conn.borrow_mut().get_transaction()?;
-        println!("> Tx {}", current_tx.lock().unwrap().tx_num());
         let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
         println!(" = {}", qry);
         if let Ok(stmt) = conn.borrow_mut().create(qry) {
@@ -133,6 +133,7 @@ mod tests {
                 }
             }
         }
+        conn.borrow_mut().close()?;
 
         Ok(())
     }
