@@ -3,10 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use super::connection::EmbeddedConnection;
 use crate::{
-    rdbc::{
-        connectionadapter::ConnectionAdapter,
-        driveradapter::{DriverAdapter, DriverError},
-    },
+    rdbc::driveradapter::{DriverAdapter, DriverError},
     server::simpledb::SimpleDB,
 };
 
@@ -19,10 +16,12 @@ impl EmbeddedDriver {
 }
 
 impl DriverAdapter for EmbeddedDriver {
-    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn ConnectionAdapter>>> {
+    type Con = EmbeddedConnection;
+
+    fn connect(&self, url: &str) -> Result<Self::Con> {
         if let Ok(db) = SimpleDB::new(url) {
             let edb = Rc::new(RefCell::new(db));
-            return Ok(Rc::new(RefCell::new(EmbeddedConnection::new(edb))));
+            return Ok(EmbeddedConnection::new(edb));
         }
 
         Err(From::from(DriverError::ConnectFailed))

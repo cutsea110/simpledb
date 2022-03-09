@@ -9,6 +9,7 @@ mod tests {
     use anyhow::Result;
     use std::{fs, path::Path};
 
+    use super::super::connectionadapter::ConnectionAdapter;
     use super::super::driveradapter::DriverAdapter;
     use super::super::resultsetmetadataadapter::DataType;
     use super::driver::EmbeddedDriver;
@@ -22,7 +23,7 @@ mod tests {
         let d = EmbeddedDriver::new();
 
         println!("Start new connection for setup database...");
-        let conn = d.connect("_test/rdbc")?;
+        let mut conn = d.connect("_test/rdbc")?;
 
         // Setting Schema and Insert Init data
         let sqls = vec![
@@ -71,17 +72,17 @@ mod tests {
         ];
         for sql in sqls {
             println!("Execute: {}", sql);
-            if let Ok(n) = conn.borrow_mut().create(sql)?.borrow_mut().execute_update() {
+            if let Ok(n) = conn.create(sql)?.borrow_mut().execute_update() {
                 println!("Affected {}", n);
             }
         }
-        conn.borrow_mut().close()?;
+        conn.close()?;
 
         println!("Start new connection for query...");
-        let conn = d.connect("_test/rdbc")?;
+        let mut conn = d.connect("_test/rdbc")?;
         let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
         println!(" = {}", qry);
-        if let Ok(stmt) = conn.borrow_mut().create(qry) {
+        if let Ok(stmt) = conn.create(qry) {
             if let Ok(results) = stmt.borrow_mut().execute_query() {
                 if let Ok(meta) = results.borrow().get_meta_data() {
                     // print header
@@ -133,7 +134,7 @@ mod tests {
                 }
             }
         }
-        conn.borrow_mut().close()?;
+        conn.close()?;
 
         Ok(())
     }

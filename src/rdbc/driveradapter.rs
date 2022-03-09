@@ -21,7 +21,9 @@ impl fmt::Display for DriverError {
 }
 
 pub trait DriverAdapter {
-    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn ConnectionAdapter>>>;
+    type Con: ConnectionAdapter;
+
+    fn connect(&self, url: &str) -> Result<Self::Con>;
     fn get_major_version(&self) -> i32;
     fn get_minor_version(&self) -> i32;
 }
