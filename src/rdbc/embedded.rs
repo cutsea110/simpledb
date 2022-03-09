@@ -6,11 +6,11 @@ pub mod statement;
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
     use std::{fs, path::Path};
 
-    use anyhow::Result;
-
     use super::super::driveradapter::DriverAdapter;
+    use super::super::resultsetmetadataadapter::DataType;
     use super::driver::EmbeddedDriver;
 
     #[test]
@@ -71,10 +71,67 @@ mod tests {
             let current_tx = conn.borrow_mut().get_transaction()?;
             println!("> Tx {}", current_tx.lock().unwrap().tx_num());
             println!(" = {}", sql);
-            conn.borrow_mut()
-                .create(sql)?
-                .borrow_mut()
-                .execute_update()?;
+            if let Ok(n) = conn.borrow_mut().create(sql)?.borrow_mut().execute_update() {
+                println!("Affected {}", n);
+            }
+        }
+
+        let conn = d.connect("_test/rdbc")?;
+        let current_tx = conn.borrow_mut().get_transaction()?;
+        println!("> Tx {}", current_tx.lock().unwrap().tx_num());
+        let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
+        println!(" = {}", qry);
+        if let Ok(stmt) = conn.borrow_mut().create(qry) {
+            if let Ok(results) = stmt.borrow_mut().execute_query() {
+                if let Ok(meta) = results.borrow().get_meta_data() {
+                    // print header
+                    for i in 0..meta.borrow().get_column_count() {
+                        print!(
+                            "{:width$} ",
+                            meta.borrow().get_column_name(i).unwrap(),
+                            width = meta.borrow().get_column_display_size(i).unwrap()
+                        );
+                    }
+                    println!("");
+                    for i in 0..meta.borrow().get_column_count() {
+                        print!(
+                            "{:-<width$}",
+                            "",
+                            width = meta.borrow().get_column_display_size(i).unwrap() + 1
+                        );
+                    }
+                    println!("");
+
+                    let mut c = 0;
+                    while results.borrow().next() {
+                        c += 1;
+                        for i in 0..meta.borrow().get_column_count() {
+                            if let Some(fldname) = meta.borrow().get_column_name(i) {
+                                match meta.borrow().get_column_type(i).unwrap() {
+                                    DataType::Int32 => {
+                                        print!(
+                                            "{:width$} ",
+                                            results.borrow().get_i32(fldname)?,
+                                            width =
+                                                meta.borrow().get_column_display_size(i).unwrap()
+                                        );
+                                    }
+                                    DataType::Varchar => {
+                                        print!(
+                                            "{:width$} ",
+                                            results.borrow().get_string(fldname)?,
+                                            width =
+                                                meta.borrow().get_column_display_size(i).unwrap()
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        println!("");
+                    }
+                    println!("({} Rows)", c);
+                }
+            }
         }
 
         Ok(())
