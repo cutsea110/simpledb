@@ -25,5 +25,5 @@ pub trait ResultSetAdapter {
     fn get_i32(&self, fldname: &str) -> Result<i32>;
     fn get_string(&self, fldname: &str) -> Result<String>;
     fn get_meta_data(&self) -> Result<Rc<RefCell<dyn ResultSetMetaDataAdapter>>>;
-    fn close(&self) -> Result<()>;
+    fn close(&mut self) -> Result<()>;
 }

@@ -1,4 +1,3 @@
-use anyhow::Result;
 use std::{cmp::max, sync::Arc};
 
 use crate::{
