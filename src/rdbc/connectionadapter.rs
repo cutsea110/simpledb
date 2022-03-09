@@ -42,7 +42,7 @@ impl fmt::Display for ConnectionError {
 }
 
 pub trait ConnectionAdapter {
-    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter>>>;
+    fn create<'a>(&'a mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter + 'a>>>;
     fn close(&mut self) -> Result<()>;
     fn commit(&mut self) -> Result<()>;
     fn rollback(&mut self) -> Result<()>;

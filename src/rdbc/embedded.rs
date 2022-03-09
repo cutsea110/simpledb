@@ -10,13 +10,7 @@ mod tests {
 
     use anyhow::Result;
 
-    use super::super::{
-        connectionadapter::ConnectionAdapter,
-        driveradapter::DriverAdapter,
-        resultsetadapter::ResultSetAdapter,
-        resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
-        statementadapter::StatementAdapter,
-    };
+    use super::super::driveradapter::DriverAdapter;
     use super::driver::EmbeddedDriver;
 
     #[test]
@@ -75,11 +69,12 @@ mod tests {
         ];
         for sql in sqls {
             let current_tx = conn.borrow_mut().get_transaction()?;
-            println!("Tx {}", current_tx.lock().unwrap().tx_num());
-            println!("Execute: {}", sql);
-
-            let stmt = conn.borrow_mut().create(sql)?;
-            stmt.borrow_mut().execute_update()?;
+            println!("> Tx {}", current_tx.lock().unwrap().tx_num());
+            println!(" = {}", sql);
+            conn.borrow_mut()
+                .create(sql)?
+                .borrow_mut()
+                .execute_update()?;
         }
 
         Ok(())

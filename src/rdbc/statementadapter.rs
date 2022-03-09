@@ -25,7 +25,7 @@ impl fmt::Display for StatementError {
 }
 
 pub trait StatementAdapter {
-    fn execute_query(&mut self) -> Result<Rc<RefCell<dyn ResultSetAdapter>>>;
+    fn execute_query<'a>(&'a mut self) -> Result<Rc<RefCell<dyn ResultSetAdapter + 'a>>>;
     fn execute_update(&mut self) -> Result<i32>;
     fn close(&mut self) -> Result<()>;
 }

@@ -17,14 +17,14 @@ use crate::{
     record::schema::Schema,
 };
 
-pub struct EmbeddedResultSet {
+pub struct EmbeddedResultSet<'a> {
     s: Arc<Mutex<dyn Scan>>,
     sch: Arc<Schema>,
-    conn: Rc<RefCell<EmbeddedConnection>>,
+    conn: &'a mut EmbeddedConnection,
 }
 
-impl EmbeddedResultSet {
-    pub fn new(plan: Arc<dyn Plan>, conn: Rc<RefCell<EmbeddedConnection>>) -> Result<Self> {
+impl<'a> EmbeddedResultSet<'a> {
+    pub fn new(plan: Arc<dyn Plan>, conn: &'a mut EmbeddedConnection) -> Result<Self> {
         if let Ok(s) = plan.open() {
             let sch = plan.schema();
             return Ok(Self { s, sch, conn });
@@ -34,7 +34,7 @@ impl EmbeddedResultSet {
     }
 }
 
-impl ResultSetAdapter for EmbeddedResultSet {
+impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     fn next(&self) -> bool {
         self.s.lock().unwrap().next()
     }
@@ -49,8 +49,8 @@ impl ResultSetAdapter for EmbeddedResultSet {
             Arc::clone(&self.sch),
         ))))
     }
-    fn close(&self) -> Result<()> {
+    fn close(&mut self) -> Result<()> {
         self.s.lock().unwrap().close()?;
-        self.conn.borrow_mut().close()
+        self.conn.close()
     }
 }

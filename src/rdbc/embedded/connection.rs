@@ -33,13 +33,10 @@ impl EmbeddedConnection {
 }
 
 impl ConnectionAdapter for EmbeddedConnection {
-    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter>>> {
-        let conn = self.clone();
+    fn create<'a>(&'a mut self, sql: &str) -> Result<Rc<RefCell<dyn StatementAdapter + 'a>>> {
         let planner = self.db.borrow_mut().planner()?;
         Ok(Rc::new(RefCell::new(EmbeddedStatement::new(
-            Rc::new(RefCell::new(conn)),
-            planner,
-            sql,
+            self, planner, sql,
         ))))
     }
     fn close(&mut self) -> Result<()> {
