@@ -6,6 +6,7 @@ use super::resultsetadapter::ResultSetAdapter;
 #[derive(Debug)]
 pub enum StatementError {
     RuntimeError,
+    CommitFailed,
     CloseFailed,
 }
 
@@ -15,6 +16,9 @@ impl fmt::Display for StatementError {
         match self {
             StatementError::RuntimeError => {
                 write!(f, "runtime error")
+            }
+            StatementError::CommitFailed => {
+                write!(f, "failed to commit")
             }
             StatementError::CloseFailed => {
                 write!(f, "failed to close")
