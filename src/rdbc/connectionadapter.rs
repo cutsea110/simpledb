@@ -44,5 +44,5 @@ pub trait ConnectionAdapter<'a> {
     fn close(&mut self) -> Result<()>;
     fn commit(&mut self) -> Result<()>;
     fn rollback(&mut self) -> Result<()>;
-    fn get_transaction(&self) -> Result<Arc<Mutex<Transaction>>>;
+    fn get_transaction(&self) -> Arc<Mutex<Transaction>>;
 }

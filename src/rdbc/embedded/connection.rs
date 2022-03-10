@@ -28,14 +28,20 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     type Stmt = EmbeddedStatement<'a>;
 
     fn create(&'a mut self, sql: &str) -> Result<Self::Stmt> {
-        let planner = self.db.planner()?;
-        Ok(EmbeddedStatement::new(self, planner, sql))
+        if let Ok(planner) = self.db.planner() {
+            return Ok(EmbeddedStatement::new(self, planner, sql));
+        }
+
+        Err(From::from(ConnectionError::CreateStatementFailed))
     }
     fn close(&mut self) -> Result<()> {
         self.commit()
+            .or_else(|_| Err(From::from(ConnectionError::CloseFailed)))
     }
     fn commit(&mut self) -> Result<()> {
-        self.current_tx.lock().unwrap().commit()?;
+        if self.current_tx.lock().unwrap().commit().is_err() {
+            return Err(From::from(ConnectionError::CommitFailed));
+        }
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
             return Ok(());
@@ -44,7 +50,9 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
         Err(From::from(ConnectionError::StartNewTransactionFailed))
     }
     fn rollback(&mut self) -> Result<()> {
-        self.current_tx.lock().unwrap().rollback()?;
+        if self.current_tx.lock().unwrap().rollback().is_err() {
+            return Err(From::from(ConnectionError::RollbackFailed));
+        }
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
             return Ok(());
@@ -52,7 +60,7 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
 
         Err(From::from(ConnectionError::StartNewTransactionFailed))
     }
-    fn get_transaction(&self) -> Result<Arc<Mutex<Transaction>>> {
-        Ok(Arc::clone(&self.current_tx))
+    fn get_transaction(&self) -> Arc<Mutex<Transaction>> {
+        Arc::clone(&self.current_tx)
     }
 }

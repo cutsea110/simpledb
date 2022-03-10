@@ -26,12 +26,12 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
     type Set = EmbeddedResultSet<'a>;
 
     fn execute_query(&'a mut self) -> Result<Self::Set> {
-        let tx = self.conn.get_transaction()?;
+        let tx = self.conn.get_transaction();
         let pln = self.planner.create_query_plan(&self.sql, tx)?;
         Ok(EmbeddedResultSet::new(pln, self.conn)?)
     }
     fn execute_update(&mut self) -> Result<i32> {
-        let tx = self.conn.get_transaction()?;
+        let tx = self.conn.get_transaction();
         let result = self.planner.execute_update(&self.sql, tx)?;
         self.conn.commit()?;
         Ok(result)
