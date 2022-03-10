@@ -25,9 +25,9 @@ impl EmbeddedConnection {
 }
 
 impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
-    type State = EmbeddedStatement<'a>;
+    type Stmt = EmbeddedStatement<'a>;
 
-    fn create(&'a mut self, sql: &str) -> Result<Self::State> {
+    fn create(&'a mut self, sql: &str) -> Result<Self::Stmt> {
         let planner = self.db.planner()?;
         Ok(EmbeddedStatement::new(self, planner, sql))
     }

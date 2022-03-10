@@ -23,9 +23,9 @@ impl<'a> EmbeddedStatement<'a> {
 }
 
 impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
-    type Result = EmbeddedResultSet<'a>;
+    type Set = EmbeddedResultSet<'a>;
 
-    fn execute_query(&'a mut self) -> Result<Self::Result> {
+    fn execute_query(&'a mut self) -> Result<Self::Set> {
         let tx = self.conn.get_transaction()?;
         let pln = self.planner.create_query_plan(&self.sql, tx)?;
         Ok(EmbeddedResultSet::new(pln, self.conn)?)
