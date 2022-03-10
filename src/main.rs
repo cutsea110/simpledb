@@ -26,7 +26,7 @@ struct Args {
 fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} [options]", program);
     print!("{}", opts.usage(&brief));
-    stdout().flush().unwrap();
+    stdout().flush().expect("display usage");
     process::exit(0);
 }
 
@@ -46,13 +46,13 @@ fn parse_args() -> Args {
     }
 
     Args {
-        dbname: matches.opt_str("d").unwrap(),
+        dbname: matches.opt_str("d").expect("require dbname"),
     }
 }
 
 fn read_query(conn: &EmbeddedConnection) -> Result<String> {
     print!("SQL {}> ", conn.get_transaction().lock().unwrap().tx_num());
-    stdout().flush().unwrap();
+    stdout().flush().expect("require input");
 
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).ok();
@@ -64,14 +64,18 @@ fn print_result_set(results: EmbeddedResultSet) -> Result<()> {
     let meta = results.get_meta_data()?;
     // print header
     for i in 0..meta.get_column_count() {
-        let name = meta.get_column_name(i).unwrap();
-        let w = meta.get_column_display_size(i).unwrap();
+        let name = meta.get_column_name(i).expect("get column name");
+        let w = meta
+            .get_column_display_size(i)
+            .expect("get column display size");
         print!("{:width$} ", name, width = w);
     }
     println!("");
     // separater
     for i in 0..meta.get_column_count() {
-        let w = meta.get_column_display_size(i).unwrap();
+        let w = meta
+            .get_column_display_size(i)
+            .expect("get column display size");
         print!("{:-<width$}", "", width = w + 1);
     }
     println!("");
@@ -80,9 +84,11 @@ fn print_result_set(results: EmbeddedResultSet) -> Result<()> {
     while results.next() {
         c += 1;
         for i in 0..meta.get_column_count() {
-            let fldname = meta.get_column_name(i).unwrap();
-            let w = meta.get_column_display_size(i).unwrap();
-            match meta.get_column_type(i).unwrap() {
+            let fldname = meta.get_column_name(i).expect("get column name");
+            let w = meta
+                .get_column_display_size(i)
+                .expect("get column display size");
+            match meta.get_column_type(i).expect("get column type") {
                 DataType::Int32 => {
                     print!("{:width$} ", results.get_i32(fldname)?, width = w);
                 }
@@ -104,7 +110,7 @@ fn main() {
 
     if !Path::new(&dbpath).exists() {
         print!("create new '{}'? [Yes/no]> ", args.dbname);
-        stdout().flush().unwrap();
+        stdout().flush().expect("confirm");
 
         let mut yes_no = String::new();
         std::io::stdin().read_line(&mut yes_no).ok();
@@ -119,15 +125,15 @@ fn main() {
     if let Ok(mut conn) = drvr.connect(&dbpath) {
         while let Ok(qry) = read_query(&conn) {
             if qry.trim().to_ascii_lowercase() == ":q" {
-                conn.close().unwrap();
+                conn.close().expect("close");
                 println!("disconnected.");
                 process::exit(0);
             }
-            let mut stmt = conn.create(&qry).unwrap();
+            let mut stmt = conn.create(&qry).expect("create statement");
             let words: Vec<&str> = qry.split_whitespace().collect();
             if words[0].trim().to_ascii_lowercase() == "select" {
                 if let Ok(result) = stmt.execute_query() {
-                    print_result_set(result).unwrap();
+                    print_result_set(result).expect("print result set");
                 } else {
                     println!("invalid query: {}", qry);
                 }
