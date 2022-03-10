@@ -104,46 +104,54 @@ fn print_result_set(mut results: EmbeddedResultSet) -> Result<()> {
     Ok(())
 }
 
+fn confirm_new_db(dbname: &str) {
+    print!("create new '{}'? [Yes/no]> ", dbname);
+    stdout().flush().expect("confirm");
+
+    let mut yes_no = String::new();
+    std::io::stdin().read_line(&mut yes_no).ok();
+    let ans = yes_no.trim().to_ascii_lowercase();
+    if ans != "y" && ans != "yes" {
+        println!("terminates the process.");
+        process::exit(0);
+    }
+}
+
+fn exec(conn: &mut EmbeddedConnection, qry: &str) {
+    if qry.trim().to_ascii_lowercase() == ":q" {
+        conn.close().expect("close");
+        println!("disconnected.");
+        process::exit(0);
+    }
+    let mut stmt = conn.create(&qry).expect("create statement");
+    let words: Vec<&str> = qry.split_whitespace().collect();
+    if words[0].trim().to_ascii_lowercase() == "select" {
+        if let Ok(result) = stmt.execute_query() {
+            print_result_set(result).expect("print result set");
+        } else {
+            println!("invalid query: {}", qry);
+        }
+    } else {
+        if let Ok(affected) = stmt.execute_update() {
+            println!("Affected {}", affected);
+        } else {
+            println!("invalid command: {}", qry);
+        }
+    }
+}
+
 fn main() {
     let args = parse_args();
     let dbpath = format!("db/{}", args.dbname);
 
     if !Path::new(&dbpath).exists() {
-        print!("create new '{}'? [Yes/no]> ", args.dbname);
-        stdout().flush().expect("confirm");
-
-        let mut yes_no = String::new();
-        std::io::stdin().read_line(&mut yes_no).ok();
-        let ans = yes_no.trim().to_ascii_lowercase();
-        if ans != "y" && ans != "yes" {
-            println!("terminates the process.");
-            process::exit(0);
-        }
+        confirm_new_db(&args.dbname);
     }
 
     let drvr = EmbeddedDriver::new();
     if let Ok(mut conn) = drvr.connect(&dbpath) {
         while let Ok(qry) = read_query(&conn) {
-            if qry.trim().to_ascii_lowercase() == ":q" {
-                conn.close().expect("close");
-                println!("disconnected.");
-                process::exit(0);
-            }
-            let mut stmt = conn.create(&qry).expect("create statement");
-            let words: Vec<&str> = qry.split_whitespace().collect();
-            if words[0].trim().to_ascii_lowercase() == "select" {
-                if let Ok(result) = stmt.execute_query() {
-                    print_result_set(result).expect("print result set");
-                } else {
-                    println!("invalid query: {}", qry);
-                }
-            } else {
-                if let Ok(affected) = stmt.execute_update() {
-                    println!("Affected {}", affected);
-                } else {
-                    println!("invalid command: {}", qry);
-                }
-            }
+            exec(&mut conn, &qry);
         }
     }
 
