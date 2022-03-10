@@ -80,7 +80,7 @@ impl Buffer {
     pub fn flush(&mut self) -> Result<()> {
         let mut lm = self.lm.lock().unwrap();
         if self.txnum >= 0 {
-            lm.flush(self.lsn as u64)?;
+            lm.flush(self.lsn)?;
 
             match self.blk.as_ref() {
                 Some(blk) => {

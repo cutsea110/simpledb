@@ -14,9 +14,9 @@ pub struct LogMgr {
     logpage: Page,
     currentblk: BlockId,
     // latest log sequence number
-    latest_lsn: u64,
+    latest_lsn: i32,
     // last saved log sequence number
-    last_saved_lsn: u64,
+    last_saved_lsn: i32,
 }
 
 impl LogMgr {
@@ -50,8 +50,8 @@ impl LogMgr {
             last_saved_lsn: 0,
         })
     }
-    pub fn flush(&mut self, lsn: u64) -> Result<()> {
-        if lsn > self.last_saved_lsn {
+    pub fn flush(&mut self, lsn: i32) -> Result<()> {
+        if lsn >= self.last_saved_lsn {
             self.flush_to_fm()?;
         }
 
@@ -64,7 +64,7 @@ impl LogMgr {
         Ok(iter)
     }
     // synchronized
-    pub fn append(&mut self, logrec: &mut Vec<u8>) -> Result<u64> {
+    pub fn append(&mut self, logrec: &mut Vec<u8>) -> Result<i32> {
         let mut boundary = self.logpage.get_i32(0)?;
         let recsize = logrec.len() as i32;
         let int32_size = mem::size_of::<i32>() as i32;

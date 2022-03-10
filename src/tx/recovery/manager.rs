@@ -66,7 +66,7 @@ impl RecoveryMgr {
         let lsn = CheckpointRecord::write_to_log(Arc::clone(&self.lm))?;
         self.lm.lock().unwrap().flush(lsn)
     }
-    pub fn set_i32(&mut self, buff: &mut Buffer, offset: i32, _new_val: i32) -> Result<u64> {
+    pub fn set_i32(&mut self, buff: &mut Buffer, offset: i32, _new_val: i32) -> Result<i32> {
         let old_val = buff.contents().get_i32(offset as usize)?;
         if let Some(blk) = buff.block() {
             return SetI32Record::write_to_log(
@@ -82,7 +82,7 @@ impl RecoveryMgr {
             "set_i32".to_string(),
         )))
     }
-    pub fn set_string(&mut self, buff: &mut Buffer, offset: i32, _new_val: &str) -> Result<u64> {
+    pub fn set_string(&mut self, buff: &mut Buffer, offset: i32, _new_val: &str) -> Result<i32> {
         let old_val = buff.contents().get_string(offset as usize)?;
         if let Some(blk) = buff.block() {
             return SetStringRecord::write_to_log(

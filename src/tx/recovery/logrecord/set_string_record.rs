@@ -70,7 +70,7 @@ impl SetStringRecord {
         blk: &BlockId,
         offset: i32,
         val: String,
-    ) -> Result<u64> {
+    ) -> Result<i32> {
         let tpos = mem::size_of::<i32>();
         let fpos = tpos + mem::size_of::<i32>();
         let bpos = fpos + Page::max_length(blk.file_name().len());

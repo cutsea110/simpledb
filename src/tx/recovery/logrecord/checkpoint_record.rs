@@ -32,7 +32,7 @@ impl CheckpointRecord {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
-    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>) -> Result<u64> {
+    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>) -> Result<i32> {
         let reclen = mem::size_of::<i32>();
 
         let mut p = Page::new_from_size(reclen);

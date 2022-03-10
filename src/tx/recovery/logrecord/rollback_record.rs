@@ -37,7 +37,7 @@ impl RollbackRecord {
 
         Ok(Self { txnum })
     }
-    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>, txnum: i32) -> Result<u64> {
+    pub fn write_to_log(lm: Arc<Mutex<LogMgr>>, txnum: i32) -> Result<i32> {
         let tpos = mem::size_of::<i32>();
         let reclen = tpos + mem::size_of::<i32>();
 

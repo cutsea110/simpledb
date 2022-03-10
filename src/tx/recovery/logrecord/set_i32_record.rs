@@ -71,7 +71,7 @@ impl SetI32Record {
         blk: &BlockId,
         offset: i32,
         val: i32,
-    ) -> Result<u64> {
+    ) -> Result<i32> {
         let tpos = mem::size_of::<i32>();
         let fpos = tpos + mem::size_of::<i32>();
         let bpos = fpos + Page::max_length(blk.file_name().len());
