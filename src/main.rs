@@ -59,7 +59,7 @@ fn read_query(conn: &EmbeddedConnection) -> Result<String> {
     Ok(input)
 }
 
-fn print_result_set(results: EmbeddedResultSet) -> Result<()> {
+fn print_result_set(mut results: EmbeddedResultSet) -> Result<()> {
     // resultset metadata
     let meta = results.get_meta_data()?;
     // print header

@@ -35,15 +35,17 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     fn next(&self) -> bool {
         self.s.lock().unwrap().next()
     }
-    fn get_i32(&self, fldname: &str) -> Result<i32> {
+    fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.s.lock().unwrap().get_i32(fldname).or_else(|_| {
+            self.conn.rollback()?;
             Err(From::from(ResultSetError::UnknownField(
                 fldname.to_string(),
             )))
         })
     }
-    fn get_string(&self, fldname: &str) -> Result<String> {
+    fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.s.lock().unwrap().get_string(fldname).or_else(|_| {
+            self.conn.rollback()?;
             Err(From::from(ResultSetError::UnknownField(
                 fldname.to_string(),
             )))

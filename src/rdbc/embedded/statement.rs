@@ -28,7 +28,7 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
     fn execute_query(&'a mut self) -> Result<Self::Set> {
         let tx = self.conn.get_transaction();
         if let Ok(pln) = self.planner.create_query_plan(&self.sql, tx) {
-            if let Ok(result) = EmbeddedResultSet::new(pln, self.conn) {
+            if let Ok(result) = EmbeddedResultSet::new(pln, &mut self.conn) {
                 return Ok(result);
             }
         }
@@ -44,6 +44,7 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
             return Ok(result);
         }
 
+        self.conn.rollback()?;
         Err(From::from(StatementError::RuntimeError))
     }
     fn close(&mut self) -> Result<()> {

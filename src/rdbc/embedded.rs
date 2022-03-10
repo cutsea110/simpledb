@@ -93,7 +93,7 @@ mod tests {
         // statement
         let mut stmt = conn.create(qry)?;
         // resultset
-        let results = stmt.execute_query()?;
+        let mut results = stmt.execute_query()?;
         // resultset metadata
         let meta = results.get_meta_data()?;
 
