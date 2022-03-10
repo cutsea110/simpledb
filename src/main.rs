@@ -125,6 +125,7 @@ fn main() {
     if let Ok(mut conn) = drvr.connect(&dbpath) {
         while let Ok(qry) = read_query(&conn) {
             if qry.trim().to_ascii_lowercase() == ":q" {
+                conn.rollback().expect("rollback");
                 conn.close().expect("close");
                 println!("disconnected.");
                 process::exit(0);
@@ -135,12 +136,14 @@ fn main() {
                 if let Ok(result) = stmt.execute_query() {
                     print_result_set(result).expect("print result set");
                 } else {
+                    conn.rollback().expect("rollback after failed query");
                     println!("invalid query: {}", qry);
                 }
             } else {
                 if let Ok(affected) = stmt.execute_update() {
                     println!("Affected {}", affected);
                 } else {
+                    conn.rollback().expect("rollback after failed update cmd");
                     println!("invalid command: {}", qry);
                 }
             }
