@@ -190,14 +190,14 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
         conn.close().expect("close");
         println!("disconnected.");
         process::exit(0);
-    } else if cmd == ":dt" {
+    } else if cmd == ":t" {
         let tblname = args[0];
         if let Ok(sch) = conn.get_table_schema(tblname) {
             let idx_info = conn.get_index_info(tblname).unwrap_or_default();
             print_table_schema(tblname, sch, idx_info);
         }
         return;
-    } else if cmd == ":dv" {
+    } else if cmd == ":v" {
         let viewname = args[0];
         if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
             print_view_definition(&viewname, &viewdef);
