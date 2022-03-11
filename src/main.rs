@@ -1,9 +1,11 @@
 use anyhow::Result;
+use itertools::Itertools;
 use std::{
     env,
     io::{stdout, Write},
     path::Path,
     process,
+    time::{Duration, Instant},
 };
 
 use getopts::Options;
@@ -12,11 +14,14 @@ use simpledb::rdbc::{
     driveradapter::DriverAdapter,
     embedded::{
         connection::EmbeddedConnection, driver::EmbeddedDriver, resultset::EmbeddedResultSet,
+        resultsetmetadata::EmbeddedResultSetMetaData,
     },
     resultsetadapter::ResultSetAdapter,
     resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
     statementadapter::StatementAdapter,
 };
+
+const DB_DIR: &str = "db";
 
 #[derive(Debug)]
 struct Args {
@@ -50,8 +55,8 @@ fn parse_args() -> Args {
     }
 }
 
-fn read_query(conn: &EmbeddedConnection) -> Result<String> {
-    print!("SQL {}> ", conn.get_transaction().lock().unwrap().tx_num());
+fn read_query() -> Result<String> {
+    print!("SQL> ");
     stdout().flush().expect("require input");
 
     let mut input = String::new();
@@ -59,7 +64,27 @@ fn read_query(conn: &EmbeddedConnection) -> Result<String> {
     Ok(input)
 }
 
-fn print_result_set(mut results: EmbeddedResultSet) -> Result<()> {
+fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedResultSetMetaData) -> Result<()> {
+    for i in 0..meta.get_column_count() {
+        let fldname = meta.get_column_name(i).expect("get column name");
+        let w = meta
+            .get_column_display_size(i)
+            .expect("get column display size");
+        match meta.get_column_type(i).expect("get column type") {
+            DataType::Int32 => {
+                print!("{:width$} ", results.get_i32(fldname)?, width = w);
+            }
+            DataType::Varchar => {
+                print!("{:width$} ", results.get_string(fldname)?, width = w);
+            }
+        }
+    }
+    println!("");
+
+    Ok(())
+}
+
+fn print_result_set(mut results: EmbeddedResultSet) -> Result<i32> {
     // resultset metadata
     let meta = results.get_meta_data()?;
     // print header
@@ -83,25 +108,10 @@ fn print_result_set(mut results: EmbeddedResultSet) -> Result<()> {
     let mut c = 0;
     while results.next() {
         c += 1;
-        for i in 0..meta.get_column_count() {
-            let fldname = meta.get_column_name(i).expect("get column name");
-            let w = meta
-                .get_column_display_size(i)
-                .expect("get column display size");
-            match meta.get_column_type(i).expect("get column type") {
-                DataType::Int32 => {
-                    print!("{:width$} ", results.get_i32(fldname)?, width = w);
-                }
-                DataType::Varchar => {
-                    print!("{:width$} ", results.get_string(fldname)?, width = w);
-                }
-            }
-        }
-        println!("");
+        print_record(&mut results, &meta)?;
     }
-    println!("({} Rows)", c);
 
-    Ok(())
+    Ok(c)
 }
 
 fn confirm_new_db(dbname: &str) {
@@ -117,23 +127,51 @@ fn confirm_new_db(dbname: &str) {
     }
 }
 
-fn exec(conn: &mut EmbeddedConnection, qry: &str) {
-    if qry.trim().to_ascii_lowercase() == ":q" {
+fn exec_cmd(conn: &mut EmbeddedConnection, qry: &str) {
+    let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
+    let cmd = tokens[0].to_ascii_lowercase();
+    let args = &tokens[1..];
+    if cmd == ":q" {
         conn.close().expect("close");
         println!("disconnected.");
         process::exit(0);
+    } else if cmd == ":d" {
+        println!("table {} schema:", args[0]);
+        println!("not implemented yet.");
     }
+}
+
+fn exec(conn: &mut EmbeddedConnection, qry: &str) {
+    if qry.trim().to_ascii_lowercase().starts_with(":") {
+        exec_cmd(conn, qry);
+    }
+
     let mut stmt = conn.create(&qry).expect("create statement");
     let words: Vec<&str> = qry.split_whitespace().collect();
     if words[0].trim().to_ascii_lowercase() == "select" {
+        let start = Instant::now();
         if let Ok(result) = stmt.execute_query() {
-            print_result_set(result).expect("print result set");
+            let c = print_result_set(result).expect("print result set");
+            let end = start.elapsed();
+            println!(
+                "Rows {} ({}.{:03}s)",
+                c,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
         } else {
             println!("invalid query: {}", qry);
         }
     } else {
+        let start = Instant::now();
         if let Ok(affected) = stmt.execute_update() {
-            println!("Affected {}", affected);
+            let end = start.elapsed();
+            println!(
+                "Affected {} ({}.{:03}s)",
+                affected,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
         } else {
             println!("invalid command: {}", qry);
         }
@@ -142,7 +180,7 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
 
 fn main() {
     let args = parse_args();
-    let dbpath = format!("db/{}", args.dbname);
+    let dbpath = format!("{}/{}", DB_DIR, args.dbname);
 
     if !Path::new(&dbpath).exists() {
         confirm_new_db(&args.dbname);
@@ -150,8 +188,10 @@ fn main() {
 
     let drvr = EmbeddedDriver::new();
     if let Ok(mut conn) = drvr.connect(&dbpath) {
-        while let Ok(qry) = read_query(&conn) {
-            exec(&mut conn, &qry);
+        while let Ok(qry) = read_query() {
+            if !qry.trim().is_empty() {
+                exec(&mut conn, &qry);
+            }
         }
     }
 
