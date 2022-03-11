@@ -20,6 +20,9 @@ impl<'a> EmbeddedStatement<'a> {
             sql: sql.to_string(),
         }
     }
+    pub fn sql(&self) -> &str {
+        &self.sql
+    }
 }
 
 impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {

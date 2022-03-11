@@ -5,7 +5,7 @@ use std::{
     io::{stdout, Write},
     path::Path,
     process,
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use getopts::Options;
@@ -14,7 +14,7 @@ use simpledb::rdbc::{
     driveradapter::DriverAdapter,
     embedded::{
         connection::EmbeddedConnection, driver::EmbeddedDriver, resultset::EmbeddedResultSet,
-        resultsetmetadata::EmbeddedResultSetMetaData,
+        resultsetmetadata::EmbeddedResultSetMetaData, statement::EmbeddedStatement,
     },
     resultsetadapter::ResultSetAdapter,
     resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
@@ -127,7 +127,7 @@ fn confirm_new_db(dbname: &str) {
     }
 }
 
-fn exec_cmd(conn: &mut EmbeddedConnection, qry: &str) {
+fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
     let args = &tokens[1..];
@@ -141,9 +141,42 @@ fn exec_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     }
 }
 
+fn exec_query<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
+    let qry = stmt.sql().to_string();
+    let start = Instant::now();
+    if let Ok(result) = stmt.execute_query() {
+        let cnt = print_result_set(result).expect("print result set");
+        let end = start.elapsed();
+        println!(
+            "Rows {} ({}.{:03}s)",
+            cnt,
+            end.as_secs(),
+            end.subsec_nanos() / 1_000_000
+        );
+    } else {
+        println!("invalid query: {}", qry);
+    }
+}
+
+fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
+    let qry = stmt.sql().to_string();
+    let start = Instant::now();
+    if let Ok(affected) = stmt.execute_update() {
+        let end = start.elapsed();
+        println!(
+            "Affected {} ({}.{:03}s)",
+            affected,
+            end.as_secs(),
+            end.subsec_nanos() / 1_000_000
+        );
+    } else {
+        println!("invalid command: {}", qry);
+    }
+}
+
 fn exec(conn: &mut EmbeddedConnection, qry: &str) {
     if qry.trim().to_ascii_lowercase().starts_with(":") {
-        exec_cmd(conn, qry);
+        exec_meta_cmd(conn, qry);
     }
 
     let mut stmt = conn.create(&qry).expect("create statement");
@@ -151,32 +184,9 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
     if !words.is_empty() {
         let cmd = words[0].trim().to_ascii_lowercase();
         if &cmd == "select" {
-            let start = Instant::now();
-            if let Ok(result) = stmt.execute_query() {
-                let cnt = print_result_set(result).expect("print result set");
-                let end = start.elapsed();
-                println!(
-                    "Rows {} ({}.{:03}s)",
-                    cnt,
-                    end.as_secs(),
-                    end.subsec_nanos() / 1_000_000
-                );
-            } else {
-                println!("invalid query: {}", qry);
-            }
+            exec_query(&mut stmt);
         } else {
-            let start = Instant::now();
-            if let Ok(affected) = stmt.execute_update() {
-                let end = start.elapsed();
-                println!(
-                    "Affected {} ({}.{:03}s)",
-                    affected,
-                    end.as_secs(),
-                    end.subsec_nanos() / 1_000_000
-                );
-            } else {
-                println!("invalid command: {}", qry);
-            }
+            exec_update_cmd(&mut stmt);
         }
     }
 }
