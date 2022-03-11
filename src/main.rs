@@ -21,7 +21,8 @@ use simpledb::rdbc::{
     statementadapter::StatementAdapter,
 };
 
-const DB_DIR: &str = "db";
+const DB_DIR: &str = "data";
+const VERSION: &str = "0.1.0";
 
 #[derive(Debug)]
 struct Args {
@@ -35,6 +36,12 @@ fn print_usage(program: &str, opts: &Options) {
     process::exit(0);
 }
 
+fn print_version(program: &str, _opts: &Options) {
+    let brief = format!("{} {}", program, VERSION);
+    println!("{}", &brief);
+    process::exit(0);
+}
+
 fn parse_args() -> Args {
     let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
@@ -42,12 +49,17 @@ fn parse_args() -> Args {
     let mut opts = Options::new();
     opts.optopt("d", "dbname", "set database name", "DBNAME");
     opts.optflag("h", "help", "print this help menu");
+    opts.optflag("v", "version", "print version");
 
     let matches = opts
         .parse(&args[1..])
         .unwrap_or_else(|f| panic!("{}", f.to_string()));
     if matches.opt_present("h") {
         print_usage(&program, &opts);
+    }
+
+    if matches.opt_present("v") {
+        print_version(&program, &opts);
     }
 
     Args {
