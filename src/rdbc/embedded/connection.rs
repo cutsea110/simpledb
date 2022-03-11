@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use super::statement::EmbeddedStatement;
 use crate::{
     rdbc::connectionadapter::{ConnectionAdapter, ConnectionError},
+    record::schema::Schema,
     server::simpledb::SimpleDB,
     tx::transaction::Transaction,
 };
@@ -62,5 +63,9 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     }
     fn get_transaction(&self) -> Arc<Mutex<Transaction>> {
         Arc::clone(&self.current_tx)
+    }
+    fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
+        self.db
+            .get_table_schema(tblname, Arc::clone(&self.current_tx))
     }
 }

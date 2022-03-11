@@ -11,20 +11,25 @@ use crate::{
         basicqueryplanner::BasicQueryPlanner, basicupdateplanner::BasicUpdatePlanner,
         planner::Planner, queryplanner::QueryPlanner, updateplanner::UpdatePlanner,
     },
+    record::schema::Schema,
     tx::{concurrency::locktable::LockTable, transaction::Transaction},
 };
 
 #[derive(Debug)]
 pub enum SimpleDBError {
     NoPlanner,
+    NoTableSchema,
 }
 
 impl std::error::Error for SimpleDBError {}
 impl fmt::Display for SimpleDBError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &SimpleDBError::NoPlanner => {
+            SimpleDBError::NoPlanner => {
                 write!(f, "no planner")
+            }
+            SimpleDBError::NoTableSchema => {
+                write!(f, "no table schema")
             }
         }
     }
@@ -127,5 +132,24 @@ impl SimpleDB {
             }
         }
         Err(From::from(SimpleDBError::NoPlanner))
+    }
+    // my extend
+    pub fn get_table_schema(
+        &self,
+        tblname: &str,
+        tx: Arc<Mutex<Transaction>>,
+    ) -> Result<Arc<Schema>> {
+        if let Ok(layout) = self
+            .mdm
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get_layout(tblname, tx)
+        {
+            return Ok(layout.schema());
+        }
+
+        Err(From::from(SimpleDBError::NoTableSchema))
     }
 }

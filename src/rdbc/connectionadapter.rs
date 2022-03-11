@@ -3,7 +3,7 @@ use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use super::statementadapter::StatementAdapter;
-use crate::tx::transaction::Transaction;
+use crate::{record::schema::Schema, tx::transaction::Transaction};
 
 #[derive(Debug)]
 pub enum ConnectionError {
@@ -45,4 +45,6 @@ pub trait ConnectionAdapter<'a> {
     fn commit(&mut self) -> Result<()>;
     fn rollback(&mut self) -> Result<()>;
     fn get_transaction(&self) -> Arc<Mutex<Transaction>>;
+    // my own extend
+    fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>>;
 }

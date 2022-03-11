@@ -1,24 +1,29 @@
 use anyhow::Result;
+use getopts::Options;
 use itertools::Itertools;
 use std::{
     env,
     io::{stdout, Write},
     path::Path,
     process,
+    sync::Arc,
     time::Instant,
 };
 
-use getopts::Options;
-use simpledb::rdbc::{
-    connectionadapter::ConnectionAdapter,
-    driveradapter::DriverAdapter,
-    embedded::{
-        connection::EmbeddedConnection, driver::EmbeddedDriver, resultset::EmbeddedResultSet,
-        resultsetmetadata::EmbeddedResultSetMetaData, statement::EmbeddedStatement,
+use simpledb::{
+    rdbc::{
+        connectionadapter::ConnectionAdapter,
+        driveradapter::DriverAdapter,
+        embedded::{
+            connection::EmbeddedConnection, driver::EmbeddedDriver, resultset::EmbeddedResultSet,
+            resultsetmetadata::EmbeddedResultSetMetaData, statement::EmbeddedStatement,
+        },
+        resultsetadapter::ResultSetAdapter,
+        resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
+        statementadapter::StatementAdapter,
     },
-    resultsetadapter::ResultSetAdapter,
-    resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
-    statementadapter::StatementAdapter,
+    record::schema::Schema,
+    record::schema::{FieldInfo, FieldType},
 };
 
 const DB_DIR: &str = "data";
@@ -139,6 +144,24 @@ fn confirm_new_db(dbname: &str) {
     }
 }
 
+fn print_table_schema(tblname: &str, schema: Arc<Schema>) {
+    println!(" #   name             type");
+    println!("--------------------------------------");
+    for (idx, fldname) in schema.fields().iter().enumerate() {
+        let fldtyp = match schema.field_type(fldname) {
+            FieldType::INTEGER => "int32".to_string(),
+            FieldType::VARCHAR => format!("varchar({})", schema.length(fldname)),
+        };
+        println!("{:>4} {:16} {:16}", idx + 1, fldname, fldtyp);
+    }
+    println!(
+        "    table: {} has {} fields.",
+        tblname,
+        schema.fields().len()
+    );
+    println!();
+}
+
 fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
@@ -148,8 +171,11 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
         println!("disconnected.");
         process::exit(0);
     } else if cmd == ":d" {
-        println!("table {} schema:", args[0]);
-        println!("not implemented yet.");
+        let tblname = args[0];
+        if let Ok(sch) = conn.get_table_schema(tblname) {
+            print_table_schema(tblname, sch);
+        }
+        return;
     }
 }
 
@@ -189,6 +215,7 @@ fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
 fn exec(conn: &mut EmbeddedConnection, qry: &str) {
     if qry.trim().to_ascii_lowercase().starts_with(":") {
         exec_meta_cmd(conn, qry);
+        return;
     }
 
     let mut stmt = conn.create(&qry).expect("create statement");
