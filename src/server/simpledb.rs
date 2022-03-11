@@ -19,6 +19,7 @@ use crate::{
 pub enum SimpleDBError {
     NoPlanner,
     NoTableSchema,
+    NoViewDefinition,
 }
 
 impl std::error::Error for SimpleDBError {}
@@ -30,6 +31,9 @@ impl fmt::Display for SimpleDBError {
             }
             SimpleDBError::NoTableSchema => {
                 write!(f, "no table schema")
+            }
+            SimpleDBError::NoViewDefinition => {
+                write!(f, "no view definition")
             }
         }
     }
@@ -133,7 +137,7 @@ impl SimpleDB {
         }
         Err(From::from(SimpleDBError::NoPlanner))
     }
-    // my extend
+    // my own extend
     pub fn get_table_schema(
         &self,
         tblname: &str,
@@ -151,5 +155,24 @@ impl SimpleDB {
         }
 
         Err(From::from(SimpleDBError::NoTableSchema))
+    }
+    // my own extend
+    pub fn get_view_definitoin(
+        &self,
+        viewname: &str,
+        tx: Arc<Mutex<Transaction>>,
+    ) -> Result<(String, String)> {
+        if let Ok(viewdef) = self
+            .mdm
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get_view_def(viewname, tx)
+        {
+            return Ok((viewname.to_string(), viewdef));
+        }
+
+        Err(From::from(SimpleDBError::NoViewDefinition))
     }
 }

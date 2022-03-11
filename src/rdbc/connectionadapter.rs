@@ -47,4 +47,6 @@ pub trait ConnectionAdapter<'a> {
     fn get_transaction(&self) -> Arc<Mutex<Transaction>>;
     // my own extend
     fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>>;
+    // my own extend
+    fn get_view_definition(&self, viewname: &str) -> Result<(String, String)>;
 }

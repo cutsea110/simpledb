@@ -162,6 +162,12 @@ fn print_table_schema(tblname: &str, schema: Arc<Schema>) {
     println!();
 }
 
+fn print_view_definition(viewname: &str, viewdef: &str) {
+    println!("view name: {}", viewname);
+    println!("view  def:\n > {}", viewdef);
+    println!();
+}
+
 fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
@@ -170,12 +176,17 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
         conn.close().expect("close");
         println!("disconnected.");
         process::exit(0);
-    } else if cmd == ":d" {
+    } else if cmd == ":dt" {
         let tblname = args[0];
         if let Ok(sch) = conn.get_table_schema(tblname) {
             print_table_schema(tblname, sch);
         }
         return;
+    } else if cmd == ":dv" {
+        let viewname = args[0];
+        if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
+            print_view_definition(&viewname, &viewdef);
+        }
     }
 }
 

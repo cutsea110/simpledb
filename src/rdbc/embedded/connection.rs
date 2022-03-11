@@ -68,4 +68,8 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
         self.db
             .get_table_schema(tblname, Arc::clone(&self.current_tx))
     }
+    fn get_view_definition(&self, viewname: &str) -> Result<(String, String)> {
+        self.db
+            .get_view_definitoin(viewname, Arc::clone(&self.current_tx))
+    }
 }
