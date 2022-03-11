@@ -11,24 +11,24 @@ use crate::{
 pub const NUM_BUCKETS: i32 = 100;
 
 pub struct HashIndex {
-    tx: Arc<Mutex<Transaction>>,
-    idxname: String,
-    layout: Arc<Layout>,
-    searchkey: Option<Constant>,
-    ts: Option<TableScan>,
+    _tx: Arc<Mutex<Transaction>>,
+    _idxname: String,
+    _layout: Arc<Layout>,
+    _searchkey: Option<Constant>,
+    _ts: Option<TableScan>,
 }
 
 impl HashIndex {
-    pub fn new(tx: Arc<Mutex<Transaction>>, idxname: String, layout: Arc<Layout>) -> Self {
+    pub fn new(_tx: Arc<Mutex<Transaction>>, _idxname: String, _layout: Arc<Layout>) -> Self {
         panic!("TODO")
     }
-    pub fn search_cost(numblocks: i32, rpb: i32) -> i32 {
+    pub fn search_cost(numblocks: i32, _rpb: i32) -> i32 {
         numblocks / NUM_BUCKETS
     }
 }
 
 impl Index for HashIndex {
-    fn before_first(&self, searchkey: Constant) -> Result<()> {
+    fn before_first(&self, _searchkey: Constant) -> Result<()> {
         panic!("TODO")
     }
     fn next(&self) -> bool {
@@ -37,10 +37,10 @@ impl Index for HashIndex {
     fn get_data_rid(&self) -> Result<RID> {
         panic!("TODO")
     }
-    fn insert(&mut self, dataval: Constant, datarid: RID) -> Result<()> {
+    fn insert(&mut self, _dataval: Constant, _datarid: RID) -> Result<()> {
         panic!("TODO")
     }
-    fn delete(&mut self, dataval: Constant, datarid: RID) -> Result<()> {
+    fn delete(&mut self, _dataval: Constant, _datarid: RID) -> Result<()> {
         panic!("TODO")
     }
     fn close(&mut self) -> Result<()> {

@@ -24,8 +24,8 @@ use simpledb::{
         resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
         statementadapter::StatementAdapter,
     },
+    record::schema::FieldType,
     record::schema::Schema,
-    record::schema::{FieldInfo, FieldType},
 };
 
 const DB_DIR: &str = "data";

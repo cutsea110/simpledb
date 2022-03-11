@@ -196,4 +196,16 @@ impl SimpleDB {
             .get_index_info(tblname, tx)
             .or_else(|_| Err(From::from(SimpleDBError::NoIndexInfo)))
     }
+    // my own extend
+    pub fn db_dir(&self) -> &str {
+        &self.db_directory
+    }
+    // my own extend
+    pub fn block_size(&self) -> i32 {
+        self.blocksize
+    }
+    // my own extend
+    pub fn buffer_nums(&self) -> usize {
+        self.numbuffs
+    }
 }
