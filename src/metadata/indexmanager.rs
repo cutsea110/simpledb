@@ -165,4 +165,16 @@ impl IndexInfo {
 
         Arc::new(Layout::new(Arc::new(sch)))
     }
+    // my own extend
+    pub fn index_name(&self) -> &str {
+        &self.idxname
+    }
+    // my own extend
+    pub fn field_name(&self) -> &str {
+        &self.fldname
+    }
+    // my own extend
+    pub fn table_schema(&self) -> Arc<Schema> {
+        Arc::clone(&self.tbl_schema)
+    }
 }

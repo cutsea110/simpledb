@@ -1,12 +1,15 @@
 use anyhow::Result;
 use core::fmt;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
     buffer::manager::BufferMgr,
     file::manager::FileMgr,
     log::manager::LogMgr,
-    metadata::manager::MetadataMgr,
+    metadata::{indexmanager::IndexInfo, manager::MetadataMgr},
     plan::{
         basicqueryplanner::BasicQueryPlanner, basicupdateplanner::BasicUpdatePlanner,
         planner::Planner, queryplanner::QueryPlanner, updateplanner::UpdatePlanner,
@@ -20,6 +23,7 @@ pub enum SimpleDBError {
     NoPlanner,
     NoTableSchema,
     NoViewDefinition,
+    NoIndexInfo,
 }
 
 impl std::error::Error for SimpleDBError {}
@@ -34,6 +38,9 @@ impl fmt::Display for SimpleDBError {
             }
             SimpleDBError::NoViewDefinition => {
                 write!(f, "no view definition")
+            }
+            SimpleDBError::NoIndexInfo => {
+                write!(f, "no index info")
             }
         }
     }
@@ -174,5 +181,19 @@ impl SimpleDB {
         }
 
         Err(From::from(SimpleDBError::NoViewDefinition))
+    }
+    // my own extend
+    pub fn get_index_info(
+        &self,
+        tblname: &str,
+        tx: Arc<Mutex<Transaction>>,
+    ) -> Result<HashMap<String, IndexInfo>> {
+        self.mdm
+            .as_ref()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get_index_info(tblname, tx)
+            .or_else(|_| Err(From::from(SimpleDBError::NoIndexInfo)))
     }
 }

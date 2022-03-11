@@ -2,6 +2,7 @@ use anyhow::Result;
 use getopts::Options;
 use itertools::Itertools;
 use std::{
+    collections::HashMap,
     env,
     io::{stdout, Write},
     path::Path,
@@ -11,6 +12,7 @@ use std::{
 };
 
 use simpledb::{
+    metadata::indexmanager::IndexInfo,
     rdbc::{
         connectionadapter::ConnectionAdapter,
         driveradapter::DriverAdapter,
@@ -144,22 +146,34 @@ fn confirm_new_db(dbname: &str) {
     }
 }
 
-fn print_table_schema(tblname: &str, schema: Arc<Schema>) {
+fn print_table_schema(tblname: &str, schema: Arc<Schema>, idx_info: HashMap<String, IndexInfo>) {
+    println!(
+        " * table: {} has {} fields.\n",
+        tblname,
+        schema.fields().len()
+    );
+
     println!(" #   name             type");
     println!("--------------------------------------");
-    for (idx, fldname) in schema.fields().iter().enumerate() {
+    for (i, fldname) in schema.fields().iter().enumerate() {
         let fldtyp = match schema.field_type(fldname) {
             FieldType::INTEGER => "int32".to_string(),
             FieldType::VARCHAR => format!("varchar({})", schema.length(fldname)),
         };
-        println!("{:>4} {:16} {:16}", idx + 1, fldname, fldtyp);
+        println!("{:>4} {:16} {:16}", i + 1, fldname, fldtyp);
     }
-    println!(
-        "    table: {} has {} fields.",
-        tblname,
-        schema.fields().len()
-    );
     println!();
+
+    if !idx_info.is_empty() {
+        println!(" * indexes on {}\n", tblname);
+
+        println!(" #   name             field");
+        println!("--------------------------------------");
+        for (i, (_, ii)) in idx_info.iter().enumerate() {
+            println!("{:>4} {:16} {:16}", i + 1, ii.index_name(), ii.field_name());
+        }
+        println!();
+    }
 }
 
 fn print_view_definition(viewname: &str, viewdef: &str) {
@@ -179,7 +193,8 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     } else if cmd == ":dt" {
         let tblname = args[0];
         if let Ok(sch) = conn.get_table_schema(tblname) {
-            print_table_schema(tblname, sch);
+            let idx_info = conn.get_index_info(tblname).unwrap_or_default();
+            print_table_schema(tblname, sch, idx_info);
         }
         return;
     } else if cmd == ":dv" {

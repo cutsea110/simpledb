@@ -1,8 +1,12 @@
 use anyhow::Result;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use super::statement::EmbeddedStatement;
 use crate::{
+    metadata::indexmanager::IndexInfo,
     rdbc::connectionadapter::{ConnectionAdapter, ConnectionError},
     record::schema::Schema,
     server::simpledb::SimpleDB,
@@ -71,5 +75,9 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     fn get_view_definition(&self, viewname: &str) -> Result<(String, String)> {
         self.db
             .get_view_definitoin(viewname, Arc::clone(&self.current_tx))
+    }
+    fn get_index_info(&self, tblname: &str) -> Result<HashMap<String, IndexInfo>> {
+        self.db
+            .get_index_info(tblname, Arc::clone(&self.current_tx))
     }
 }
