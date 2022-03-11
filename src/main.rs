@@ -148,32 +148,35 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
 
     let mut stmt = conn.create(&qry).expect("create statement");
     let words: Vec<&str> = qry.split_whitespace().collect();
-    if words[0].trim().to_ascii_lowercase() == "select" {
-        let start = Instant::now();
-        if let Ok(result) = stmt.execute_query() {
-            let c = print_result_set(result).expect("print result set");
-            let end = start.elapsed();
-            println!(
-                "Rows {} ({}.{:03}s)",
-                c,
-                end.as_secs(),
-                end.subsec_nanos() / 1_000_000
-            );
+    if !words.is_empty() {
+        let cmd = words[0].trim().to_ascii_lowercase();
+        if &cmd == "select" {
+            let start = Instant::now();
+            if let Ok(result) = stmt.execute_query() {
+                let cnt = print_result_set(result).expect("print result set");
+                let end = start.elapsed();
+                println!(
+                    "Rows {} ({}.{:03}s)",
+                    cnt,
+                    end.as_secs(),
+                    end.subsec_nanos() / 1_000_000
+                );
+            } else {
+                println!("invalid query: {}", qry);
+            }
         } else {
-            println!("invalid query: {}", qry);
-        }
-    } else {
-        let start = Instant::now();
-        if let Ok(affected) = stmt.execute_update() {
-            let end = start.elapsed();
-            println!(
-                "Affected {} ({}.{:03}s)",
-                affected,
-                end.as_secs(),
-                end.subsec_nanos() / 1_000_000
-            );
-        } else {
-            println!("invalid command: {}", qry);
+            let start = Instant::now();
+            if let Ok(affected) = stmt.execute_update() {
+                let end = start.elapsed();
+                println!(
+                    "Affected {} ({}.{:03}s)",
+                    affected,
+                    end.as_secs(),
+                    end.subsec_nanos() / 1_000_000
+                );
+            } else {
+                println!("invalid command: {}", qry);
+            }
         }
     }
 }
@@ -189,9 +192,7 @@ fn main() {
     let drvr = EmbeddedDriver::new();
     if let Ok(mut conn) = drvr.connect(&dbpath) {
         while let Ok(qry) = read_query() {
-            if !qry.trim().is_empty() {
-                exec(&mut conn, &qry);
-            }
+            exec(&mut conn, &qry);
         }
     }
 
