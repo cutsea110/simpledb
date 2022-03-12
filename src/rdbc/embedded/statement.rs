@@ -30,13 +30,10 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
 
     fn execute_query(&'a mut self) -> Result<Self::Set> {
         let tx = self.conn.get_transaction();
-        if let Ok(pln) = self.planner.create_query_plan(&self.sql, tx) {
-            if let Ok(result) = EmbeddedResultSet::new(pln, &mut self.conn) {
-                return Ok(result);
-            }
-        }
-
-        Err(From::from(StatementError::RuntimeError))
+        self.planner
+            .create_query_plan(&self.sql, tx)
+            .and_then(|pln| EmbeddedResultSet::new(pln, &mut self.conn))
+            .or_else(|_| Err(From::from(StatementError::RuntimeError)))
     }
     fn execute_update(&mut self) -> Result<i32> {
         let tx = self.conn.get_transaction();
