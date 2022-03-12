@@ -216,33 +216,35 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
 fn exec_query<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
     let qry = stmt.sql().to_string();
     let start = Instant::now();
-    if let Ok(result) = stmt.execute_query() {
-        let cnt = print_result_set(result).expect("print result set");
-        let end = start.elapsed();
-        println!(
-            "Rows {} ({}.{:03}s)",
-            cnt,
-            end.as_secs(),
-            end.subsec_nanos() / 1_000_000
-        );
-    } else {
-        println!("invalid query: {}", qry);
+    match stmt.execute_query() {
+        Err(_) => println!("invalid query: {}", qry),
+        Ok(result) => {
+            let cnt = print_result_set(result).expect("print result set");
+            let end = start.elapsed();
+            println!(
+                "Rows {} ({}.{:03}s)",
+                cnt,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
+        }
     }
 }
 
 fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
     let qry = stmt.sql().to_string();
     let start = Instant::now();
-    if let Ok(affected) = stmt.execute_update() {
-        let end = start.elapsed();
-        println!(
-            "Affected {} ({}.{:03}s)",
-            affected,
-            end.as_secs(),
-            end.subsec_nanos() / 1_000_000
-        );
-    } else {
-        println!("invalid command: {}", qry);
+    match stmt.execute_update() {
+        Err(_) => println!("invalid command: {}", qry),
+        Ok(affected) => {
+            let end = start.elapsed();
+            println!(
+                "Affected {} ({}.{:03}s)",
+                affected,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
+        }
     }
 }
 
