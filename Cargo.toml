@@ -14,3 +14,11 @@ itertools = "0.10.3"
 num-derive = "0.3"
 num-traits = "0.2"
 rand = "0.8.5"
+
+[lib]
+name = "simpledb"
+path = "src/lib.rs"
+
+[[bin]]
+name = "esql"
+path = "src/esql.rs"
