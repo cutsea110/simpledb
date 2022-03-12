@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
-use super::{connection::EmbeddedConnection, resultsetmetadata::EmbeddedResultSetMetaData};
+use super::{connection::EmbeddedConnection, metadata::EmbeddedMetaData};
 use crate::{
     plan::plan::Plan,
     query::scan::Scan,
@@ -30,7 +30,7 @@ impl<'a> EmbeddedResultSet<'a> {
 }
 
 impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
-    type Meta = EmbeddedResultSetMetaData;
+    type Meta = EmbeddedMetaData;
 
     fn next(&self) -> bool {
         self.s.lock().unwrap().next()
@@ -52,7 +52,7 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
         })
     }
     fn get_meta_data(&self) -> Result<Self::Meta> {
-        Ok(EmbeddedResultSetMetaData::new(Arc::clone(&self.sch)))
+        Ok(EmbeddedMetaData::new(Arc::clone(&self.sch)))
     }
     fn close(&mut self) -> Result<()> {
         self.s

@@ -5,17 +5,17 @@ use crate::{
     record::schema::{FieldType, Schema},
 };
 
-pub struct EmbeddedResultSetMetaData {
+pub struct EmbeddedMetaData {
     sch: Arc<Schema>,
 }
 
-impl EmbeddedResultSetMetaData {
+impl EmbeddedMetaData {
     pub fn new(sch: Arc<Schema>) -> Self {
         Self { sch }
     }
 }
 
-impl ResultSetMetaDataAdapter for EmbeddedResultSetMetaData {
+impl ResultSetMetaDataAdapter for EmbeddedMetaData {
     fn get_column_count(&self) -> usize {
         self.sch.fields().len()
     }

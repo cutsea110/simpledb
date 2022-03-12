@@ -17,8 +17,8 @@ use simpledb::{
         connectionadapter::ConnectionAdapter,
         driveradapter::DriverAdapter,
         embedded::{
-            connection::EmbeddedConnection, driver::EmbeddedDriver, resultset::EmbeddedResultSet,
-            resultsetmetadata::EmbeddedResultSetMetaData, statement::EmbeddedStatement,
+            connection::EmbeddedConnection, driver::EmbeddedDriver, metadata::EmbeddedMetaData,
+            resultset::EmbeddedResultSet, statement::EmbeddedStatement,
         },
         resultsetadapter::ResultSetAdapter,
         resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
@@ -83,7 +83,7 @@ fn read_query() -> Result<String> {
     Ok(input)
 }
 
-fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedResultSetMetaData) -> Result<()> {
+fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedMetaData) -> Result<()> {
     for i in 0..meta.get_column_count() {
         let fldname = meta.get_column_name(i).expect("get column name");
         let w = meta
