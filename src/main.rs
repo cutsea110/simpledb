@@ -178,7 +178,7 @@ fn print_table_schema(tblname: &str, schema: Arc<Schema>, idx_info: HashMap<Stri
 
 fn print_view_definition(viewname: &str, viewdef: &str) {
     println!("view name: {}", viewname);
-    println!("view  def:\n > {}", viewdef);
+    println!("view def:\n > {}", viewdef);
     println!();
 }
 
