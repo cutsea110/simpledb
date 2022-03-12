@@ -30,4 +30,3 @@ path = "src/lib.rs"
 [[bin]]
 name = "esql"
 path = "src/esql.rs"
-
