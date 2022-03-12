@@ -273,12 +273,12 @@ fn main() {
     }
 
     let drvr = EmbeddedDriver::new();
-    if let Ok(mut conn) = drvr.connect(&dbpath) {
-        while let Ok(qry) = read_query() {
-            exec(&mut conn, &qry);
-        }
-    }
+    let mut conn = drvr.connect(&dbpath).unwrap_or_else(|_| {
+        println!("couldn't connect database.");
+        process::exit(1);
+    });
 
-    println!("couldn't connect database.");
-    process::exit(1);
+    while let Ok(qry) = read_query() {
+        exec(&mut conn, &qry);
+    }
 }
