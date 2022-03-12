@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::fmt;
 use serde::{Deserialize, Serialize};
 
-use super::resultsetmetadata::RemoteResultSetMetaData;
+use super::metadata::RemoteMetaData;
 use crate::rdbc::resultsetadapter::ResultSetAdapter;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,7 +21,7 @@ impl RemoteResultSet {
 }
 
 impl ResultSetAdapter for RemoteResultSet {
-    type Meta = RemoteResultSetMetaData;
+    type Meta = RemoteMetaData;
 
     fn next(&self) -> bool {
         panic!("TODO")
