@@ -5,21 +5,21 @@ use serde::{Deserialize, Serialize};
 use crate::rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RemoteResultSetMetaData {}
+pub struct RemoteMetaData {}
 
-impl fmt::Display for RemoteResultSetMetaData {
+impl fmt::Display for RemoteMetaData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self)
     }
 }
 
-impl RemoteResultSetMetaData {
+impl RemoteMetaData {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl ResultSetMetaDataAdapter for RemoteResultSetMetaData {
+impl ResultSetMetaDataAdapter for RemoteMetaData {
     fn get_column_count(&self) -> usize {
         panic!("TODO")
     }
