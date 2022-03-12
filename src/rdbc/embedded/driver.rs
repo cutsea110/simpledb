@@ -6,11 +6,11 @@ use crate::{
     server::simpledb::SimpleDB,
 };
 
-pub struct EmbeddedDriver {}
+pub struct EmbeddedDriver;
 
 impl EmbeddedDriver {
     pub fn new() -> Self {
-        Self {}
+        Self
     }
 }
 
