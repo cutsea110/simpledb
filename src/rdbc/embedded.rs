@@ -103,13 +103,13 @@ mod tests {
             let w = meta.get_column_display_size(i).unwrap();
             print!("{:width$} ", name, width = w);
         }
-        println!("");
+        println!();
         // separater
         for i in 0..meta.get_column_count() {
             let w = meta.get_column_display_size(i).unwrap();
             print!("{:-<width$}", "", width = w + 1);
         }
-        println!("");
+        println!();
 
         // scan record
         let mut c = 0;
@@ -127,7 +127,7 @@ mod tests {
                     }
                 }
             }
-            println!("");
+            println!();
         }
         println!("({} Rows)", c);
 

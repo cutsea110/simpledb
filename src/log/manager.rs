@@ -141,7 +141,7 @@ mod tests {
                 let val = p.get_i32(npos).unwrap();
                 print!("[{}, {}]", s, val);
             }
-            println!("");
+            println!();
         }
     }
     fn create_records(lm: &mut LogMgr, start: i32, end: i32) {
@@ -151,7 +151,7 @@ mod tests {
             let lsn = lm.append(&mut rec).expect("LogMgr append");
             print!("{} ", format!("{}", lsn));
         }
-        println!("");
+        println!();
     }
     fn create_log_record(s: String, n: i32) -> Vec<u8> {
         let npos = Page::max_length(s.len()) as i32;

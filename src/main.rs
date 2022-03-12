@@ -98,7 +98,7 @@ fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedResultSetMetaDat
             }
         }
     }
-    println!("");
+    println!();
 
     Ok(())
 }
@@ -114,7 +114,7 @@ fn print_result_set(mut results: EmbeddedResultSet) -> Result<i32> {
             .expect("get column display size");
         print!("{:width$} ", name, width = w);
     }
-    println!("");
+    println!();
     // separater
     for i in 0..meta.get_column_count() {
         let w = meta
@@ -122,7 +122,7 @@ fn print_result_set(mut results: EmbeddedResultSet) -> Result<i32> {
             .expect("get column display size");
         print!("{:-<width$}", "", width = w + 1);
     }
-    println!("");
+    println!();
     // scan record
     let mut c = 0;
     while results.next() {
@@ -191,6 +191,10 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
         println!("disconnected.");
         process::exit(0);
     } else if cmd == ":t" {
+        if args.is_empty() {
+            println!("table name is required.");
+            return;
+        }
         let tblname = args[0];
         if let Ok(sch) = conn.get_table_schema(tblname) {
             let idx_info = conn.get_index_info(tblname).unwrap_or_default();
@@ -198,6 +202,10 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
         }
         return;
     } else if cmd == ":v" {
+        if args.is_empty() {
+            println!("view name is required.");
+            return;
+        }
         let viewname = args[0];
         if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
             print_view_definition(&viewname, &viewdef);
