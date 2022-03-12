@@ -37,15 +37,20 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
     }
     fn execute_update(&mut self) -> Result<i32> {
         let tx = self.conn.get_transaction();
-        if let Ok(result) = self.planner.execute_update(&self.sql, tx) {
-            if self.conn.commit().is_err() {
-                return Err(From::from(StatementError::CommitFailed));
-            }
-            return Ok(result);
-        }
-
-        self.conn.rollback()?;
-        Err(From::from(StatementError::RuntimeError))
+        self.planner
+            .execute_update(&self.sql, tx)
+            .and_then(|affected| {
+                self.conn
+                    .commit()
+                    .and(Ok(affected))
+                    .or(Err(From::from(StatementError::CommitFailed)))
+            })
+            .or({
+                self.conn
+                    .rollback()
+                    .and(Err(From::from(StatementError::RuntimeError)))
+                    .or(Err(From::from(StatementError::RollbackFailed)))
+            })
     }
     fn close(&mut self) -> Result<()> {
         self.conn

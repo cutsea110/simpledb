@@ -7,6 +7,7 @@ use super::resultsetadapter::ResultSetAdapter;
 pub enum StatementError {
     RuntimeError,
     CommitFailed,
+    RollbackFailed,
     CloseFailed,
 }
 
@@ -19,6 +20,9 @@ impl fmt::Display for StatementError {
             }
             StatementError::CommitFailed => {
                 write!(f, "failed to commit")
+            }
+            StatementError::RollbackFailed => {
+                write!(f, "failed to rollback")
             }
             StatementError::CloseFailed => {
                 write!(f, "failed to close")
