@@ -33,11 +33,10 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     type Stmt = EmbeddedStatement<'a>;
 
     fn create(&'a mut self, sql: &str) -> Result<Self::Stmt> {
-        if let Ok(planner) = self.db.planner() {
-            return Ok(EmbeddedStatement::new(self, planner, sql));
-        }
-
-        Err(From::from(ConnectionError::CreateStatementFailed))
+        self.db
+            .planner()
+            .and_then(|planner| Ok(EmbeddedStatement::new(self, planner, sql)))
+            .or_else(|_| Err(From::from(ConnectionError::CreateStatementFailed)))
     }
     fn close(&mut self) -> Result<()> {
         self.commit()
