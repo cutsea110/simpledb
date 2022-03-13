@@ -37,29 +37,29 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.s.lock().unwrap().get_i32(fldname).or_else(|_| {
-            self.conn.rollback()?;
-            Err(From::from(ResultSetError::UnknownField(
-                fldname.to_string(),
-            )))
+            self.conn.rollback().and_then(|_| {
+                Err(From::from(ResultSetError::UnknownField(
+                    fldname.to_string(),
+                )))
+            })
         })
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.s.lock().unwrap().get_string(fldname).or_else(|_| {
-            self.conn.rollback()?;
-            Err(From::from(ResultSetError::UnknownField(
-                fldname.to_string(),
-            )))
+            self.conn.rollback().and_then(|_| {
+                Err(From::from(ResultSetError::UnknownField(
+                    fldname.to_string(),
+                )))
+            })
         })
     }
     fn get_meta_data(&self) -> Result<Self::Meta> {
         Ok(EmbeddedMetaData::new(Arc::clone(&self.sch)))
     }
     fn close(&mut self) -> Result<()> {
-        self.s
-            .lock()
-            .unwrap()
-            .close()
-            .and_then(|_| self.conn.close())
-            .or_else(|_| Err(From::from(ResultSetError::CloseFailed)))
+        match self.s.lock().unwrap().close() {
+            Ok(_) => self.conn.close(),
+            Err(_) => Err(From::from(ResultSetError::CloseFailed)),
+        }
     }
 }

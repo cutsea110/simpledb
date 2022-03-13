@@ -35,8 +35,8 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
             Err(_) => self
                 .conn
                 .rollback()
-                .and(Err(From::from(StatementError::RuntimeError)))
-                .or(Err(From::from(StatementError::RollbackFailed))),
+                .and_then(|_| Err(From::from(StatementError::RuntimeError)))
+                .or_else(|_| Err(From::from(StatementError::RollbackFailed))),
         }
     }
     fn execute_update(&mut self) -> Result<i32> {
@@ -45,13 +45,13 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
             Ok(affected) => self
                 .conn
                 .commit()
-                .and(Ok(affected))
-                .or(Err(From::from(StatementError::CommitFailed))),
+                .and_then(|_| Ok(affected))
+                .or_else(|_| Err(From::from(StatementError::CommitFailed))),
             Err(_) => self
                 .conn
                 .rollback()
-                .and(Err(From::from(StatementError::RuntimeError)))
-                .or(Err(From::from(StatementError::RollbackFailed))),
+                .and_then(|_| Err(From::from(StatementError::RuntimeError)))
+                .or_else(|_| Err(From::from(StatementError::RollbackFailed))),
         }
     }
     fn close(&mut self) -> Result<()> {

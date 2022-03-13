@@ -5,8 +5,9 @@ use super::resultsetmetadataadapter::ResultSetMetaDataAdapter;
 
 #[derive(Debug)]
 pub enum ResultSetError {
-    CloseFailed,
     ScanFailed,
+    RollbackFailed,
+    CloseFailed,
     UnknownField(String),
 }
 
@@ -14,11 +15,14 @@ impl std::error::Error for ResultSetError {}
 impl fmt::Display for ResultSetError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ResultSetError::CloseFailed => {
-                write!(f, "failed to close")
-            }
             ResultSetError::ScanFailed => {
                 write!(f, "failed to scan")
+            }
+            ResultSetError::RollbackFailed => {
+                write!(f, "failed to rollback")
+            }
+            ResultSetError::CloseFailed => {
+                write!(f, "failed to close")
             }
             ResultSetError::UnknownField(fldname) => {
                 write!(f, "unknown field {}", fldname)
