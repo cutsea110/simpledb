@@ -182,11 +182,20 @@ fn print_view_definition(viewname: &str, viewdef: &str) {
     println!();
 }
 
+fn print_help_meta_cmd() {
+    println!(":h                show this help");
+    println!(":q                quit");
+    println!(":t <table_name>   show table schema");
+    println!(":v <view_name>    show view definition");
+}
+
 fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
     let args = &tokens[1..];
-    if cmd == ":q" {
+    if cmd == ":h" {
+        print_help_meta_cmd();
+    } else if cmd == ":q" {
         conn.close().expect("close");
         println!("disconnected.");
         process::exit(0);
