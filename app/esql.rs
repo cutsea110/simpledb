@@ -183,41 +183,49 @@ fn print_view_definition(viewname: &str, viewdef: &str) {
 }
 
 fn print_help_meta_cmd() {
-    println!(":h                show this help");
-    println!(":q                quit");
-    println!(":t <table_name>   show table schema");
-    println!(":v <view_name>    show view definition");
+    println!(":h, :help                       Show this help");
+    println!(":q, :quit, :exit                Quit the program");
+    println!(":t, :table <table_name>         Show table schema");
+    println!(":v, :view  <view_name>          Show view definition");
 }
 
 fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
     let args = &tokens[1..];
-    if cmd == ":h" {
-        print_help_meta_cmd();
-    } else if cmd == ":q" {
-        conn.close().expect("close");
-        println!("disconnected.");
-        process::exit(0);
-    } else if cmd == ":t" {
-        if args.is_empty() {
-            println!("table name is required.");
+    match cmd.as_str() {
+        ":h" | ":help" => {
+            print_help_meta_cmd();
+        }
+        ":q" | ":quit" | ":exit" => {
+            conn.close().expect("close");
+            println!("disconnected.");
+            process::exit(0);
+        }
+        ":t" | ":table" => {
+            if args.is_empty() {
+                println!("table name is required.");
+                return;
+            }
+            let tblname = args[0];
+            if let Ok(sch) = conn.get_table_schema(tblname) {
+                let idx_info = conn.get_index_info(tblname).unwrap_or_default();
+                print_table_schema(tblname, sch, idx_info);
+            }
             return;
         }
-        let tblname = args[0];
-        if let Ok(sch) = conn.get_table_schema(tblname) {
-            let idx_info = conn.get_index_info(tblname).unwrap_or_default();
-            print_table_schema(tblname, sch, idx_info);
+        ":v" | ":view" => {
+            if args.is_empty() {
+                println!("view name is required.");
+                return;
+            }
+            let viewname = args[0];
+            if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
+                print_view_definition(&viewname, &viewdef);
+            }
         }
-        return;
-    } else if cmd == ":v" {
-        if args.is_empty() {
-            println!("view name is required.");
-            return;
-        }
-        let viewname = args[0];
-        if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
-            print_view_definition(&viewname, &viewdef);
+        cmd => {
+            println!("Unknown command: {}", cmd)
         }
     }
 }
