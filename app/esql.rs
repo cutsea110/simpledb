@@ -79,7 +79,7 @@ fn read_query() -> Result<String> {
     stdout().flush().expect("require input");
 
     let mut input = String::new();
-    std::io::stdin().read_line(&mut input).ok();
+    std::io::stdin().read_line(&mut input)?;
     Ok(input)
 }
 
