@@ -4,6 +4,7 @@ use anyhow::Result;
 
 use crate::{query::constant::Constant, record::rid::RID};
 
+pub mod btree;
 pub mod hash;
 
 #[derive(Debug)]
