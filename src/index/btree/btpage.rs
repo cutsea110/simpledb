@@ -1,5 +1,5 @@
 use anyhow::Result;
-use core::panic;
+use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use crate::{
@@ -9,25 +9,60 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Debug)]
+pub enum BTPageError {
+    NoCurrentBlockError,
+}
+
+impl std::error::Error for BTPageError {}
+impl fmt::Display for BTPageError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            BTPageError::NoCurrentBlockError => {
+                write!(f, "no current block")
+            }
+        }
+    }
+}
+
 pub struct BTPage {
     tx: Arc<Mutex<Transaction>>,
-    currentblk: BlockId,
+    currentblk: Option<BlockId>,
     layout: Arc<Layout>,
 }
 
 impl BTPage {
-    pub fn new(tx: Arc<Mutex<Transaction>>, currentblk: BlockId, layout: Arc<Layout>) -> Self {
-        Self {
+    pub fn new(
+        tx: Arc<Mutex<Transaction>>,
+        currentblk: BlockId,
+        layout: Arc<Layout>,
+    ) -> Result<Self> {
+        tx.lock().unwrap().pin(&currentblk)?;
+
+        Ok(Self {
             tx,
-            currentblk,
+            currentblk: Some(currentblk),
             layout,
-        }
+        })
     }
     pub fn find_slot_before(&self, searchkey: Constant) -> i32 {
-        panic!("TODO")
+        let mut slot = 0;
+
+        while slot < self.get_num_recs() && self.get_data_val(slot) < searchkey {
+            slot += 1;
+        }
+
+        slot - 1
     }
     pub fn close(&mut self) -> Result<()> {
-        panic!("TODO")
+        match &self.currentblk {
+            Some(currentblk) => {
+                self.tx.lock().unwrap().unpin(&currentblk)?;
+                self.currentblk = None;
+                Ok(())
+            }
+            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        }
     }
     pub fn is_full(&self) -> bool {
         panic!("TODO")
