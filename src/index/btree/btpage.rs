@@ -65,7 +65,7 @@ impl BTPage {
         }
     }
     pub fn is_full(&self) -> bool {
-        panic!("TODO")
+        self.slotpos(self.get_num_recs() + 1) >= self.tx.lock().unwrap().block_size()
     }
     pub fn split(&mut self, splitpos: i32, flag: i32) -> BlockId {
         panic!("TODO")
