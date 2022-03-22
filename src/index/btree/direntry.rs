@@ -16,7 +16,4 @@ impl DirEntry {
     pub fn block_number(&self) -> i32 {
         self.blknum
     }
-    pub fn is_null(&self) -> bool {
-        panic!("TODO")
-    }
 }
