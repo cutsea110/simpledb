@@ -61,11 +61,11 @@ impl BTreeLeaf {
     pub fn next(&mut self) -> bool {
         self.currentslot += 1;
         if self.currentslot >= self.contents.get_num_recs().unwrap() {
-            self.try_overflow().unwrap()
+            self.try_overflow()
         } else if self.contents.get_data_val(self.currentslot).unwrap() == self.searchkey {
             true
         } else {
-            self.try_overflow().unwrap()
+            self.try_overflow()
         }
     }
     pub fn get_data_rid(&self) -> Result<RID> {
@@ -137,16 +137,17 @@ impl BTreeLeaf {
             return Some(DirEntry::new(splitkey, newblk.number()));
         }
     }
-    pub fn try_overflow(&mut self) -> Result<bool> {
-        let firstkey = self.contents.get_data_val(0)?;
-        let flag = self.contents.get_flag()?;
+    fn try_overflow(&mut self) -> bool {
+        let firstkey = self.contents.get_data_val(0).unwrap();
+        let flag = self.contents.get_flag().unwrap();
         if self.searchkey != firstkey || flag < 0 {
-            return Ok(false);
+            return false;
         }
-        self.contents.close()?;
+        self.contents.close().unwrap();
         let nextblk = BlockId::new(&self.filename, flag);
-        self.contents = BTPage::new(Arc::clone(&self.tx), nextblk, Arc::clone(&self.layout))?;
+        self.contents =
+            BTPage::new(Arc::clone(&self.tx), nextblk, Arc::clone(&self.layout)).unwrap();
         self.currentslot = 0;
-        return Ok(true);
+        return true;
     }
 }
