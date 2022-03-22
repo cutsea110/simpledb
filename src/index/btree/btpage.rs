@@ -48,10 +48,10 @@ impl BTPage {
             layout,
         })
     }
-    pub fn find_slot_before(&self, searchkey: Constant) -> Result<i32> {
+    pub fn find_slot_before(&self, searchkey: &Constant) -> Result<i32> {
         let mut slot = 0;
 
-        while slot < self.get_num_recs()? && self.get_data_val(slot)? < searchkey {
+        while slot < self.get_num_recs()? && self.get_data_val(slot)? < *searchkey {
             slot += 1;
         }
 
