@@ -50,22 +50,18 @@ impl BTPage {
     }
     pub fn find_slot_before(&self, searchkey: &Constant) -> Result<i32> {
         let mut slot = 0;
-
         while slot < self.get_num_recs()? && self.get_data_val(slot)? < *searchkey {
             slot += 1;
         }
-
         Ok(slot - 1)
     }
     pub fn close(&mut self) -> Result<()> {
-        match &self.currentblk {
-            Some(currentblk) => {
-                self.tx.lock().unwrap().unpin(&currentblk)?;
-                self.currentblk = None;
-                Ok(())
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_mut() {
+            self.tx.lock().unwrap().unpin(currentblk)?;
+            self.currentblk = None;
         }
+
+        Ok(())
     }
     pub fn is_full(&self) -> bool {
         self.slotpos(self.get_num_recs().unwrap() + 1) >= self.tx.lock().unwrap().block_size()
