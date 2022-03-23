@@ -53,6 +53,7 @@ impl BTPage {
         while slot < self.get_num_recs()? && self.get_data_val(slot)? < *searchkey {
             slot += 1;
         }
+
         Ok(slot - 1)
     }
     pub fn close(&mut self) -> Result<()> {
@@ -83,56 +84,57 @@ impl BTPage {
         self.get_val(slot, "dataval")
     }
     pub fn get_flag(&self) -> Result<i32> {
-        match self.currentblk.as_ref() {
-            Some(currentblk) => self.tx.lock().unwrap().get_i32(currentblk, 0),
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            return self.tx.lock().unwrap().get_i32(currentblk, 0);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     pub fn set_flag(&mut self, val: i32) -> Result<()> {
-        match self.currentblk.as_ref() {
-            Some(currentblk) => self.tx.lock().unwrap().set_i32(currentblk, 0, val, true),
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            return self.tx.lock().unwrap().set_i32(currentblk, 0, val, true);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     pub fn append_new(&mut self, flag: i32) -> Result<BlockId> {
-        match self.currentblk.as_ref() {
-            Some(currentblk) => {
-                let blk = self.tx.lock().unwrap().append(&currentblk.file_name())?;
-                self.tx.lock().unwrap().pin(&blk)?;
-                self.format(&blk, flag)?;
-
-                Ok(blk)
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let blk = self.tx.lock().unwrap().append(&currentblk.file_name())?;
+            self.tx.lock().unwrap().pin(&blk)?;
+            self.format(&blk, flag)?;
+            return Ok(blk);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     pub fn format(&mut self, blk: &BlockId, flag: i32) -> Result<()> {
         let mut tx = self.tx.lock().unwrap();
         tx.set_i32(blk, 0, flag, false)?;
         tx.set_i32(blk, mem::size_of::<i32>() as i32, 0, false)?; // #records = 0
-        let recsize = self.layout.slot_size() as i32;
-        let mut pos = 2 * mem::size_of::<i32>() as i32;
-        while pos + recsize <= tx.block_size() {
+        let recsize = self.layout.slot_size();
+        let mut pos = 2 * mem::size_of::<i32>();
+        while pos + recsize <= tx.block_size() as usize {
             self.make_default_record(blk, pos)?;
             pos += recsize;
         }
 
         Ok(())
     }
-    pub fn make_default_record(&self, blk: &BlockId, pos: i32) -> Result<()> {
+    pub fn make_default_record(&self, blk: &BlockId, pos: usize) -> Result<()> {
         for fldname in self.layout.schema().fields() {
-            let offset = self.layout.offset(fldname) as i32;
+            let offset = self.layout.offset(fldname);
             match self.layout.schema().field_type(fldname) {
                 FieldType::INTEGER => {
                     let mut tx = self.tx.lock().unwrap();
-                    tx.set_i32(blk, pos + offset, 0, false)?;
+                    tx.set_i32(blk, (pos + offset) as i32, 0, false)?;
                 }
                 FieldType::VARCHAR => {
                     let mut tx = self.tx.lock().unwrap();
-                    tx.set_string(blk, pos + offset, "", false)?;
+                    tx.set_string(blk, (pos + offset) as i32, "", false)?;
                 }
             }
         }
+
         Ok(())
     }
     // Methods called only by BTreeDir
@@ -165,32 +167,29 @@ impl BTPage {
         self.set_num_recs(self.get_num_recs()? - 1)
     }
     pub fn get_num_recs(&self) -> Result<i32> {
-        match &self.currentblk {
-            Some(currentblk) => {
-                let mut tx = self.tx.lock().unwrap();
-                tx.get_i32(currentblk, mem::size_of::<i32>() as i32)
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let mut tx = self.tx.lock().unwrap();
+            return tx.get_i32(currentblk, mem::size_of::<i32>() as i32);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     // Private methods
     fn get_i32(&self, slot: i32, fldname: &str) -> Result<i32> {
-        match &self.currentblk {
-            Some(currentblk) => {
-                let pos = self.fldpos(slot, fldname);
-                self.tx.lock().unwrap().get_i32(currentblk, pos)
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_i32(currentblk, pos);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     fn get_string(&self, slot: i32, fldname: &str) -> Result<String> {
-        match &self.currentblk {
-            Some(currentblk) => {
-                let pos = self.fldpos(slot, fldname);
-                self.tx.lock().unwrap().get_string(currentblk, pos)
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_string(currentblk, pos);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     fn get_val(&self, slot: i32, fldname: &str) -> Result<Constant> {
         let fldtype = self.layout.schema().field_type(fldname);
@@ -200,24 +199,22 @@ impl BTPage {
         }
     }
     fn set_i32(&mut self, slot: i32, fldname: &str, val: i32) -> Result<()> {
-        match &self.currentblk {
-            Some(currentblk) => {
-                let pos = self.fldpos(slot, fldname);
-                let mut tx = self.tx.lock().unwrap();
-                tx.set_i32(currentblk, pos, val, true)
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_i32(currentblk, pos, val, true);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     fn set_string(&mut self, slot: i32, fldname: &str, val: &str) -> Result<()> {
-        match &self.currentblk {
-            Some(currentblk) => {
-                let pos = self.fldpos(slot, fldname);
-                let mut tx = self.tx.lock().unwrap();
-                tx.set_string(currentblk, pos, val, true)
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_string(currentblk, pos, val, true);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     fn set_val(&mut self, slot: i32, fldname: &str, val: Constant) -> Result<()> {
         let fldtype = self.layout.schema().field_type(fldname);
@@ -227,13 +224,12 @@ impl BTPage {
         }
     }
     fn set_num_recs(&mut self, n: i32) -> Result<()> {
-        match &self.currentblk {
-            Some(currentblk) => {
-                let mut tx = self.tx.lock().unwrap();
-                tx.set_i32(currentblk, mem::size_of::<i32>() as i32, n, true)
-            }
-            None => Err(From::from(BTPageError::NoCurrentBlockError)),
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_i32(currentblk, mem::size_of::<i32>() as i32, n, true);
         }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     fn insert(&mut self, slot: i32) -> Result<()> {
         let mut i = self.get_num_recs()?;
