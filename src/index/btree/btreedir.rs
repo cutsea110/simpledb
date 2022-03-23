@@ -29,12 +29,12 @@ impl BTreeDir {
     pub fn close(&mut self) -> Result<()> {
         self.contents.close()
     }
-    pub fn search(&mut self, searchkey: Constant) -> Result<i32> {
-        let mut childblk = self.find_child_block(&searchkey)?;
+    pub fn search(&mut self, searchkey: &Constant) -> Result<i32> {
+        let mut childblk = self.find_child_block(searchkey)?;
         while self.contents.get_flag()? > 0 {
             self.contents.close()?;
             self.contents = BTPage::new(Arc::clone(&self.tx), childblk, Arc::clone(&self.layout))?;
-            childblk = self.find_child_block(&searchkey)?;
+            childblk = self.find_child_block(searchkey)?;
         }
 
         Ok(childblk.number())
