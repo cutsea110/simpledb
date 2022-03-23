@@ -9,7 +9,7 @@ use super::{
     tablemanager::{TableMgr, MAX_NAME},
 };
 use crate::{
-    index::{hash::HashIndex, Index},
+    index::{hash::index::HashIndex, Index},
     query::{scan::Scan, updatescan::UpdateScan},
     record::{layout::Layout, schema::FieldType, schema::Schema, tablescan::TableScan},
     tx::transaction::Transaction,
