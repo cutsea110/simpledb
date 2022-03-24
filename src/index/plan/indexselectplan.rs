@@ -1,7 +1,6 @@
+use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
-
-use anyhow::Result;
 
 use crate::{
     index::query::indexselectscan::IndexSelectScan,

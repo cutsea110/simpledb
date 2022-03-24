@@ -57,7 +57,7 @@ impl Plan for IndexJoinPlan {
                 self.ii.open(),
                 &self.joinfield,
                 Arc::new(Mutex::new(ts.clone())),
-            );
+            )?;
             return Ok(Arc::new(Mutex::new(scan)));
         }
 
