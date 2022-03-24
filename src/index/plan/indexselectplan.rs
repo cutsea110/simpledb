@@ -42,11 +42,12 @@ impl Plan for IndexSelectPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
         // throws an exception if p is not a table plan.
         if let Ok(ts) = self.p.open()?.lock().unwrap().as_table_scan() {
-            return Ok(Arc::new(Mutex::new(IndexSelectScan::new(
+            let scan = IndexSelectScan::new(
                 Arc::new(Mutex::new(ts.clone())),
                 self.ii.open(),
                 self.val.clone(),
-            )?)));
+            )?;
+            return Ok(Arc::new(Mutex::new(scan)));
         }
 
         Err(From::from(IndexSelectPlanError::DowncastError))
