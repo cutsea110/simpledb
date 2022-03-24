@@ -15,7 +15,7 @@ pub struct IndexSelectScan {
 }
 
 impl IndexSelectScan {
-    pub fn new(ts: TableScan, idx: Arc<Mutex<dyn Index>>, val: Constant) -> Self {
+    pub fn new(ts: Arc<Mutex<TableScan>>, idx: Arc<Mutex<dyn Index>>, val: Constant) -> Self {
         panic!("TODO")
     }
 }
