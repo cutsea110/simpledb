@@ -12,7 +12,7 @@ pub struct IndexJoinScan {
     lhs: Arc<Mutex<dyn Scan>>,
     idx: Arc<Mutex<dyn Index>>,
     joinfield: String,
-    rhs: TableScan,
+    rhs: Arc<Mutex<TableScan>>,
 }
 
 impl IndexJoinScan {
@@ -20,7 +20,7 @@ impl IndexJoinScan {
         lhs: Arc<Mutex<dyn Scan>>,
         idx: Arc<Mutex<dyn Index>>,
         joinfld: &str,
-        rhs: TableScan,
+        rhs: Arc<Mutex<TableScan>>,
     ) -> Self {
         panic!("TODO")
     }
