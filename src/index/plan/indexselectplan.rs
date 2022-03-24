@@ -1,3 +1,4 @@
+use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
@@ -9,6 +10,21 @@ use crate::{
     query::{constant::Constant, scan::Scan},
     record::schema::Schema,
 };
+
+#[derive(Debug)]
+pub enum IndexSelectPlanError {
+    DowncastError,
+}
+impl std::error::Error for IndexSelectPlanError {}
+impl fmt::Display for IndexSelectPlanError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            IndexSelectPlanError::DowncastError => {
+                write!(f, "downcast error")
+            }
+        }
+    }
+}
 
 pub struct IndexSelectPlan {
     p: Arc<dyn Plan>,
@@ -24,17 +40,16 @@ impl IndexSelectPlan {
 
 impl Plan for IndexSelectPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
-        panic!("TODO")
-        /*
-                // throws an exception if p is not a table plan.
-                let ts = self.p.open()?;
-                let idx = self.ii.open();
-                Ok(Arc::new(Mutex::new(IndexSelectScan::new(
-                    ts,
-                    idx,
-                    self.val.clone(),
-                ))))
-        */
+        // throws an exception if p is not a table plan.
+        if let Ok(ts) = self.p.open()?.lock().unwrap().as_table_scan() {
+            return Ok(Arc::new(Mutex::new(IndexSelectScan::new(
+                Arc::new(Mutex::new(ts.clone())),
+                self.ii.open(),
+                self.val.clone(),
+            )?)));
+        }
+
+        Err(From::from(IndexSelectPlanError::DowncastError))
     }
     fn blocks_accessed(&self) -> i32 {
         self.ii.blocks_accessed() + self.records_output()

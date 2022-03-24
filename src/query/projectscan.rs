@@ -2,6 +2,8 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
+use crate::record::tablescan::TableScan;
+
 use super::{constant::Constant, scan::Scan, updatescan::UpdateScan};
 
 #[derive(Debug)]
@@ -71,6 +73,9 @@ impl Scan for ProjectScan {
         self.s.lock().unwrap().close()
     }
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
+        Err(From::from(ProjectScanError::DowncastError))
+    }
+    fn as_table_scan(&self) -> Result<&TableScan> {
         Err(From::from(ProjectScanError::DowncastError))
     }
 }

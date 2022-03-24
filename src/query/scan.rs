@@ -1,5 +1,7 @@
 use anyhow::Result;
 
+use crate::record::tablescan::TableScan;
+
 use super::{constant::Constant, updatescan::UpdateScan};
 
 pub trait Scan {
@@ -12,4 +14,5 @@ pub trait Scan {
     fn close(&mut self) -> Result<()>;
 
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan>;
+    fn as_table_scan(&self) -> Result<&TableScan>;
 }

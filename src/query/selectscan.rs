@@ -3,7 +3,10 @@ use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use super::{predicate::Predicate, scan::Scan, updatescan::UpdateScan};
-use crate::{query::constant::Constant, record::rid::RID};
+use crate::{
+    query::constant::Constant,
+    record::{rid::RID, tablescan::TableScan},
+};
 
 #[derive(Debug)]
 pub enum SelectScanError {
@@ -57,6 +60,9 @@ impl Scan for SelectScan {
     // downcast
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
         Ok(self)
+    }
+    fn as_table_scan(&self) -> Result<&TableScan> {
+        Err(From::from(SelectScanError::DowncastError))
     }
 }
 

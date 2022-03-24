@@ -2,6 +2,8 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
+use crate::record::tablescan::TableScan;
+
 use super::{constant::Constant, scan::Scan};
 
 #[derive(Debug)]
@@ -81,6 +83,9 @@ impl Scan for ProductScan {
         s2.close()
     }
     fn to_update_scan(&mut self) -> anyhow::Result<&mut dyn super::updatescan::UpdateScan> {
+        Err(From::from(ProductScanError::DowncastError))
+    }
+    fn as_table_scan(&self) -> Result<&TableScan> {
         Err(From::from(ProductScanError::DowncastError))
     }
 }

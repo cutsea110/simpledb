@@ -77,4 +77,7 @@ impl Scan for IndexSelectScan {
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
         Err(From::from(IndexSelectScanError::DowncastError))
     }
+    fn as_table_scan(&self) -> Result<&TableScan> {
+        Err(From::from(IndexSelectScanError::DowncastError))
+    }
 }

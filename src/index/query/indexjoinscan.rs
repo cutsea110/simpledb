@@ -51,4 +51,7 @@ impl Scan for IndexJoinScan {
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
         panic!("TODO")
     }
+    fn as_table_scan(&self) -> Result<&TableScan> {
+        panic!("TODO")
+    }
 }
