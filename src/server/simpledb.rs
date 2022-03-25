@@ -127,6 +127,9 @@ impl SimpleDB {
     pub fn buffer_mgr(&self) -> Arc<Mutex<BufferMgr>> {
         Arc::clone(&self.bm)
     }
+    pub fn metadata_mgr(&self) -> Option<Arc<Mutex<MetadataMgr>>> {
+        self.mdm.as_ref().map(|md| Arc::clone(md))
+    }
     pub fn new_tx(&self) -> Result<Transaction> {
         Transaction::new(
             Arc::clone(&self.next_tx_num),

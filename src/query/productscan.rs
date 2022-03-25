@@ -85,7 +85,7 @@ impl Scan for ProductScan {
     fn to_update_scan(&mut self) -> anyhow::Result<&mut dyn super::updatescan::UpdateScan> {
         Err(From::from(ProductScanError::DowncastError))
     }
-    fn as_table_scan(&self) -> Result<&TableScan> {
+    fn as_table_scan(&mut self) -> Result<&mut TableScan> {
         Err(From::from(ProductScanError::DowncastError))
     }
 }

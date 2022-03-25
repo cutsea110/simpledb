@@ -75,7 +75,7 @@ impl Scan for ProjectScan {
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
         Err(From::from(ProjectScanError::DowncastError))
     }
-    fn as_table_scan(&self) -> Result<&TableScan> {
+    fn as_table_scan(&mut self) -> Result<&mut TableScan> {
         Err(From::from(ProjectScanError::DowncastError))
     }
 }

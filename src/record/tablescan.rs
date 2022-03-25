@@ -99,7 +99,7 @@ impl Scan for TableScan {
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
         Ok(self)
     }
-    fn as_table_scan(&self) -> Result<&TableScan> {
+    fn as_table_scan(&mut self) -> Result<&mut TableScan> {
         Ok(self)
     }
 }

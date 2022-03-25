@@ -99,6 +99,6 @@ impl Index for HashIndex {
             return ts.close();
         }
 
-        Err(From::from(IndexError::NoTableScan))
+        Ok(())
     }
 }

@@ -108,7 +108,7 @@ impl Scan for IndexJoinScan {
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan> {
         Err(From::from(IndexJoinScanError::DowncastError))
     }
-    fn as_table_scan(&self) -> Result<&TableScan> {
+    fn as_table_scan(&mut self) -> Result<&mut TableScan> {
         Err(From::from(IndexJoinScanError::DowncastError))
     }
 }
