@@ -130,7 +130,8 @@ impl IndexInfo {
             Arc::clone(&self.tx),
             &self.idxname,
             Arc::clone(&self.idx_layout),
-        );
+        )
+        .expect("create index");
 
         Arc::new(Mutex::new(idx))
     }

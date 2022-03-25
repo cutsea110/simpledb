@@ -23,14 +23,14 @@ pub struct HashIndex {
 }
 
 impl HashIndex {
-    pub fn new(tx: Arc<Mutex<Transaction>>, idxname: &str, layout: Arc<Layout>) -> Self {
-        Self {
+    pub fn new(tx: Arc<Mutex<Transaction>>, idxname: &str, layout: Arc<Layout>) -> Result<Self> {
+        Ok(Self {
             tx,
             idxname: idxname.to_string(),
             layout,
             searchkey: None,
             ts: None,
-        }
+        })
     }
     pub fn search_cost(numblocks: i32, _rpb: i32) -> i32 {
         numblocks / NUM_BUCKETS
