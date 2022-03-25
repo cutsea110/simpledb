@@ -23,10 +23,10 @@ pub struct HashIndex {
 }
 
 impl HashIndex {
-    pub fn new(tx: Arc<Mutex<Transaction>>, idxname: String, layout: Arc<Layout>) -> Self {
+    pub fn new(tx: Arc<Mutex<Transaction>>, idxname: &str, layout: Arc<Layout>) -> Self {
         Self {
             tx,
-            idxname,
+            idxname: idxname.to_string(),
             layout,
             searchkey: None,
             ts: None,

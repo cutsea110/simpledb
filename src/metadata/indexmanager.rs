@@ -128,7 +128,7 @@ impl IndexInfo {
     pub fn open(&self) -> Arc<Mutex<dyn Index>> {
         let idx = HashIndex::new(
             Arc::clone(&self.tx),
-            self.idxname.clone(),
+            &self.idxname,
             Arc::clone(&self.idx_layout),
         );
 
