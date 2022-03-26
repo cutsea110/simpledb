@@ -108,12 +108,15 @@ impl BTPage {
         Err(From::from(BTPageError::NoCurrentBlockError))
     }
     pub fn format(&mut self, blk: &BlockId, flag: i32) -> Result<()> {
-        let mut tx = self.tx.lock().unwrap();
-        tx.set_i32(blk, 0, flag, false)?;
-        tx.set_i32(blk, mem::size_of::<i32>() as i32, 0, false)?; // #records = 0
+        self.tx.lock().unwrap().set_i32(blk, 0, flag, false)?;
+        self.tx
+            .lock()
+            .unwrap()
+            .set_i32(blk, mem::size_of::<i32>() as i32, 0, false)?; // #records = 0
         let recsize = self.layout.slot_size();
         let mut pos = 2 * mem::size_of::<i32>();
-        while pos + recsize <= tx.block_size() as usize {
+        let blksize = self.tx.lock().unwrap().block_size() as usize;
+        while pos + recsize <= blksize {
             self.make_default_record(blk, pos)?;
             pos += recsize;
         }

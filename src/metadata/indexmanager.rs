@@ -9,7 +9,7 @@ use super::{
     tablemanager::{TableMgr, MAX_NAME},
 };
 use crate::{
-    index::{hash::index::HashIndex, Index},
+    index::{btree::index::BTreeIndex, Index},
     query::{scan::Scan, updatescan::UpdateScan},
     record::{layout::Layout, schema::FieldType, schema::Schema, tablescan::TableScan},
     tx::transaction::Transaction,
@@ -126,7 +126,7 @@ impl IndexInfo {
         mgr
     }
     pub fn open(&self) -> Arc<Mutex<dyn Index>> {
-        let idx = HashIndex::new(
+        let idx = BTreeIndex::new(
             Arc::clone(&self.tx),
             &self.idxname,
             Arc::clone(&self.idx_layout),
@@ -138,7 +138,7 @@ impl IndexInfo {
     pub fn blocks_accessed(&self) -> i32 {
         let rpb = self.tx.lock().unwrap().block_size() / self.idx_layout.slot_size() as i32;
         let numblocks = self.si.records_output() / rpb;
-        HashIndex::search_cost(numblocks, rpb)
+        BTreeIndex::search_cost(numblocks, rpb)
     }
     pub fn records_output(&self) -> i32 {
         self.si.records_output() / self.si.distinct_values(&self.fldname)
