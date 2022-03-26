@@ -1,6 +1,5 @@
-use core::fmt;
-
 use anyhow::Result;
+use core::fmt;
 
 use crate::{query::constant::Constant, record::rid::RID};
 
