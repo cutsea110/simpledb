@@ -88,44 +88,30 @@ mod tests {
         let idx = ii.open();
 
         // Initialize data
+        let students = vec![
+            (1, "joe", 2021, 10),
+            (2, "amy", 2020, 20),
+            (3, "max", 2022, 10),
+            (4, "sue", 2022, 20),
+            (5, "bob", 2020, 30),
+            (6, "kim", 2020, 20),
+            (7, "art", 2021, 30),
+            (8, "pat", 2019, 20),
+            (9, "lee", 2021, 10),
+        ];
         if let Ok(ts) = studentscan.lock().unwrap().as_table_scan() {
             ts.before_first()?;
 
-            ts.insert()?;
-            ts.set_i32("sid", 1)?;
-            ts.set_string("sname", "joe".to_string())?;
-            ts.set_i32("grad_year", 2020)?;
-            ts.set_i32("major_id", 10)?;
-            idx.lock()
-                .unwrap()
-                .insert(Constant::I32(10), ts.get_rid()?)?;
-
-            ts.insert()?;
-            ts.set_i32("sid", 2)?;
-            ts.set_string("sname", "amy".to_string())?;
-            ts.set_i32("grad_year", 2021)?;
-            ts.set_i32("major_id", 20)?;
-            idx.lock()
-                .unwrap()
-                .insert(Constant::I32(20), ts.get_rid()?)?;
-
-            ts.insert()?;
-            ts.set_i32("sid", 3)?;
-            ts.set_string("sname", "max".to_string())?;
-            ts.set_i32("grad_year", 2022)?;
-            ts.set_i32("major_id", 30)?;
-            idx.lock()
-                .unwrap()
-                .insert(Constant::I32(30), ts.get_rid()?)?;
-
-            ts.insert()?;
-            ts.set_i32("sid", 4)?;
-            ts.set_string("sname", "lee".to_string())?;
-            ts.set_i32("grad_year", 2020)?;
-            ts.set_i32("major_id", 20)?;
-            idx.lock()
-                .unwrap()
-                .insert(Constant::I32(20), ts.get_rid()?)?;
+            for (sid, sname, grad_year, major_id) in students {
+                ts.insert()?;
+                ts.set_i32("sid", sid)?;
+                ts.set_string("sname", sname.to_string())?;
+                ts.set_i32("grad_year", grad_year)?;
+                ts.set_i32("major_id", major_id)?;
+                idx.lock()
+                    .unwrap()
+                    .insert(Constant::I32(major_id), ts.get_rid()?)?;
+            }
         }
 
         // Retrieve all index records having a dataval of 20.
