@@ -218,7 +218,7 @@ mod tests {
                 let idx = indexes.get(fldname).unwrap();
                 idx.lock().unwrap().insert(dataval, datarid)?;
             }
-            println!("insert sam's record");
+            println!("insert sam's record. RID = {}", datarid);
         }
 
         // Task 2: Find and delete Joe's record.
@@ -235,7 +235,7 @@ mod tests {
                     }
                     // Then delete Joe's record in STUDENT.
                     ts.delete()?;
-                    println!("delete joe's record");
+                    println!("delete joe's record: RID = {}", joerid);
                     break;
                 }
             }
@@ -245,7 +245,12 @@ mod tests {
         if let Ok(ts) = studentscan.lock().unwrap().to_update_scan() {
             ts.before_first()?;
             while ts.next() {
-                println!("{} {}", ts.get_string("sname")?, ts.get_i32("sid")?)
+                println!(
+                    "{} {} RID = {}",
+                    ts.get_string("sname")?,
+                    ts.get_i32("sid")?,
+                    ts.get_rid()?
+                )
             }
             ts.close()?;
             for idx in indexes.values() {
