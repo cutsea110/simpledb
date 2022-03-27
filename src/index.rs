@@ -5,7 +5,7 @@ use crate::{query::constant::Constant, record::rid::RID};
 
 pub mod btree;
 pub mod hash;
-pub mod plan;
+pub mod planner;
 pub mod query;
 
 #[derive(Debug)]
