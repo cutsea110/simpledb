@@ -8,11 +8,12 @@ use std::{
 use crate::{
     buffer::manager::BufferMgr,
     file::manager::FileMgr,
+    index::planner::indexupdateplanner::IndexUpdatePlanner,
     log::manager::LogMgr,
     metadata::{indexmanager::IndexInfo, manager::MetadataMgr},
     plan::{
-        basicqueryplanner::BasicQueryPlanner, basicupdateplanner::BasicUpdatePlanner,
-        planner::Planner, queryplanner::QueryPlanner, updateplanner::UpdatePlanner,
+        basicqueryplanner::BasicQueryPlanner, planner::Planner, queryplanner::QueryPlanner,
+        updateplanner::UpdatePlanner,
     },
     record::schema::Schema,
     tx::{concurrency::locktable::LockTable, transaction::Transaction},
@@ -84,7 +85,7 @@ impl SimpleDB {
         db.mdm = Some(Arc::new(Mutex::new(meta)));
         let qp = BasicQueryPlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
         db.qp = Some(Arc::new(Mutex::new(qp)));
-        let up = BasicUpdatePlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
+        let up = IndexUpdatePlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
         db.up = Some(Arc::new(Mutex::new(up)));
 
         tx.lock().unwrap().commit()?;
