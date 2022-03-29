@@ -2,6 +2,7 @@ pub mod buffer;
 pub mod file;
 pub mod index;
 pub mod log;
+pub mod materialize;
 pub mod metadata;
 pub mod parser;
 pub mod plan;
