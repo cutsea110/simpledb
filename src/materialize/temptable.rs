@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub struct TempTable {
-    // static member (shared by all TempTable)
+    // static member (shared by all Materializeplan and Temptable)
     next_table_num: Arc<Mutex<i32>>,
 
     tx: Arc<Mutex<Transaction>>,
