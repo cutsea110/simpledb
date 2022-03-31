@@ -8,9 +8,12 @@ use crate::{
     tx::transaction::Transaction,
 };
 
-use super::temptable::TempTable;
+use super::{materializeplan::MaterializePlan, sortscan::SortScan, temptable::TempTable};
 
 pub struct SortPlan {
+    // static member (shared by all Materializeplan and Temptable)
+    next_table_num: Arc<Mutex<i32>>,
+
     p: Arc<dyn Plan>,
     tx: Arc<Mutex<Transaction>>,
     sch: Arc<Schema>,
@@ -18,38 +21,63 @@ pub struct SortPlan {
 }
 
 impl SortPlan {
-    pub fn new(p: Arc<dyn Plan>, sortfields: Vec<String>, tx: Arc<Mutex<Transaction>>) -> Self {
-        panic!("TODO")
-    }
+    pub fn new(
+        next_table_num: Arc<Mutex<i32>>,
+        p: Arc<dyn Plan>,
+        sortfields: Vec<String>,
+        tx: Arc<Mutex<Transaction>>,
+    ) -> Self {
+        let sch = p.schema();
 
-    fn split_into_runs(src: Arc<Mutex<dyn Scan>>) -> Vec<TempTable> {
-        panic!("TODO")
+        Self {
+            next_table_num,
+            p,
+            tx,
+            sch,
+        }
     }
-    fn do_a_merge_iteration(runs: Vec<TempTable>) -> Vec<TempTable> {
-        panic!("TODO")
-    }
-    fn merge_two_runs(p1: TempTable, p2: TempTable) -> TempTable {
-        panic!("TODO")
-    }
-    fn copy(src: Arc<Mutex<dyn Scan>>, dest: Arc<Mutex<dyn UpdateScan>>) -> bool {
-        panic!("TODO")
-    }
+}
+fn split_into_runs(src: Arc<Mutex<dyn Scan>>) -> Vec<TempTable> {
+    panic!("TODO")
+}
+fn do_a_merge_iteration(runs: Vec<TempTable>) -> Vec<TempTable> {
+    panic!("TODO")
+}
+fn merge_two_runs(p1: TempTable, p2: TempTable) -> TempTable {
+    panic!("TODO")
+}
+fn copy(src: Arc<Mutex<dyn Scan>>, dest: Arc<Mutex<dyn UpdateScan>>) -> bool {
+    panic!("TODO")
 }
 
 impl Plan for SortPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
-        panic!("TODO")
+        let src = self.p.open()?;
+        let mut runs = split_into_runs(Arc::clone(&src));
+        src.lock().unwrap().close()?;
+        while runs.len() > 2 {
+            runs = do_a_merge_iteration(runs);
+        }
+
+        Ok(Arc::new(Mutex::new(SortScan::new(runs))))
     }
     fn blocks_accessed(&self) -> i32 {
-        panic!("TODO")
+        // does not include the one-time cost of sorting
+        let mp = MaterializePlan::new(
+            Arc::clone(&self.next_table_num),
+            Arc::clone(&self.tx),
+            Arc::clone(&self.p),
+        );
+
+        mp.blocks_accessed()
     }
     fn records_output(&self) -> i32 {
-        panic!("TODO")
+        self.p.records_output()
     }
     fn distinct_values(&self, fldname: &str) -> i32 {
-        panic!("TODO")
+        self.p.distinct_values(fldname)
     }
     fn schema(&self) -> Arc<Schema> {
-        panic!("TODO")
+        Arc::clone(&self.sch)
     }
 }
