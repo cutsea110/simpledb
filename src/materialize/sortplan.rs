@@ -10,6 +10,7 @@ use crate::{
 
 use super::{materializeplan::MaterializePlan, sortscan::SortScan, temptable::TempTable};
 
+#[derive(Clone)]
 pub struct SortPlan {
     // static member (shared by all Materializeplan and Temptable)
     next_table_num: Arc<Mutex<i32>>,
@@ -36,17 +37,38 @@ impl SortPlan {
             sch,
         }
     }
+    fn copy(
+        &mut self,
+        src: Arc<Mutex<dyn Scan>>,
+        dest: Arc<Mutex<dyn UpdateScan>>,
+    ) -> Result<bool> {
+        dest.lock().unwrap().insert()?;
+        for fldname in self.sch.fields() {
+            dest.lock()
+                .unwrap()
+                .set_val(fldname, src.lock().unwrap().get_val(fldname)?)?;
+        }
+
+        Ok(src.lock().unwrap().next())
+    }
 }
 fn split_into_runs(src: Arc<Mutex<dyn Scan>>) -> Vec<TempTable> {
     panic!("TODO")
 }
-fn do_a_merge_iteration(runs: Vec<TempTable>) -> Vec<TempTable> {
-    panic!("TODO")
+fn do_a_merge_iteration(runs: &mut Vec<TempTable>) -> Vec<TempTable> {
+    let mut result = vec![];
+    while runs.len() > 1 {
+        let p1 = runs.remove(0);
+        let p2 = runs.remove(0);
+        result.push(merge_two_runs(p1, p2));
+    }
+    if runs.len() == 1 {
+        result.push(runs.get(0).unwrap().clone());
+    }
+
+    result
 }
 fn merge_two_runs(p1: TempTable, p2: TempTable) -> TempTable {
-    panic!("TODO")
-}
-fn copy(src: Arc<Mutex<dyn Scan>>, dest: Arc<Mutex<dyn UpdateScan>>) -> bool {
     panic!("TODO")
 }
 
@@ -56,7 +78,7 @@ impl Plan for SortPlan {
         let mut runs = split_into_runs(Arc::clone(&src));
         src.lock().unwrap().close()?;
         while runs.len() > 2 {
-            runs = do_a_merge_iteration(runs);
+            runs = do_a_merge_iteration(&mut runs);
         }
 
         Ok(Arc::new(Mutex::new(SortScan::new(runs))))
