@@ -52,6 +52,6 @@ impl TempTable {
         let mut next_table_num = self.next_table_num.lock().unwrap();
         *next_table_num += 1;
 
-        format!("temp{}", *next_table_num)
+        format!("temp{}", *next_table_num) // if you change the name, you must change FileMgr, too.
     }
 }

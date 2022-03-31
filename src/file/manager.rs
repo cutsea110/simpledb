@@ -52,6 +52,7 @@ impl FileMgr {
                 None => return Err(From::from(FileMgrError::ParseFailed)),
             };
 
+            // if you change the name, you must change TempTable, too.
             if filename.starts_with("temp") {
                 fs::remove_file(entry_path)?;
             }
