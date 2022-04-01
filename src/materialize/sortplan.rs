@@ -42,6 +42,37 @@ impl SortPlan {
             comp,
         }
     }
+    fn split_into_runs(&self, src: Arc<Mutex<dyn Scan>>) -> Vec<TempTable> {
+        let mut temps = vec![];
+        src.lock().unwrap().before_first().unwrap();
+        if !src.lock().unwrap().next() {
+            return temps;
+        }
+        let mut currenttemp = TempTable::new(
+            Arc::clone(&self.next_table_num),
+            Arc::clone(&self.tx),
+            Arc::clone(&self.sch),
+        );
+        temps.push(currenttemp.clone());
+        let mut currentscan = currenttemp.open().unwrap();
+        while self.copy(Arc::clone(&src), Arc::clone(&currentscan)) {
+            let curscan = currentscan.lock().unwrap().to_scan().unwrap();
+            if self.comp.compare(Arc::clone(&src), curscan).is_lt() {
+                // start a new run
+                currentscan.lock().unwrap().close().unwrap();
+                currenttemp = TempTable::new(
+                    Arc::clone(&self.next_table_num),
+                    Arc::clone(&self.tx),
+                    Arc::clone(&self.sch),
+                );
+                temps.push(currenttemp.clone());
+                currentscan = currenttemp.open().unwrap();
+            }
+        }
+        currentscan.lock().unwrap().close().unwrap();
+
+        temps
+    }
     fn copy(&self, src: Arc<Mutex<dyn Scan>>, dest: Arc<Mutex<dyn UpdateScan>>) -> bool {
         dest.lock().unwrap().insert().unwrap();
         for fldname in self.sch.fields() {
@@ -51,9 +82,6 @@ impl SortPlan {
 
         src.lock().unwrap().next()
     }
-}
-fn split_into_runs(src: Arc<Mutex<dyn Scan>>) -> Vec<TempTable> {
-    panic!("TODO")
 }
 fn do_a_merge_iteration(runs: &mut Vec<TempTable>) -> Vec<TempTable> {
     let mut result = vec![];
@@ -75,7 +103,7 @@ fn merge_two_runs(p1: TempTable, p2: TempTable) -> TempTable {
 impl Plan for SortPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
         let src = self.p.open()?;
-        let mut runs = split_into_runs(Arc::clone(&src));
+        let mut runs = self.split_into_runs(Arc::clone(&src));
         src.lock().unwrap().close()?;
         while runs.len() > 2 {
             runs = do_a_merge_iteration(&mut runs);
