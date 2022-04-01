@@ -1,8 +1,7 @@
 use anyhow::Result;
 
-use crate::record::tablescan::TableScan;
-
 use super::{constant::Constant, updatescan::UpdateScan};
+use crate::record::tablescan::TableScan;
 
 pub trait Scan {
     fn before_first(&mut self) -> Result<()>;

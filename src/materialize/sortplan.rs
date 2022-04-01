@@ -145,7 +145,7 @@ impl Plan for SortPlan {
             runs = self.do_a_merge_iteration(&mut runs);
         }
 
-        Ok(Arc::new(Mutex::new(SortScan::new(runs))))
+        Ok(Arc::new(Mutex::new(SortScan::new(runs, self.comp.clone()))))
     }
     fn blocks_accessed(&self) -> i32 {
         // does not include the one-time cost of sorting
