@@ -37,19 +37,14 @@ impl SortPlan {
             sch,
         }
     }
-    fn copy(
-        &mut self,
-        src: Arc<Mutex<dyn Scan>>,
-        dest: Arc<Mutex<dyn UpdateScan>>,
-    ) -> Result<bool> {
-        dest.lock().unwrap().insert()?;
+    fn copy(&self, src: Arc<Mutex<dyn Scan>>, dest: Arc<Mutex<dyn UpdateScan>>) -> bool {
+        dest.lock().unwrap().insert().unwrap();
         for fldname in self.sch.fields() {
-            dest.lock()
-                .unwrap()
-                .set_val(fldname, src.lock().unwrap().get_val(fldname)?)?;
+            let srcval = src.lock().unwrap().get_val(fldname).unwrap();
+            dest.lock().unwrap().set_val(fldname, srcval).unwrap();
         }
 
-        Ok(src.lock().unwrap().next())
+        src.lock().unwrap().next()
     }
 }
 fn split_into_runs(src: Arc<Mutex<dyn Scan>>) -> Vec<TempTable> {
