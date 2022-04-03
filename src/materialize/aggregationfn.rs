@@ -2,6 +2,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::query::{constant::Constant, scan::Scan};
 
+pub mod maxfn;
+
 pub trait AggregationFn {
     fn process_first(&mut self, scan: Arc<Mutex<dyn Scan>>);
     fn process_next(&mut self, scan: Arc<Mutex<dyn Scan>>);
