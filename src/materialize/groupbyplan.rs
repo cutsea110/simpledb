@@ -1,6 +1,5 @@
-use std::sync::{Arc, Mutex};
-
 use anyhow::Result;
+use std::sync::{Arc, Mutex};
 
 use super::{aggregationfn::AggregationFn, groupbyscan::GroupByScan, sortplan::SortPlan};
 use crate::{
@@ -8,9 +7,6 @@ use crate::{
 };
 
 pub struct GroupByPlan {
-    // static member (shared by all Materializeplan and Temptable)
-    next_table_num: Arc<Mutex<i32>>,
-
     p: Arc<dyn Plan>,
     groupfields: Vec<String>,
     aggfns: Vec<Arc<Mutex<dyn AggregationFn>>>,
@@ -40,7 +36,6 @@ impl GroupByPlan {
             sch.add_i32_field(&aggfn.lock().unwrap().field_name());
         }
         Self {
-            next_table_num,
             p: Arc::new(plan),
             groupfields,
             aggfns,

@@ -103,8 +103,9 @@ impl Scan for GroupByScan {
     }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
         if self.groupfields.contains(&fldname.to_string()) {
-            let val = self.groupval.as_ref().unwrap().get_val(fldname);
-            return Ok(val);
+            if let Some(val) = self.groupval.as_ref().unwrap().get_val(fldname) {
+                return Ok(val.clone());
+            }
         }
         for aggfn in self.aggfns.iter() {
             if aggfn.lock().unwrap().field_name() == fldname {

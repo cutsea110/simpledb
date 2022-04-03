@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    hash::{Hash, Hasher},
     sync::{Arc, Mutex},
 };
 
@@ -11,23 +10,19 @@ pub struct GroupValue {
     vals: HashMap<String, Constant>,
 }
 
-impl Hash for GroupValue {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        panic!("TODO")
-    }
-    fn hash_slice<H: Hasher>(data: &[Self], state: &mut H)
-    where
-        Self: Sized,
-    {
-        panic!("TODO")
-    }
-}
-
 impl GroupValue {
     pub fn new(s: Arc<Mutex<dyn Scan>>, fields: Vec<String>) -> Self {
-        panic!("TODO")
+        let mut vals = HashMap::<String, Constant>::new();
+        for fldname in fields.iter() {
+            vals.insert(
+                fldname.to_string(),
+                s.lock().unwrap().get_val(fldname).unwrap(),
+            );
+        }
+
+        Self { vals }
     }
-    pub fn get_val(&self, fldname: &str) -> Constant {
-        panic!("TODO")
+    pub fn get_val(&self, fldname: &str) -> Option<&Constant> {
+        self.vals.get(fldname)
     }
 }

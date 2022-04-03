@@ -1,16 +1,15 @@
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
+use super::{
+    materializeplan::MaterializePlan, recordcomparator::RecordComparator, sortscan::SortScan,
+    temptable::TempTable,
+};
 use crate::{
     plan::plan::Plan,
     query::{scan::Scan, updatescan::UpdateScan},
     record::schema::Schema,
     tx::transaction::Transaction,
-};
-
-use super::{
-    materializeplan::MaterializePlan, recordcomparator::RecordComparator, sortscan::SortScan,
-    temptable::TempTable,
 };
 
 #[derive(Clone)]
