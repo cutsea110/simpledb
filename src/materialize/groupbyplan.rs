@@ -13,7 +13,7 @@ pub struct GroupByPlan {
 
     p: Arc<dyn Plan>,
     groupfields: Vec<String>,
-    aggfns: Vec<Arc<dyn AggregationFn>>,
+    aggfns: Vec<Arc<Mutex<dyn AggregationFn>>>,
     sch: Arc<Schema>,
 }
 
@@ -23,7 +23,7 @@ impl GroupByPlan {
         tx: Arc<Mutex<Transaction>>,
         p: Arc<dyn Plan>,
         groupfields: Vec<String>,
-        aggfns: Vec<Arc<dyn AggregationFn>>,
+        aggfns: Vec<Arc<Mutex<dyn AggregationFn>>>,
     ) -> Self {
         let plan = SortPlan::new(
             Arc::clone(&next_table_num),
@@ -37,7 +37,7 @@ impl GroupByPlan {
             sch.add(fldname, plan.schema());
         }
         for aggfn in aggfns.iter() {
-            sch.add_i32_field(&aggfn.field_name());
+            sch.add_i32_field(&aggfn.lock().unwrap().field_name());
         }
         Self {
             next_table_num,

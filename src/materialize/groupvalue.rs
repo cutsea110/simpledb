@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
 use crate::query::{constant::Constant, scan::Scan};
@@ -24,7 +24,7 @@ impl Hash for GroupValue {
 }
 
 impl GroupValue {
-    pub fn new(s: Arc<dyn Scan>, fields: Vec<String>) -> Self {
+    pub fn new(s: Arc<Mutex<dyn Scan>>, fields: Vec<String>) -> Self {
         panic!("TODO")
     }
     pub fn get_val(&self, fldname: &str) -> Constant {
