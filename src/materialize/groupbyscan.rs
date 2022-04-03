@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 
@@ -18,7 +18,7 @@ pub struct GroupByScan {
 
 impl GroupByScan {
     pub fn new(
-        s: Arc<dyn Scan>,
+        s: Arc<Mutex<dyn Scan>>,
         groupfields: Vec<String>,
         aggfns: Vec<Arc<dyn AggregationFn>>,
     ) -> Self {
