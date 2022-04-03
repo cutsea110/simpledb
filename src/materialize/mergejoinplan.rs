@@ -1,10 +1,28 @@
 use anyhow::Result;
+use core::fmt;
 use std::sync::{Arc, Mutex};
 
+use super::mergejoinscan::MergeJoinScan;
 use crate::{
     materialize::sortplan::SortPlan, plan::plan::Plan, query::scan::Scan, record::schema::Schema,
     tx::transaction::Transaction,
 };
+
+#[derive(Debug)]
+pub enum MergeJoinPlanError {
+    DowncastError,
+}
+
+impl std::error::Error for MergeJoinPlanError {}
+impl fmt::Display for MergeJoinPlanError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MergeJoinPlanError::DowncastError => {
+                write!(f, "downcast error")
+            }
+        }
+    }
+}
 
 pub struct MergeJoinPlan {
     p1: Arc<dyn Plan>,
@@ -45,7 +63,19 @@ impl MergeJoinPlan {
 
 impl Plan for MergeJoinPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
-        panic!("TODO")
+        let s1 = self.p1.open()?;
+        if let Ok(s2) = self.p2.open()?.lock().unwrap().as_sort_scan() {
+            let scan = MergeJoinScan::new(
+                s1,
+                Arc::new(Mutex::new(s2.clone())),
+                &self.fldname1,
+                &self.fldname2,
+            );
+
+            return Ok(Arc::new(Mutex::new(scan)));
+        }
+
+        Err(From::from(MergeJoinPlanError::DowncastError))
     }
     fn blocks_accessed(&self) -> i32 {
         panic!("TODO")

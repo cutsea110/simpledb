@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::{
     index::Index,
+    materialize::sortscan::SortScan,
     query::{constant::Constant, scan::Scan, updatescan::UpdateScan},
     record::tablescan::TableScan,
 };
@@ -109,6 +110,9 @@ impl Scan for IndexJoinScan {
         Err(From::from(IndexJoinScanError::DowncastError))
     }
     fn as_table_scan(&mut self) -> Result<&mut TableScan> {
+        Err(From::from(IndexJoinScanError::DowncastError))
+    }
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
         Err(From::from(IndexJoinScanError::DowncastError))
     }
 }

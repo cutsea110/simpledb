@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
-use super::{aggregationfn::AggregationFn, groupvalue::GroupValue};
+use super::{aggregationfn::AggregationFn, groupvalue::GroupValue, sortscan::SortScan};
 use crate::{
     query::{constant::Constant, scan::Scan, updatescan::UpdateScan},
     record::tablescan::TableScan,
@@ -137,6 +137,9 @@ impl Scan for GroupByScan {
         Err(From::from(GroupByScanError::DowncastError))
     }
     fn as_table_scan(&mut self) -> Result<&mut TableScan> {
+        Err(From::from(GroupByScanError::DowncastError))
+    }
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
         Err(From::from(GroupByScanError::DowncastError))
     }
 }

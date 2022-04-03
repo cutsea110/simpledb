@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use super::{layout::Layout, recordpage::RecordPage, rid::RID, schema::FieldType};
 use crate::{
     file::block_id::BlockId,
+    materialize::sortscan::SortScan,
     query::{constant::Constant, scan::Scan, updatescan::UpdateScan},
     tx::transaction::Transaction,
 };
@@ -12,6 +13,7 @@ use crate::{
 #[derive(Debug)]
 pub enum TableScanError {
     NoRecordPage,
+    DowncastError,
 }
 
 impl std::error::Error for TableScanError {}
@@ -20,6 +22,9 @@ impl fmt::Display for TableScanError {
         match self {
             TableScanError::NoRecordPage => {
                 write!(f, "no record page")
+            }
+            TableScanError::DowncastError => {
+                write!(f, "downcast error")
             }
         }
     }
@@ -101,6 +106,9 @@ impl Scan for TableScan {
     }
     fn as_table_scan(&mut self) -> Result<&mut TableScan> {
         Ok(self)
+    }
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
+        Err(From::from(TableScanError::DowncastError))
     }
 }
 

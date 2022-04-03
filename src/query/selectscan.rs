@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use super::{predicate::Predicate, scan::Scan, updatescan::UpdateScan};
 use crate::{
+    materialize::sortscan::SortScan,
     query::constant::Constant,
     record::{rid::RID, tablescan::TableScan},
 };
@@ -62,6 +63,9 @@ impl Scan for SelectScan {
         Ok(self)
     }
     fn as_table_scan(&mut self) -> Result<&mut TableScan> {
+        Err(From::from(SelectScanError::DowncastError))
+    }
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
         Err(From::from(SelectScanError::DowncastError))
     }
 }

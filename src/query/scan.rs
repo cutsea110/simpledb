@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use super::{constant::Constant, updatescan::UpdateScan};
-use crate::record::tablescan::TableScan;
+use crate::{materialize::sortscan::SortScan, record::tablescan::TableScan};
 
 pub trait Scan {
     fn before_first(&mut self) -> Result<()>;
@@ -14,4 +14,5 @@ pub trait Scan {
 
     fn to_update_scan(&mut self) -> Result<&mut dyn UpdateScan>;
     fn as_table_scan(&mut self) -> Result<&mut TableScan>;
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan>;
 }

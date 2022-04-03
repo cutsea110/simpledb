@@ -166,4 +166,7 @@ impl Scan for SortScan {
     fn as_table_scan(&mut self) -> Result<&mut TableScan> {
         Err(From::from(SortScanError::DowncastError))
     }
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
+        Ok(self)
+    }
 }

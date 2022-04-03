@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
-use crate::record::tablescan::TableScan;
+use crate::{materialize::sortscan::SortScan, record::tablescan::TableScan};
 
 use super::{constant::Constant, scan::Scan};
 
@@ -86,6 +86,9 @@ impl Scan for ProductScan {
         Err(From::from(ProductScanError::DowncastError))
     }
     fn as_table_scan(&mut self) -> Result<&mut TableScan> {
+        Err(From::from(ProductScanError::DowncastError))
+    }
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
         Err(From::from(ProductScanError::DowncastError))
     }
 }

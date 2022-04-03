@@ -51,4 +51,7 @@ impl Scan for MergeJoinScan {
     fn as_table_scan(&mut self) -> Result<&mut crate::record::tablescan::TableScan> {
         panic!("TODO")
     }
+    fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
+        panic!("TODO")
+    }
 }
