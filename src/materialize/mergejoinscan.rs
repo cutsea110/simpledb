@@ -1,8 +1,25 @@
 use anyhow::Result;
+use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use super::sortscan::SortScan;
 use crate::query::{constant::Constant, scan::Scan};
+
+#[derive(Debug)]
+pub enum MergeJoinScanError {
+    DowncastError,
+}
+
+impl std::error::Error for MergeJoinScanError {}
+impl fmt::Display for MergeJoinScanError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MergeJoinScanError::DowncastError => {
+                write!(f, "downcast error")
+            }
+        }
+    }
+}
 
 pub struct MergeJoinScan {
     s1: Arc<Mutex<dyn Scan>>,
@@ -19,31 +36,83 @@ impl MergeJoinScan {
         fldname1: &str,
         fldname2: &str,
     ) -> Self {
-        panic!("TODO")
+        let mut scan = Self {
+            s1,
+            s2,
+            fldname1: fldname1.to_string(),
+            fldname2: fldname2.to_string(),
+            joinval: None,
+        };
+        scan.before_first().unwrap();
+
+        scan
     }
 }
 
 impl Scan for MergeJoinScan {
     fn before_first(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.s1.lock().unwrap().before_first()?;
+        self.s2.lock().unwrap().before_first()?;
+
+        Ok(())
     }
     fn next(&mut self) -> bool {
-        panic!("TODO")
+        let mut hasmore2 = self.s2.lock().unwrap().next();
+        if hasmore2 && self.s2.lock().unwrap().get_val(&self.fldname2).ok() == self.joinval {
+            return true;
+        }
+
+        let mut hasmore1 = self.s1.lock().unwrap().next();
+        if hasmore1 && self.s1.lock().unwrap().get_val(&self.fldname1).ok() == self.joinval {
+            self.s2.lock().unwrap().restore_position();
+            return true;
+        }
+
+        while hasmore1 && hasmore2 {
+            let v1 = self.s1.lock().unwrap().get_val(&self.fldname1).unwrap();
+            let v2 = self.s2.lock().unwrap().get_val(&self.fldname2).unwrap();
+            if v1 < v2 {
+                hasmore1 = self.s1.lock().unwrap().next();
+            } else if v1 > v2 {
+                hasmore2 = self.s2.lock().unwrap().next();
+            } else {
+                self.s2.lock().unwrap().save_position();
+                self.joinval = self.s2.lock().unwrap().get_val(&self.fldname2).ok();
+                return true;
+            }
+        }
+
+        false
     }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
-        panic!("TODO")
+        if self.s2.lock().unwrap().has_field(fldname) {
+            return self.s1.lock().unwrap().get_i32(fldname);
+        } else {
+            return self.s2.lock().unwrap().get_i32(fldname);
+        }
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
-        panic!("TODO")
+        if self.s2.lock().unwrap().has_field(fldname) {
+            return self.s1.lock().unwrap().get_string(fldname);
+        } else {
+            return self.s2.lock().unwrap().get_string(fldname);
+        }
     }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
-        panic!("TODO")
+        if self.s2.lock().unwrap().has_field(fldname) {
+            return self.s1.lock().unwrap().get_val(fldname);
+        } else {
+            return self.s2.lock().unwrap().get_val(fldname);
+        }
     }
     fn has_field(&self, fldname: &str) -> bool {
-        panic!("TODO")
+        self.s1.lock().unwrap().has_field(fldname) || self.s2.lock().unwrap().has_field(fldname)
     }
     fn close(&mut self) -> Result<()> {
-        panic!("TODO")
+        self.s1.lock().unwrap().close()?;
+        self.s2.lock().unwrap().close()?;
+
+        Ok(())
     }
     fn to_update_scan(&mut self) -> Result<&mut dyn crate::query::updatescan::UpdateScan> {
         panic!("TODO")
