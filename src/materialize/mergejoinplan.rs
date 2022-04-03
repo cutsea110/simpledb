@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::sync::{Arc, Mutex};
+use std::{
+    cmp::max,
+    sync::{Arc, Mutex},
+};
 
 use super::mergejoinscan::MergeJoinScan;
 use crate::{
@@ -78,15 +81,24 @@ impl Plan for MergeJoinPlan {
         Err(From::from(MergeJoinPlanError::DowncastError))
     }
     fn blocks_accessed(&self) -> i32 {
-        panic!("TODO")
+        self.p1.blocks_accessed() + self.p2.blocks_accessed()
     }
     fn records_output(&self) -> i32 {
-        panic!("TODO")
+        let maxvals = max(
+            self.p1.distinct_values(&self.fldname1),
+            self.p2.distinct_values(&self.fldname2),
+        );
+
+        (self.p1.records_output() * self.p2.records_output()) / maxvals
     }
     fn distinct_values(&self, fldname: &str) -> i32 {
-        panic!("TODO")
+        if self.p1.schema().has_field(fldname) {
+            self.p1.distinct_values(fldname)
+        } else {
+            self.p2.distinct_values(fldname)
+        }
     }
     fn schema(&self) -> Arc<Schema> {
-        panic!("TODO")
+        Arc::clone(&self.sch)
     }
 }
