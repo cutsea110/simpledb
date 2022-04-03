@@ -28,7 +28,7 @@ impl AggregationFn for MaxFn {
         }
     }
     fn field_name(&self) -> String {
-        format!("maxof{}", self.fldname)
+        format!("max({})", self.fldname)
     }
     fn value(&self) -> Constant {
         self.val.clone().expect("access value")
