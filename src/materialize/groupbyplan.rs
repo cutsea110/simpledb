@@ -35,6 +35,7 @@ impl GroupByPlan {
         for aggfn in aggfns.iter() {
             sch.add_i32_field(&aggfn.lock().unwrap().field_name());
         }
+
         Self {
             p: Arc::new(plan),
             groupfields,
