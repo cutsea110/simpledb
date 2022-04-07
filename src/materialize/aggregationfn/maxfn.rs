@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use super::AggregationFn;
 use crate::query::{constant::Constant, scan::Scan};
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct MaxFn {
     fldname: String,
     val: Option<Constant>,
