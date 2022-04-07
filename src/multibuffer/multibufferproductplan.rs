@@ -2,7 +2,7 @@ use anyhow::Result;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
-use super::productscan::MultibufferProductScan;
+use super::multibufferproductscan::MultibufferProductScan;
 use crate::{
     materialize::{materializeplan::MaterializePlan, temptable::TempTable},
     plan::plan::Plan,
