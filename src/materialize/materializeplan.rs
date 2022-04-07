@@ -1,14 +1,13 @@
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
+use super::temptable::TempTable;
 use crate::{
     plan::plan::Plan,
     query::scan::Scan,
     record::{layout::Layout, schema::Schema},
     tx::transaction::Transaction,
 };
-
-use super::temptable::TempTable;
 
 pub struct MaterializePlan {
     // static member (shared by all Materializeplan and Temptable)
