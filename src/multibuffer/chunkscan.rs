@@ -42,7 +42,7 @@ pub struct ChunkScan {
 impl ChunkScan {
     pub fn new(
         tx: Arc<Mutex<Transaction>>,
-        filename: String,
+        filename: &str,
         layout: Arc<Layout>,
         startbnum: i32,
         endbnum: i32,
@@ -57,7 +57,7 @@ impl ChunkScan {
         let mut scan = Self {
             buffs,
             tx,
-            filename,
+            filename: filename.to_string(),
             layout,
             startbnum,
             endbnum,
