@@ -28,6 +28,7 @@ impl fmt::Display for GroupByScanError {
     }
 }
 
+#[derive(Clone)]
 pub struct GroupByScan {
     s: Arc<Mutex<dyn Scan>>,
     groupfields: Vec<String>,

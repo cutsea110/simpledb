@@ -1,7 +1,6 @@
+use anyhow::Result;
 use core::panic;
 use std::sync::{Arc, Mutex};
-
-use anyhow::Result;
 
 use crate::{
     materialize::sortscan::SortScan,
@@ -10,6 +9,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Clone)]
 pub struct MultibufferProductScan {
     tx: Arc<Mutex<Transaction>>,
     lhsscan: Arc<Mutex<dyn Scan>>,

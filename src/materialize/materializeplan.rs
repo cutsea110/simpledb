@@ -9,6 +9,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Clone)]
 pub struct MaterializePlan {
     // static member (shared by all Materializeplan and Temptable)
     next_table_num: Arc<Mutex<i32>>,

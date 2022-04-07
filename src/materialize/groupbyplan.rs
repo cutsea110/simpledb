@@ -6,6 +6,7 @@ use crate::{
     plan::plan::Plan, query::scan::Scan, record::schema::Schema, tx::transaction::Transaction,
 };
 
+#[derive(Clone)]
 pub struct GroupByPlan {
     p: Arc<dyn Plan>,
     groupfields: Vec<String>,

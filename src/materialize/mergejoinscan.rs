@@ -21,6 +21,7 @@ impl fmt::Display for MergeJoinScanError {
     }
 }
 
+#[derive(Clone)]
 pub struct MergeJoinScan {
     s1: Arc<Mutex<dyn Scan>>,
     s2: Arc<Mutex<SortScan>>,

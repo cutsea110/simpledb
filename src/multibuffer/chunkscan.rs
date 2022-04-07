@@ -26,6 +26,7 @@ impl fmt::Display for ChunkScanError {
     }
 }
 
+#[derive(Clone)]
 pub struct ChunkScan {
     buffs: Vec<RecordPage>,
     tx: Arc<Mutex<Transaction>>,

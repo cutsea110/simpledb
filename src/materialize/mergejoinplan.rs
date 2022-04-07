@@ -27,6 +27,7 @@ impl fmt::Display for MergeJoinPlanError {
     }
 }
 
+#[derive(Clone)]
 pub struct MergeJoinPlan {
     p1: Arc<dyn Plan>,
     p2: Arc<dyn Plan>,
