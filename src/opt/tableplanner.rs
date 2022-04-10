@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     metadata::{indexmanager::IndexInfo, manager::MetadataMgr},
-    plan::tableplan::TablePlan,
+    plan::{plan::Plan, tableplan::TablePlan},
     query::predicate::Predicate,
     record::schema::Schema,
     tx::transaction::Transaction,
@@ -26,6 +26,30 @@ impl TablePlanner {
         tx: Arc<Mutex<Transaction>>,
         mdm: Arc<Mutex<MetadataMgr>>,
     ) -> Self {
+        panic!("TODO")
+    }
+    pub fn make_select_plan() -> Arc<dyn Plan> {
+        panic!("TODO")
+    }
+    pub fn make_join_plan(current: Arc<dyn Plan>) -> Arc<dyn Plan> {
+        panic!("TODO")
+    }
+    pub fn make_product_plan(current: Arc<dyn Plan>) -> Arc<dyn Plan> {
+        panic!("TODO")
+    }
+    fn make_index_select() -> Arc<dyn Plan> {
+        panic!("TODO")
+    }
+    fn make_index_join(current: Arc<dyn Plan>, currsch: Arc<Schema>) -> Arc<dyn Plan> {
+        panic!("TODO")
+    }
+    fn make_product_join(current: Arc<dyn Plan>, currsch: Arc<Schema>) -> Arc<dyn Plan> {
+        panic!("TODO")
+    }
+    fn add_select_pred(p: Arc<dyn Plan>) -> Arc<dyn Plan> {
+        panic!("TODO")
+    }
+    fn add_join_pred(current: Arc<dyn Plan>, currsch: Arc<Schema>) -> Arc<dyn Plan> {
         panic!("TODO")
     }
 }
