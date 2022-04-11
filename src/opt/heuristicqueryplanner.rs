@@ -11,13 +11,17 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct HeuristicQueryPlanner {
+    // static member (shared by all Materializeplan and Temptable)
+    next_table_num: Arc<Mutex<i32>>,
+
     tableplanners: Vec<TablePlanner>,
     mdm: Arc<Mutex<MetadataMgr>>,
 }
 
 impl HeuristicQueryPlanner {
-    pub fn new(mdm: Arc<Mutex<MetadataMgr>>) -> Self {
+    pub fn new(next_table_num: Arc<Mutex<i32>>, mdm: Arc<Mutex<MetadataMgr>>) -> Self {
         Self {
+            next_table_num,
             tableplanners: vec![],
             mdm,
         }
@@ -31,11 +35,12 @@ impl HeuristicQueryPlanner {
             let tp = &self.tableplanners[i];
             let plan = tp.make_select_plan();
             if besttp.is_none()
-                || plan.records_output() < bestplan.as_ref().unwrap().records_output()
+                || plan.as_ref().unwrap().records_output()
+                    < bestplan.as_ref().unwrap().records_output()
             {
                 besttpindex = i as i32;
                 besttp = Some(tp);
-                bestplan = Some(plan);
+                bestplan = plan;
             }
         }
 
@@ -75,18 +80,19 @@ impl HeuristicQueryPlanner {
             let tp = &self.tableplanners[i];
             let plan = tp.make_product_plan(Arc::clone(&current));
             if besttp.is_none()
-                || plan.records_output() < bestplan.as_ref().unwrap().records_output()
+                || plan.as_ref().unwrap().records_output()
+                    < bestplan.as_ref().unwrap().records_output()
             {
                 besttpindex = i as i32;
                 besttp = Some(tp);
-                bestplan = Some(plan);
+                bestplan = plan;
             }
         }
 
         self.tableplanners.remove(besttpindex as usize);
         Ok(bestplan.unwrap())
     }
-    pub fn set_planner(&mut self, p: Planner) {
+    pub fn set_planner(&mut self, _p: Planner) {
         // for use in planning views, which
         // for simplicity this code doesn't do.
     }
@@ -101,6 +107,7 @@ impl QueryPlanner for HeuristicQueryPlanner {
         // Step 1, Create a TablePlanner object for each mentioned table
         for tblname in data.tables().iter() {
             let tp = TablePlanner::new(
+                Arc::clone(&self.next_table_num),
                 tblname,
                 data.pred().clone(),
                 Arc::clone(&tx),
