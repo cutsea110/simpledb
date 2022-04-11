@@ -5,10 +5,11 @@ use super::tableplanner::TablePlanner;
 use crate::{
     metadata::manager::MetadataMgr,
     parser::querydata::QueryData,
-    plan::{plan::Plan, planner::Planner, queryplanner::QueryPlanner},
+    plan::{plan::Plan, planner::Planner, projectplan::ProjectPlan, queryplanner::QueryPlanner},
     tx::transaction::Transaction,
 };
 
+#[derive(Debug, Clone)]
 pub struct HeuristicQueryPlanner {
     tableplanners: Vec<TablePlanner>,
     mdm: Arc<Mutex<MetadataMgr>>,
@@ -16,16 +17,74 @@ pub struct HeuristicQueryPlanner {
 
 impl HeuristicQueryPlanner {
     pub fn new(mdm: Arc<Mutex<MetadataMgr>>) -> Self {
-        panic!("TODO")
+        Self {
+            tableplanners: vec![],
+            mdm,
+        }
     }
-    fn get_lowest_select_plan(&self) -> Result<Arc<dyn Plan>> {
-        panic!("TODO")
+    fn get_lowest_select_plan(&mut self) -> Result<Arc<dyn Plan>> {
+        // We must to keep this index in order to remove the TablePlanner after.
+        let mut besttpindex = -1;
+        let mut besttp: Option<&TablePlanner> = None;
+        let mut bestplan: Option<Arc<dyn Plan>> = None;
+        for i in 0..self.tableplanners.len() {
+            let tp = &self.tableplanners[i];
+            let plan = tp.make_select_plan();
+            if besttp.is_none()
+                || plan.records_output() < bestplan.as_ref().unwrap().records_output()
+            {
+                besttpindex = i as i32;
+                besttp = Some(tp);
+                bestplan = Some(plan);
+            }
+        }
+
+        self.tableplanners.remove(besttpindex as usize);
+        Ok(bestplan.unwrap())
     }
-    fn get_lowest_join_plan(&self, current: Arc<dyn Plan>) -> Result<Arc<dyn Plan>> {
-        panic!("TODO")
+    fn get_lowest_join_plan(&mut self, current: Arc<dyn Plan>) -> Result<Arc<dyn Plan>> {
+        // We must to keep this index in order to remove the TablePlanner after.
+        let mut besttpindex = -1;
+        let mut besttp: Option<&TablePlanner> = None;
+        let mut bestplan: Option<Arc<dyn Plan>> = None;
+        for i in 0..self.tableplanners.len() {
+            let tp = &self.tableplanners[i];
+            let plan = tp.make_join_plan(Arc::clone(&current));
+            if plan.is_some()
+                && (besttp.is_none()
+                    || plan.as_ref().unwrap().records_output()
+                        < bestplan.as_ref().unwrap().records_output())
+            {
+                besttpindex = i as i32;
+                besttp = Some(tp);
+                bestplan = plan;
+            }
+        }
+
+        if bestplan.is_some() {
+            self.tableplanners.remove(besttpindex as usize);
+        }
+        Ok(bestplan.unwrap())
     }
-    fn get_lowest_product_plan(&self, current: Arc<dyn Plan>) -> Result<Arc<dyn Plan>> {
-        panic!("TODO")
+    fn get_lowest_product_plan(&mut self, current: Arc<dyn Plan>) -> Result<Arc<dyn Plan>> {
+        // We must to keep this index in order to remove the TablePlanner after.
+        let mut besttpindex = -1;
+        let mut besttp: Option<&TablePlanner> = None;
+        let mut bestplan: Option<Arc<dyn Plan>> = None;
+        for i in 0..self.tableplanners.len() {
+            let tp = &self.tableplanners[i];
+            let plan = tp.make_product_plan(Arc::clone(&current));
+            if besttp.is_none()
+                || plan.records_output() < bestplan.as_ref().unwrap().records_output()
+            {
+                besttpindex = i as i32;
+                besttp = Some(tp);
+                bestplan = Some(plan);
+            }
+        }
+
+        self.tableplanners.remove(besttpindex as usize);
+        Ok(bestplan.unwrap())
     }
     pub fn set_planner(&mut self, p: Planner) {
         // for use in planning views, which
@@ -39,6 +98,33 @@ impl QueryPlanner for HeuristicQueryPlanner {
         data: QueryData,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<Arc<dyn Plan>> {
-        panic!("TODO")
+        // Step 1, Create a TablePlanner object for each mentioned table
+        for tblname in data.tables().iter() {
+            let tp = TablePlanner::new(
+                tblname,
+                data.pred().clone(),
+                Arc::clone(&tx),
+                Arc::clone(&self.mdm),
+            );
+            self.tableplanners.push(tp)
+        }
+
+        // Step 2, Choose the lowest-size plan to begin the join order
+        let mut currentplan = self.get_lowest_select_plan()?;
+
+        // Step 3, Repeatedly add a plan to the join order
+        while !self.tableplanners.is_empty() {
+            if let Ok(p) = self.get_lowest_join_plan(Arc::clone(&currentplan)) {
+                currentplan = p;
+            } else {
+                currentplan = self.get_lowest_product_plan(currentplan)?;
+            }
+        }
+
+        // Step 4, Project on the field names and return
+        Ok(Arc::new(ProjectPlan::new(
+            currentplan,
+            data.fields().clone(),
+        )))
     }
 }

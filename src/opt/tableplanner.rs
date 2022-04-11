@@ -11,6 +11,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Debug, Clone)]
 pub struct TablePlanner {
     myplan: Arc<TablePlan>,
     mypred: Predicate,
@@ -28,16 +29,16 @@ impl TablePlanner {
     ) -> Self {
         panic!("TODO")
     }
-    pub fn make_select_plan() -> Arc<dyn Plan> {
+    pub fn make_select_plan(&self) -> Arc<dyn Plan> {
         panic!("TODO")
     }
-    pub fn make_join_plan(current: Arc<dyn Plan>) -> Arc<dyn Plan> {
+    pub fn make_join_plan(&self, current: Arc<dyn Plan>) -> Option<Arc<dyn Plan>> {
         panic!("TODO")
     }
-    pub fn make_product_plan(current: Arc<dyn Plan>) -> Arc<dyn Plan> {
+    pub fn make_product_plan(&self, current: Arc<dyn Plan>) -> Arc<dyn Plan> {
         panic!("TODO")
     }
-    fn make_index_select() -> Arc<dyn Plan> {
+    fn make_index_select(&self) -> Arc<dyn Plan> {
         panic!("TODO")
     }
     fn make_index_join(current: Arc<dyn Plan>, currsch: Arc<Schema>) -> Arc<dyn Plan> {
