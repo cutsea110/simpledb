@@ -126,4 +126,12 @@ impl Plan for MultibufferProductPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
+    fn dump(&self) -> String {
+        format!(
+            "MultibufferProductPlan{{lhs:{}, rhs:{}, fields:{:?}}}",
+            self.lhs.dump(),
+            self.rhs.dump(),
+            self.schema.fields()
+        )
+    }
 }

@@ -71,4 +71,7 @@ impl Plan for MaterializePlan {
     fn schema(&self) -> Arc<Schema> {
         self.srcplan.schema()
     }
+    fn dump(&self) -> String {
+        format!("MaterializePlan{{srcplan:{}}}", self.srcplan.dump())
+    }
 }

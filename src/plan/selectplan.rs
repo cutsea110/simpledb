@@ -43,6 +43,9 @@ impl Plan for SelectPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.p.schema())
     }
+    fn dump(&self) -> String {
+        format!("SelectPlan{{p:{}, pred:{}}}", self.p.dump(), self.pred)
+    }
 }
 
 impl SelectPlan {

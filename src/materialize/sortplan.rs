@@ -165,4 +165,7 @@ impl Plan for SortPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
+    fn dump(&self) -> String {
+        format!("SortPlan{{p:{}, comp:{:?}}}", self.p.dump(), self.comp)
+    }
 }

@@ -37,6 +37,13 @@ impl Plan for ProductPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
+    fn dump(&self) -> String {
+        format!(
+            "ProductPlan{{p1:{}, p2:{}}}",
+            self.p1.dump(),
+            self.p2.dump()
+        )
+    }
 }
 
 impl ProductPlan {

@@ -81,4 +81,12 @@ impl Plan for IndexJoinPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
+    fn dump(&self) -> String {
+        format!(
+            "IndexJoinPlan{{p1:{}, p2:{}, joinfield:{}}}",
+            self.p1.dump(),
+            self.p2.dump(),
+            self.joinfield
+        )
+    }
 }

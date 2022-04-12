@@ -39,6 +39,9 @@ impl Plan for TablePlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.layout.schema())
     }
+    fn dump(&self) -> String {
+        format!("TablePlan{{tblname:{}}}", self.tblname)
+    }
 }
 
 impl TablePlan {

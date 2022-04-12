@@ -74,4 +74,12 @@ impl Plan for GroupByPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
+    fn dump(&self) -> String {
+        // TODO: aggfns
+        format!(
+            "GroupByPlan{{p:{}, groupfields:{:?}}}",
+            self.p.dump(),
+            self.groupfields
+        )
+    }
 }

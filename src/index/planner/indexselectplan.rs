@@ -63,4 +63,7 @@ impl Plan for IndexSelectPlan {
     fn schema(&self) -> Arc<Schema> {
         self.p.schema()
     }
+    fn dump(&self) -> String {
+        format!("IndexSelectPlan{{p:{}, val:{}}}", self.p.dump(), self.val)
+    }
 }

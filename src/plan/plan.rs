@@ -9,4 +9,6 @@ pub trait Plan {
     fn records_output(&self) -> i32;
     fn distinct_values(&self, fldname: &str) -> i32;
     fn schema(&self) -> Arc<Schema>;
+    // my own extends
+    fn dump(&self) -> String;
 }

@@ -33,6 +33,13 @@ impl Plan for ProjectPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
+    fn dump(&self) -> String {
+        format!(
+            "ProjectPlan{{p:{}, fields:{:?}}}",
+            self.p.dump(),
+            self.schema.fields()
+        )
+    }
 }
 
 impl ProjectPlan {
