@@ -57,10 +57,7 @@ impl MultibufferProductScan {
         let filesize = tx.lock().unwrap().size(filename).unwrap();
         let available = tx.lock().unwrap().available_buffs() as i32;
         let chunksize = bufferneeds::best_factor(available, filesize);
-        println!(
-            "DEBUG: filename: {}, filesize: {}, available: {}, chunksize: {}",
-            filename, filesize, available, chunksize
-        );
+        dbg!(filename, filesize, available, chunksize);
 
         let mut scan = Self {
             tx,
@@ -101,7 +98,6 @@ impl MultibufferProductScan {
             Arc::clone(&self.lhsscan),
             self.rhsscan.as_ref().unwrap().clone(),
         );
-        println!("HAPPY!!!");
         self.prodscan = Some(Arc::new(Mutex::new(prodscan)));
         self.nextblknum = end + 1;
 
