@@ -14,6 +14,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Debug, Clone)]
 pub struct BTreeIndex {
     tx: Arc<Mutex<Transaction>>,
     dir_layout: Arc<Layout>,

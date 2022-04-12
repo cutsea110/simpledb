@@ -26,6 +26,7 @@ impl fmt::Display for BTreeLeafError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct BTreeLeaf {
     tx: Arc<Mutex<Transaction>>,
     layout: Arc<Layout>,

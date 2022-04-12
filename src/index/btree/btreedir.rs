@@ -7,6 +7,7 @@ use crate::{
     tx::transaction::Transaction,
 };
 
+#[derive(Debug, Clone)]
 pub struct BTreeDir {
     tx: Arc<Mutex<Transaction>>,
     layout: Arc<Layout>,

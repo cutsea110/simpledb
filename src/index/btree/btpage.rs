@@ -28,6 +28,7 @@ impl fmt::Display for BTPageError {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct BTPage {
     tx: Arc<Mutex<Transaction>>,
     currentblk: Option<BlockId>,

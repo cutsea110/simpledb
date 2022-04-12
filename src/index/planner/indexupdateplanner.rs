@@ -31,6 +31,7 @@ impl fmt::Display for IndexUpdatePlannerError {
     }
 }
 
+#[derive(Debug)]
 pub struct IndexUpdatePlanner {
     mdm: Arc<Mutex<MetadataMgr>>,
 }

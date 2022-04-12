@@ -14,6 +14,7 @@ use crate::{
 
 pub const NUM_BUCKETS: i32 = 100;
 
+#[derive(Debug)]
 pub struct HashIndex {
     tx: Arc<Mutex<Transaction>>,
     idxname: String,
