@@ -1,4 +1,5 @@
 use anyhow::Result;
+use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use super::tableplanner::TablePlanner;
@@ -8,6 +9,22 @@ use crate::{
     plan::{plan::Plan, planner::Planner, projectplan::ProjectPlan, queryplanner::QueryPlanner},
     tx::transaction::Transaction,
 };
+
+#[derive(Debug)]
+pub enum HeuristicQueryPlannerError {
+    NoPlan,
+}
+
+impl std::error::Error for HeuristicQueryPlannerError {}
+impl fmt::Display for HeuristicQueryPlannerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            HeuristicQueryPlannerError::NoPlan => {
+                write!(f, "no plan")
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct HeuristicQueryPlanner {
@@ -50,18 +67,16 @@ impl HeuristicQueryPlanner {
     fn get_lowest_join_plan(&mut self, current: Arc<dyn Plan>) -> Result<Arc<dyn Plan>> {
         // We must to keep this index in order to remove the TablePlanner after.
         let mut besttpindex = -1;
-        let mut besttp: Option<&TablePlanner> = None;
         let mut bestplan: Option<Arc<dyn Plan>> = None;
         for i in 0..self.tableplanners.len() {
             let tp = &self.tableplanners[i];
             let plan = tp.make_join_plan(Arc::clone(&current));
             if plan.is_some()
-                && (besttp.is_none()
+                && (bestplan.is_none()
                     || plan.as_ref().unwrap().records_output()
                         < bestplan.as_ref().unwrap().records_output())
             {
                 besttpindex = i as i32;
-                besttp = Some(tp);
                 bestplan = plan;
             }
         }
@@ -69,28 +84,26 @@ impl HeuristicQueryPlanner {
         if bestplan.is_some() {
             self.tableplanners.remove(besttpindex as usize);
         }
-        Ok(bestplan.unwrap())
+        bestplan.ok_or_else(|| From::from(HeuristicQueryPlannerError::NoPlan))
     }
     fn get_lowest_product_plan(&mut self, current: Arc<dyn Plan>) -> Result<Arc<dyn Plan>> {
         // We must to keep this index in order to remove the TablePlanner after.
         let mut besttpindex = -1;
-        let mut besttp: Option<&TablePlanner> = None;
         let mut bestplan: Option<Arc<dyn Plan>> = None;
         for i in 0..self.tableplanners.len() {
             let tp = &self.tableplanners[i];
             let plan = tp.make_product_plan(Arc::clone(&current));
-            if besttp.is_none()
+            if bestplan.is_none()
                 || plan.as_ref().unwrap().records_output()
                     < bestplan.as_ref().unwrap().records_output()
             {
                 besttpindex = i as i32;
-                besttp = Some(tp);
                 bestplan = plan;
             }
         }
 
         self.tableplanners.remove(besttpindex as usize);
-        Ok(bestplan.unwrap())
+        bestplan.ok_or_else(|| From::from(HeuristicQueryPlannerError::NoPlan))
     }
     pub fn set_planner(&mut self, _p: Planner) {
         // for use in planning views, which

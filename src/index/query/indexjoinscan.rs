@@ -63,9 +63,8 @@ impl Scan for IndexJoinScan {
     }
     fn next(&mut self) -> bool {
         loop {
-            let mut idx = self.idx.lock().unwrap();
-            if idx.next() {
-                let rid = idx.get_data_rid().unwrap();
+            if self.idx.lock().unwrap().next() {
+                let rid = self.idx.lock().unwrap().get_data_rid().unwrap();
                 self.rhs.lock().unwrap().move_to_rid(rid).unwrap();
                 return true;
             }

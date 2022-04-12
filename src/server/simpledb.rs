@@ -11,10 +11,8 @@ use crate::{
     index::planner::indexupdateplanner::IndexUpdatePlanner,
     log::manager::LogMgr,
     metadata::{indexmanager::IndexInfo, manager::MetadataMgr},
-    plan::{
-        basicqueryplanner::BasicQueryPlanner, planner::Planner, queryplanner::QueryPlanner,
-        updateplanner::UpdatePlanner,
-    },
+    opt::heuristicqueryplanner::HeuristicQueryPlanner,
+    plan::{planner::Planner, queryplanner::QueryPlanner, updateplanner::UpdatePlanner},
     record::schema::Schema,
     tx::{concurrency::locktable::LockTable, transaction::Transaction},
 };
@@ -83,7 +81,8 @@ impl SimpleDB {
         }
         let meta = MetadataMgr::new(isnew, Arc::clone(&tx))?;
         db.mdm = Some(Arc::new(Mutex::new(meta)));
-        let qp = BasicQueryPlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
+        let next_table_num = Arc::new(Mutex::new(0));
+        let qp = HeuristicQueryPlanner::new(next_table_num, Arc::clone(&db.mdm.as_ref().unwrap()));
         db.qp = Some(Arc::new(Mutex::new(qp)));
         let up = IndexUpdatePlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
         db.up = Some(Arc::new(Mutex::new(up)));
