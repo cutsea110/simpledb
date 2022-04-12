@@ -85,11 +85,10 @@ impl TablePlanner {
     }
     fn make_index_select(&self) -> Option<Arc<dyn Plan>> {
         for fldname in self.indexes.keys() {
-            let val = self.mypred.equates_with_constant(fldname);
-            if val.is_none() {
+            if let Some(val) = self.mypred.equates_with_constant(fldname) {
                 let ii = self.indexes.get(fldname).unwrap();
                 let myplan = Arc::clone(&self.myplan);
-                let plan = IndexSelectPlan::new(myplan, ii.clone(), val.unwrap().clone());
+                let plan = IndexSelectPlan::new(myplan, ii.clone(), val.clone());
                 return Some(Arc::new(plan));
             }
         }
