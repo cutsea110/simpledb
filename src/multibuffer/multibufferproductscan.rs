@@ -111,7 +111,7 @@ impl Scan for MultibufferProductScan {
         Ok(())
     }
     fn next(&mut self) -> bool {
-        while !self.prodscan.as_ref().unwrap().lock().unwrap().next() {
+        while self.prodscan.is_none() || !self.prodscan.as_ref().unwrap().lock().unwrap().next() {
             if !self.use_next_chunk() {
                 return false;
             }
