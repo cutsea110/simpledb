@@ -26,8 +26,8 @@ impl Schema {
         self.add_field(fldname, FieldType::VARCHAR, length)
     }
     pub fn add(&mut self, fldname: &str, sch: Arc<Schema>) {
-        let fld_type = sch.field_type(fldname.clone());
-        let length = sch.length(fldname.clone());
+        let fld_type = sch.field_type(fldname);
+        let length = sch.length(fldname);
         self.add_field(fldname, fld_type, length)
     }
     pub fn add_all(&mut self, sch: Arc<Schema>) {
