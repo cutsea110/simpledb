@@ -102,7 +102,7 @@ impl Plan for MultibufferProductPlan {
         Ok(Arc::new(Mutex::new(scan)))
     }
     fn blocks_accessed(&self) -> i32 {
-        // this guesses at the % of chunks
+        // this guesses at the # of chunks
         let avail = self.tx.lock().unwrap().available_buffs() as i32;
         let size = MaterializePlan::new(
             Arc::clone(&self.next_table_num),
