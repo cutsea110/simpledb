@@ -46,23 +46,21 @@ impl HeuristicQueryPlanner {
     fn get_lowest_select_plan(&mut self) -> Result<Arc<dyn Plan>> {
         // We must to keep this index in order to remove the TablePlanner after.
         let mut besttpindex = -1;
-        let mut besttp: Option<&TablePlanner> = None;
         let mut bestplan: Option<Arc<dyn Plan>> = None;
         for i in 0..self.tableplanners.len() {
             let tp = &self.tableplanners[i];
             let plan = tp.make_select_plan();
-            if besttp.is_none()
+            if besttpindex == -1
                 || plan.as_ref().unwrap().records_output()
                     < bestplan.as_ref().unwrap().records_output()
             {
                 besttpindex = i as i32;
-                besttp = Some(tp);
                 bestplan = plan;
             }
         }
 
         self.tableplanners.remove(besttpindex as usize);
-        Ok(bestplan.unwrap())
+        bestplan.ok_or_else(|| From::from(HeuristicQueryPlannerError::NoPlan))
     }
     fn get_lowest_join_plan(&mut self, current: Arc<dyn Plan>) -> Result<Arc<dyn Plan>> {
         // We must to keep this index in order to remove the TablePlanner after.
@@ -137,6 +135,7 @@ impl QueryPlanner for HeuristicQueryPlanner {
             if let Ok(p) = self.get_lowest_join_plan(Arc::clone(&currentplan)) {
                 currentplan = p;
             } else {
+                // no applicable join
                 currentplan = self.get_lowest_product_plan(currentplan)?;
             }
         }
