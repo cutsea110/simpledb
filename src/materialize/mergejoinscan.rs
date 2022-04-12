@@ -116,12 +116,12 @@ impl Scan for MergeJoinScan {
         Ok(())
     }
     fn to_update_scan(&mut self) -> Result<&mut dyn crate::query::updatescan::UpdateScan> {
-        panic!("TODO")
+        Err(From::from(MergeJoinScanError::DowncastError))
     }
     fn as_table_scan(&mut self) -> Result<&mut crate::record::tablescan::TableScan> {
-        panic!("TODO")
+        Err(From::from(MergeJoinScanError::DowncastError))
     }
     fn as_sort_scan(&mut self) -> Result<&mut SortScan> {
-        panic!("TODO")
+        Err(From::from(MergeJoinScanError::DowncastError))
     }
 }
