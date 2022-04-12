@@ -141,9 +141,7 @@ impl QueryPlanner for HeuristicQueryPlanner {
         }
 
         // Step 4, Project on the field names and return
-        Ok(Arc::new(ProjectPlan::new(
-            currentplan,
-            data.fields().clone(),
-        )))
+        let plan = ProjectPlan::new(currentplan, data.fields().clone());
+        Ok(Arc::new(plan))
     }
 }
