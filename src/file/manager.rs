@@ -53,7 +53,7 @@ impl FileMgr {
             };
 
             // if you change the name, you must change TempTable, too.
-            if filename.starts_with("temp") {
+            if filename.starts_with(&format!("{}/temp", db_directory)) {
                 fs::remove_file(entry_path)?;
             }
         }

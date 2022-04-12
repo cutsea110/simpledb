@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use super::{bufferneeds, chunkscan::ChunkScan};
 use crate::{
     materialize::sortscan::SortScan,
-    query::{constant::Constant, scan::Scan, updatescan::UpdateScan},
+    query::{constant::Constant, productscan::ProductScan, scan::Scan, updatescan::UpdateScan},
     record::{layout::Layout, tablescan::TableScan},
     tx::transaction::Transaction,
 };
@@ -92,6 +92,11 @@ impl MultibufferProductScan {
             end,
         ))));
         self.lhsscan.lock().unwrap().before_first().unwrap();
+        let prodscan = ProductScan::new(
+            Arc::clone(&self.lhsscan),
+            self.rhsscan.as_ref().unwrap().clone(),
+        );
+        self.prodscan = Some(Arc::new(Mutex::new(prodscan)));
         self.nextblknum = end + 1;
 
         true
@@ -106,7 +111,7 @@ impl Scan for MultibufferProductScan {
         Ok(())
     }
     fn next(&mut self) -> bool {
-        while self.prodscan.as_ref().unwrap().lock().unwrap().next() {
+        while !self.prodscan.as_ref().unwrap().lock().unwrap().next() {
             if !self.use_next_chunk() {
                 return false;
             }
