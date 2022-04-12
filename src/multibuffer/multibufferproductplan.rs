@@ -59,7 +59,7 @@ impl MultibufferProductPlan {
             tx: Arc::clone(&tx),
             lhs,
             rhs,
-            schema: Arc::new(Schema::new()),
+            schema: Arc::new(schema),
         }
     }
     fn copy_records_from(&self, p: Arc<dyn Plan>) -> Result<TempTable> {
