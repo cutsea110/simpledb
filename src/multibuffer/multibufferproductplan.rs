@@ -188,10 +188,10 @@ mod tests {
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();
         while iter.next() {
-            let name = iter.get_string("SName")?;
+            let sname = iter.get_string("SName")?;
+            let dname = iter.get_string("DName")?;
             let year = iter.get_i32("GradYear")?;
-            let major_id = iter.get_i32("MajorId")?;
-            println!("{:<10}{:>8}{:>8}", name, major_id, year);
+            println!("{:<10}{:<10}{:>8}", sname, dname, year);
         }
         tx.lock().unwrap().commit()?;
         assert_eq!(tx.lock().unwrap().available_buffs(), 8);
