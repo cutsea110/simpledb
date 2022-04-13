@@ -1,4 +1,5 @@
 use anyhow::Result;
+use core::fmt;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -99,6 +100,16 @@ pub struct IndexInfo {
     tbl_schema: Arc<Schema>,
     idx_layout: Arc<Layout>,
     si: StatInfo,
+}
+
+impl fmt::Display for IndexInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "IndexInfo{{idxname:{}, fldname:{}}}",
+            self.idxname, self.fldname
+        )
+    }
 }
 
 impl IndexInfo {

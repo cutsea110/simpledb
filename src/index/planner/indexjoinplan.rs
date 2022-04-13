@@ -83,10 +83,80 @@ impl Plan for IndexJoinPlan {
     }
     fn dump(&self) -> String {
         format!(
-            "IndexJoinPlan{{p1:{}, p2:{}, joinfield:{}}}",
+            "IndexJoinPlan{{p1:{}, p2:{}, ii:{}, joinfield:{}}}",
             self.p1.dump(),
             self.p2.dump(),
+            self.ii,
             self.joinfield
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::{
+        metadata::manager::MetadataMgr,
+        plan::{plan::Plan, tableplan::TablePlan},
+        query::tests,
+        server::simpledb::SimpleDB,
+    };
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_test/indexjoinplan").exists() {
+            fs::remove_dir_all("_test/indexjoinplan")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/indexjoinplan", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        tests::init_sampledb(&mut mdm, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let mdm = Arc::new(Mutex::new(mdm));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let student_plan = Arc::new(TablePlan::new(
+            "STUDENT",
+            Arc::clone(&tx),
+            Arc::clone(&mdm),
+        )?);
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let dept_plan = Arc::new(TablePlan::new("DEPT", Arc::clone(&tx), Arc::clone(&mdm))?);
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let iimap = mdm
+            .lock()
+            .unwrap()
+            .get_index_info("STUDENT", Arc::clone(&tx))?;
+        let ii = iimap.get("MajorId").unwrap().clone();
+        let p1 = Arc::clone(&dept_plan);
+        let p2 = Arc::clone(&student_plan);
+        let plan = IndexJoinPlan::new(p1, p2, ii, "DId");
+
+        println!("PLAN: {}", plan.dump());
+        let scan = plan.open()?;
+        scan.lock().unwrap().before_first()?;
+        let mut iter = scan.lock().unwrap();
+        while iter.next() {
+            let sname = iter.get_string("SName")?;
+            let dname = iter.get_string("DName")?;
+            let year = iter.get_i32("GradYear")?;
+            println!("{:<10}{:<10}{:>8}", sname, dname, year);
+        }
+        tx.lock().unwrap().commit()?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        Ok(())
     }
 }
