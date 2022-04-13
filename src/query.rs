@@ -9,7 +9,7 @@ pub mod term;
 pub mod updatescan;
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use anyhow::Result;
     use std::sync::{Arc, Mutex};
 
@@ -136,6 +136,7 @@ mod tests {
             ts.set_i32("GradYear", s.grad_year)?;
             ts.set_i32("MajorId", s.major_id)?;
         }
+        tx.lock().unwrap().commit()?;
 
         Ok(())
     }
@@ -160,6 +161,7 @@ mod tests {
             ts.set_i32("DId", d.d_id)?;
             ts.set_string("DName", d.d_name.to_string())?;
         }
+        tx.lock().unwrap().commit()?;
 
         Ok(())
     }
@@ -189,6 +191,7 @@ mod tests {
             ts.set_string("Title", c.title.to_string())?;
             ts.set_i32("DeptId", c.dept_id)?;
         }
+        tx.lock().unwrap().commit()?;
 
         Ok(())
     }
@@ -219,6 +222,7 @@ mod tests {
             ts.set_string("Prof", s.prof.to_string())?;
             ts.set_i32("YearOffered", s.year_offered)?;
         }
+        tx.lock().unwrap().commit()?;
 
         Ok(())
     }
@@ -250,6 +254,7 @@ mod tests {
             ts.set_i32("SectionId", e.section_id)?;
             ts.set_string("Grade", e.grade.to_string())?;
         }
+        tx.lock().unwrap().commit()?;
 
         Ok(())
     }

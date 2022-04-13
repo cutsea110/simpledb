@@ -56,3 +56,66 @@ impl TempTable {
         format!("temp{}", *next_table_num) // if you change the name, you must change FileMgr, too.
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::{
+        metadata::manager::MetadataMgr,
+        plan::{plan::Plan, tableplan::TablePlan},
+        query::tests,
+        server::simpledb::SimpleDB,
+    };
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_test/temptable").exists() {
+            fs::remove_dir_all("_test/temptable")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/temptable", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+
+        tests::init_sampledb(&mut mdm, Arc::clone(&tx))?;
+
+        let next_table_num = Arc::new(Mutex::new(0));
+        let mdm = Arc::new(Mutex::new(mdm));
+
+        let plan = TablePlan::new("STUDENT", Arc::clone(&tx), Arc::clone(&mdm))?;
+
+        let tt = TempTable::new(Arc::clone(&next_table_num), Arc::clone(&tx), plan.schema());
+        assert_eq!("temp1", tt.table_name());
+
+        let mut tt = TempTable::new(Arc::clone(&next_table_num), Arc::clone(&tx), plan.schema());
+        assert_eq!("temp2", tt.table_name());
+        let src = plan.open()?;
+        let dest = tt.open()?;
+        while src.lock().unwrap().next() {
+            dest.lock().unwrap().insert()?;
+            for fldname in plan.schema().fields() {
+                dest.lock()
+                    .unwrap()
+                    .set_val(fldname, src.lock().unwrap().get_val(fldname)?)?;
+            }
+        }
+        src.lock().unwrap().close()?;
+        dest.lock().unwrap().before_first()?;
+
+        let mut iter = dest.lock().unwrap();
+        while iter.next() {
+            let name = iter.get_string("SName")?;
+            let year = iter.get_i32("GradYear")?;
+            println!("{:<10}{:>8}", name, year);
+        }
+
+        tx.lock().unwrap().commit()?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        Ok(())
+    }
+}
