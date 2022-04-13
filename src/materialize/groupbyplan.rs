@@ -83,3 +83,69 @@ impl Plan for GroupByPlan {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::{
+        materialize::aggregationfn::maxfn::MaxFn,
+        metadata::manager::MetadataMgr,
+        plan::{plan::Plan, tableplan::TablePlan},
+        query::tests,
+        server::simpledb::SimpleDB,
+    };
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_test/groupbyplan").exists() {
+            fs::remove_dir_all("_test/groupbyplan")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/groupbyplan", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let next_table_num = Arc::new(Mutex::new(0));
+        let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        tests::init_sampledb(&mut mdm, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let mdm = Arc::new(Mutex::new(mdm));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let srcplan = Arc::new(TablePlan::new(
+            "STUDENT",
+            Arc::clone(&tx),
+            Arc::clone(&mdm),
+        )?);
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let plan = GroupByPlan::new(
+            Arc::clone(&next_table_num),
+            Arc::clone(&tx),
+            srcplan,
+            vec!["MajorId".to_string()],
+            vec![Arc::new(Mutex::new(MaxFn::new("GradYear")))],
+        );
+
+        println!("PLAN: {}", plan.dump());
+        let scan = plan.open()?;
+        scan.lock().unwrap().before_first()?;
+        let mut iter = scan.lock().unwrap();
+        while iter.next() {
+            let major_id = iter.get_i32("MajorId")?;
+            let maxof_gradyear = iter.get_i32("maxofGradYear")?;
+            println!("{:>8}{:>8}", major_id, maxof_gradyear);
+        }
+        tx.lock().unwrap().commit()?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        Ok(())
+    }
+}
