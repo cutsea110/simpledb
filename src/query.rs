@@ -15,7 +15,7 @@ pub(crate) mod tests {
 
     use crate::{
         metadata::manager::MetadataMgr,
-        query::{scan::Scan, updatescan::UpdateScan},
+        query::{constant::Constant, scan::Scan, updatescan::UpdateScan},
         record::{layout::Layout, schema::Schema, tablescan::TableScan},
         tx::transaction::Transaction,
     };
@@ -114,6 +114,16 @@ pub(crate) mod tests {
         sch.add_i32_field("MajorId");
         let asch = Arc::new(sch);
         mdm.create_table("STUDENT", Arc::clone(&asch), Arc::clone(&tx))?;
+        // CREATE INDEX
+        mdm.create_index("IDX_GradYear", "STUDENT", "GradYear", Arc::clone(&tx))?;
+        mdm.create_index("IDX_MajorId", "STUDENT", "MajorId", Arc::clone(&tx))?;
+        // Open the index on GradYear and MajorId
+        let indexes = mdm.get_index_info("STUDENT", Arc::clone(&tx))?;
+        let ii1 = indexes.get("GradYear").unwrap().clone();
+        let idx1 = ii1.open();
+        let ii2 = indexes.get("MajorId").unwrap().clone();
+        let idx2 = ii2.open();
+
         // INSERT STUDENT Records
         let layout = Arc::new(Layout::new(Arc::clone(&asch)));
         let mut ts = TableScan::new(Arc::clone(&tx), "STUDENT", layout)?;
@@ -135,6 +145,12 @@ pub(crate) mod tests {
             ts.set_string("SName", s.s_name.to_string())?;
             ts.set_i32("GradYear", s.grad_year)?;
             ts.set_i32("MajorId", s.major_id)?;
+            idx1.lock()
+                .unwrap()
+                .insert(Constant::I32(s.grad_year), ts.get_rid()?)?;
+            idx2.lock()
+                .unwrap()
+                .insert(Constant::I32(s.major_id), ts.get_rid()?)?;
         }
         tx.lock().unwrap().commit()?;
 
