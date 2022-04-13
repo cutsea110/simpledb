@@ -91,11 +91,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_test/materializedplan").exists() {
-            fs::remove_dir_all("_test/materializedplan")?;
+        if Path::new("_test/materializeplan").exists() {
+            fs::remove_dir_all("_test/materializeplan")?;
         }
 
-        let simpledb = SimpleDB::new_with("_test/materializedplan", 400, 8);
+        let simpledb = SimpleDB::new_with("_test/materializeplan", 400, 8);
 
         let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
         assert_eq!(tx.lock().unwrap().available_buffs(), 8);
