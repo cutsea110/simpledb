@@ -68,13 +68,9 @@ impl MergeJoinPlan {
 impl Plan for MergeJoinPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
         let s1 = self.p1.open()?;
-        if let Ok(s2) = self.p2.open()?.lock().unwrap().as_sort_scan() {
-            let scan = MergeJoinScan::new(
-                s1,
-                Arc::new(Mutex::new(s2.clone())),
-                &self.fldname1,
-                &self.fldname2,
-            );
+        if let Ok(s2) = self.p2.open() {
+            let s2 = Arc::new(Mutex::new(s2.lock().unwrap().as_sort_scan()?.to_owned()));
+            let scan = MergeJoinScan::new(s1, s2, &self.fldname1, &self.fldname2);
 
             return Ok(Arc::new(Mutex::new(scan)));
         }
