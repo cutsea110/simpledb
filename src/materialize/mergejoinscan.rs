@@ -86,21 +86,21 @@ impl Scan for MergeJoinScan {
         false
     }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
-        if self.s2.lock().unwrap().has_field(fldname) {
+        if self.s1.lock().unwrap().has_field(fldname) {
             return self.s1.lock().unwrap().get_i32(fldname);
         } else {
             return self.s2.lock().unwrap().get_i32(fldname);
         }
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
-        if self.s2.lock().unwrap().has_field(fldname) {
+        if self.s1.lock().unwrap().has_field(fldname) {
             return self.s1.lock().unwrap().get_string(fldname);
         } else {
             return self.s2.lock().unwrap().get_string(fldname);
         }
     }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
-        if self.s2.lock().unwrap().has_field(fldname) {
+        if self.s1.lock().unwrap().has_field(fldname) {
             return self.s1.lock().unwrap().get_val(fldname);
         } else {
             return self.s2.lock().unwrap().get_val(fldname);

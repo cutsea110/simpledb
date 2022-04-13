@@ -52,8 +52,8 @@ impl SortPlan {
             Arc::clone(&self.tx),
             Arc::clone(&self.sch),
         );
-        temps.push(currenttemp.clone());
         let mut currentscan = currenttemp.open().unwrap();
+        temps.push(currenttemp);
         while self.copy(Arc::clone(&src), Arc::clone(&currentscan)) {
             let curscan = currentscan.lock().unwrap().to_scan().unwrap();
             if self.comp.compare(Arc::clone(&src), curscan).is_lt() {
@@ -137,7 +137,6 @@ impl SortPlan {
 
 impl Plan for SortPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
-        println!("SortPlan: {}", self.p.dump());
         let src = self.p.open()?;
         let mut runs = self.split_into_runs(Arc::clone(&src));
         src.lock().unwrap().close()?;

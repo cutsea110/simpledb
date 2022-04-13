@@ -69,15 +69,21 @@ impl SortScan {
     }
     pub fn save_position(&mut self) {
         let rid1 = self.s1.lock().unwrap().get_rid().unwrap();
-        let rid2 = self.s2.as_ref().unwrap().lock().unwrap().get_rid().unwrap();
-        self.savedposition = vec![rid1, rid2];
+        match self.s2.as_ref() {
+            Some(s2) => {
+                let rid2 = s2.lock().unwrap().get_rid().unwrap();
+                self.savedposition = vec![rid1, rid2];
+            }
+            None => self.savedposition = vec![rid1],
+        }
     }
     pub fn restore_position(&mut self) {
-        let rid1 = self.savedposition[0];
-        let rid2 = self.savedposition[1];
-        self.s1.lock().unwrap().move_to_rid(rid1).unwrap();
-        let mut s2 = self.s2.as_ref().unwrap().lock().unwrap();
-        s2.move_to_rid(rid2).unwrap();
+        let rid1 = self.savedposition.get(0).unwrap();
+        self.s1.lock().unwrap().move_to_rid(rid1.clone()).unwrap();
+        if let Some(rid2) = self.savedposition.get(1) {
+            let mut s2 = self.s2.as_ref().unwrap().lock().unwrap();
+            s2.move_to_rid(rid2.clone()).unwrap();
+        }
     }
 }
 
