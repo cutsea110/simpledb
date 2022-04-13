@@ -87,14 +87,14 @@ impl Scan for ChunkScan {
     }
     fn next(&mut self) -> bool {
         let rp = self.rp.as_mut().unwrap();
-        self.currentslot = rp.next_after(self.currentslot).unwrap();
+        self.currentslot = rp.next_after(self.currentslot).unwrap_or(-1);
         while self.currentslot < 0 {
             if self.currentbnum == self.endbnum {
                 return false;
             }
             self.move_to_block(self.rp.as_ref().unwrap().block().number() + 1);
             let rp = self.rp.as_mut().unwrap();
-            self.currentslot = rp.next_after(self.currentslot).unwrap();
+            self.currentslot = rp.next_after(self.currentslot).unwrap_or(-1);
         }
 
         true

@@ -76,26 +76,27 @@ impl MultibufferProductScan {
         scan
     }
     fn use_next_chunk(&mut self) -> bool {
-        if let Some(rhsscan) = self.rhsscan.as_ref() {
-            rhsscan.lock().unwrap().close().unwrap();
-        }
         if self.nextblknum >= self.filesize {
             return false;
+        }
+        if self.rhsscan.is_some() {
+            let mut rhsscan = self.rhsscan.as_ref().unwrap().lock().unwrap();
+            rhsscan.close().unwrap();
         }
         let mut end = self.nextblknum + self.chunksize - 1;
         if end >= self.filesize {
             end = self.filesize - 1;
         }
-        self.rhsscan = Some(Arc::new(Mutex::new(ChunkScan::new(
+        let rhsscan: Arc<Mutex<dyn Scan>> = Arc::new(Mutex::new(ChunkScan::new(
             Arc::clone(&self.tx),
             &self.filename,
             Arc::clone(&self.layout),
             self.nextblknum,
             end,
-        ))));
+        )));
+        self.rhsscan = Some(Arc::clone(&rhsscan));
         self.lhsscan.lock().unwrap().before_first().unwrap();
-        let prodscan =
-            ProductScan::new(self.lhsscan.clone(), self.rhsscan.as_ref().unwrap().clone());
+        let prodscan = ProductScan::new(Arc::clone(&self.lhsscan), rhsscan);
         self.prodscan = Some(Arc::new(Mutex::new(prodscan)));
         self.nextblknum = end + 1;
 
@@ -111,7 +112,7 @@ impl Scan for MultibufferProductScan {
         Ok(())
     }
     fn next(&mut self) -> bool {
-        while !self.prodscan.as_ref().unwrap().lock().unwrap().next() {
+        while self.prodscan.is_none() || !self.prodscan.as_ref().unwrap().lock().unwrap().next() {
             if !self.use_next_chunk() {
                 return false;
             }
