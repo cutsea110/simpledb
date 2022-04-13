@@ -51,20 +51,21 @@ impl MultibufferProductScan {
     pub fn new(
         tx: Arc<Mutex<Transaction>>,
         lhsscan: Arc<Mutex<dyn Scan>>,
-        filename: &str,
+        tblname: &str,
         layout: Arc<Layout>,
     ) -> Self {
-        let filesize = tx.lock().unwrap().size(filename).unwrap();
+        let filename = format!("{}.tbl", tblname);
+        let filesize = tx.lock().unwrap().size(&filename).unwrap();
         let available = tx.lock().unwrap().available_buffs() as i32;
         let chunksize = bufferneeds::best_factor(available, filesize);
-        dbg!(filename, filesize, available, chunksize);
+        dbg!(&filename, filesize, available, chunksize);
 
         let mut scan = Self {
             tx,
             lhsscan,
             rhsscan: None,
             prodscan: None,
-            filename: filename.to_string(),
+            filename,
             layout,
             chunksize,
             nextblknum: 0,
