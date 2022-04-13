@@ -86,8 +86,8 @@ impl SortPlan {
         result
     }
     fn merge_two_runs(&self, mut p1: TempTable, mut p2: TempTable) -> TempTable {
-        let src1 = p1.open().unwrap();
-        let src2 = p2.open().unwrap();
+        let src1 = p1.open().unwrap().lock().unwrap().to_scan().unwrap();
+        let src2 = p2.open().unwrap().lock().unwrap().to_scan().unwrap();
         let mut result = TempTable::new(
             Arc::clone(&self.next_table_num),
             Arc::clone(&self.tx),
@@ -98,24 +98,24 @@ impl SortPlan {
         let mut hasmore1 = src1.lock().unwrap().next();
         let mut hasmore2 = src2.lock().unwrap().next();
         while hasmore1 && hasmore2 {
-            let s1 = src1.lock().unwrap().to_scan().unwrap();
-            let s2 = src2.lock().unwrap().to_scan().unwrap();
-            if self.comp.compare(Arc::clone(&s1), Arc::clone(&s2)).is_lt() {
-                hasmore1 = self.copy(s1, Arc::clone(&dest));
+            if self
+                .comp
+                .compare(Arc::clone(&src1), Arc::clone(&src2))
+                .is_lt()
+            {
+                hasmore1 = self.copy(Arc::clone(&src1), Arc::clone(&dest));
             } else {
-                hasmore2 = self.copy(s2, Arc::clone(&dest));
+                hasmore2 = self.copy(Arc::clone(&src2), Arc::clone(&dest));
             }
         }
 
         if hasmore1 {
             while hasmore1 {
-                let s1 = src1.lock().unwrap().to_scan().unwrap();
-                hasmore1 = self.copy(s1, Arc::clone(&dest));
+                hasmore1 = self.copy(Arc::clone(&src1), Arc::clone(&dest));
             }
         } else {
             while hasmore2 {
-                let s2 = src2.lock().unwrap().to_scan().unwrap();
-                hasmore2 = self.copy(s2, Arc::clone(&dest));
+                hasmore2 = self.copy(Arc::clone(&src2), Arc::clone(&dest));
             }
         }
         src1.lock().unwrap().close().unwrap();
@@ -167,5 +167,70 @@ impl Plan for SortPlan {
     }
     fn dump(&self) -> String {
         format!("SortPlan{{p:{}, comp:{:?}}}", self.p.dump(), self.comp)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::{
+        metadata::manager::MetadataMgr,
+        plan::{plan::Plan, tableplan::TablePlan},
+        query::tests,
+        server::simpledb::SimpleDB,
+    };
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_test/sortplan").exists() {
+            fs::remove_dir_all("_test/sortplan")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/sortplan", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let next_table_num = Arc::new(Mutex::new(0));
+        let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        tests::init_sampledb(&mut mdm, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let mdm = Arc::new(Mutex::new(mdm));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let srcplan = Arc::new(TablePlan::new(
+            "STUDENT",
+            Arc::clone(&tx),
+            Arc::clone(&mdm),
+        )?);
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let plan = SortPlan::new(
+            next_table_num,
+            srcplan,
+            vec!["SName".to_string()],
+            Arc::clone(&tx),
+        );
+
+        println!("PLAN: {}", plan.dump());
+        let scan = plan.open()?;
+        scan.lock().unwrap().before_first()?;
+        let mut iter = scan.lock().unwrap();
+        while iter.next() {
+            let name = iter.get_string("SName")?;
+            let year = iter.get_i32("GradYear")?;
+            let major_id = iter.get_i32("MajorId")?;
+            println!("{:<10}{:>8}{:>8}", name, major_id, year);
+        }
+        tx.lock().unwrap().commit()?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        Ok(())
     }
 }
