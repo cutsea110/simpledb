@@ -59,3 +59,65 @@ impl ProductPlan {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::{fs, path::Path};
+
+    use super::*;
+    use crate::{
+        metadata::manager::MetadataMgr,
+        plan::{plan::Plan, tableplan::TablePlan},
+        query::tests,
+        server::simpledb::SimpleDB,
+    };
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_test/productplan").exists() {
+            fs::remove_dir_all("_test/productplan")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/productplan", 400, 8);
+
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let mut mdm = MetadataMgr::new(true, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        tests::init_sampledb(&mut mdm, Arc::clone(&tx))?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let mdm = Arc::new(Mutex::new(mdm));
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let p1 = Arc::new(TablePlan::new(
+            "STUDENT",
+            Arc::clone(&tx),
+            Arc::clone(&mdm),
+        )?);
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let p2 = Arc::new(TablePlan::new("DEPT", Arc::clone(&tx), Arc::clone(&mdm))?);
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        let plan = ProductPlan::new(p1, p2);
+
+        println!("PLAN: {}", plan.dump());
+        let scan = plan.open()?;
+        scan.lock().unwrap().before_first()?;
+        let mut iter = scan.lock().unwrap();
+        while iter.next() {
+            let sname = iter.get_string("SName")?;
+            let dname = iter.get_string("DName")?;
+            let year = iter.get_i32("GradYear")?;
+            println!("{:<10}{:<10}{:>8}", sname, dname, year);
+        }
+        tx.lock().unwrap().commit()?;
+        assert_eq!(tx.lock().unwrap().available_buffs(), 8);
+
+        Ok(())
+    }
+}
