@@ -137,6 +137,7 @@ impl SortPlan {
 
 impl Plan for SortPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
+        println!("SortPlan: {}", self.p.dump());
         let src = self.p.open()?;
         let mut runs = self.split_into_runs(Arc::clone(&src));
         src.lock().unwrap().close()?;
@@ -214,7 +215,7 @@ mod tests {
         let plan = SortPlan::new(
             next_table_num,
             srcplan,
-            vec!["SName".to_string()],
+            vec!["GradYear".to_string(), "SName".to_string()],
             Arc::clone(&tx),
         );
 
