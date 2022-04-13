@@ -63,7 +63,7 @@ impl ChunkScan {
             endbnum,
             currentbnum: 0,
             rp: None,
-            currentslot: 0,
+            currentslot: -1,
         };
         scan.move_to_block(startbnum);
 
