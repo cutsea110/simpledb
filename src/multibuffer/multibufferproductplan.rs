@@ -8,6 +8,7 @@ use crate::{
     plan::plan::Plan,
     query::scan::Scan,
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -126,13 +127,17 @@ impl Plan for MultibufferProductPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
-    fn dump(&self) -> String {
-        format!(
-            "MultibufferProductPlan{{lhs:{}, rhs:{}, fields:{:?}}}",
-            self.lhs.dump(),
-            self.rhs.dump(),
-            self.schema.fields()
-        )
+}
+
+impl PlanRepr for MultibufferProductPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

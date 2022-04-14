@@ -5,6 +5,7 @@ use super::plan::Plan;
 use crate::{
     query::{projectscan::ProjectScan, scan::Scan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Clone)]
@@ -33,12 +34,17 @@ impl Plan for ProjectPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
-    fn dump(&self) -> String {
-        format!(
-            "ProjectPlan{{p:{}, fields:{:?}}}",
-            self.p.dump(),
-            self.schema.fields()
-        )
+}
+
+impl PlanRepr for ProjectPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

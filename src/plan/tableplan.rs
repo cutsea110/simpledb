@@ -6,6 +6,7 @@ use crate::{
     metadata::{manager::MetadataMgr, statmanager::StatInfo},
     query::scan::Scan,
     record::{layout::Layout, schema::Schema, tablescan::TableScan},
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -39,8 +40,17 @@ impl Plan for TablePlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.layout.schema())
     }
-    fn dump(&self) -> String {
-        format!("TablePlan{{tblname:{}}}", self.tblname)
+}
+
+impl PlanRepr for TablePlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

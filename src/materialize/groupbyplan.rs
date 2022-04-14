@@ -3,7 +3,11 @@ use std::sync::{Arc, Mutex};
 
 use super::{aggregationfn::AggregationFn, groupbyscan::GroupByScan, sortplan::SortPlan};
 use crate::{
-    plan::plan::Plan, query::scan::Scan, record::schema::Schema, tx::transaction::Transaction,
+    plan::plan::Plan,
+    query::scan::Scan,
+    record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
+    tx::transaction::Transaction,
 };
 
 #[derive(Clone)]
@@ -74,13 +78,17 @@ impl Plan for GroupByPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        // TODO: aggfns
-        format!(
-            "GroupByPlan{{p:{}, groupfields:{:?}}}",
-            self.p.dump(),
-            self.groupfields
-        )
+}
+
+impl PlanRepr for GroupByPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

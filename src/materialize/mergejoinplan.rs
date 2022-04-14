@@ -7,7 +7,11 @@ use std::{
 
 use super::mergejoinscan::MergeJoinScan;
 use crate::{
-    materialize::sortplan::SortPlan, plan::plan::Plan, query::scan::Scan, record::schema::Schema,
+    materialize::sortplan::SortPlan,
+    plan::plan::Plan,
+    query::scan::Scan,
+    record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -98,14 +102,17 @@ impl Plan for MergeJoinPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        format!(
-            "MergeJoinPlan{{p1:{}, p2:{}, fldname1:{}, fldname2:{}}}",
-            self.p1.dump(),
-            self.p2.dump(),
-            self.fldname1,
-            self.fldname2
-        )
+}
+
+impl PlanRepr for MergeJoinPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

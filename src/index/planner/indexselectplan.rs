@@ -8,6 +8,7 @@ use crate::{
     plan::plan::Plan,
     query::{constant::Constant, scan::Scan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Debug)]
@@ -63,8 +64,17 @@ impl Plan for IndexSelectPlan {
     fn schema(&self) -> Arc<Schema> {
         self.p.schema()
     }
-    fn dump(&self) -> String {
-        format!("IndexSelectPlan{{p:{}, val:{}}}", self.p.dump(), self.val)
+}
+
+impl PlanRepr for IndexSelectPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

@@ -8,6 +8,7 @@ use super::plan::Plan;
 use crate::{
     query::{predicate::Predicate, scan::Scan, selectscan::SelectScan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Clone)]
@@ -43,8 +44,17 @@ impl Plan for SelectPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.p.schema())
     }
-    fn dump(&self) -> String {
-        format!("SelectPlan{{p:{}, pred:{}}}", self.p.dump(), self.pred)
+}
+
+impl PlanRepr for SelectPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

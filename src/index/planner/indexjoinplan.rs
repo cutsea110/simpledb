@@ -3,8 +3,12 @@ use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    index::query::indexjoinscan::IndexJoinScan, metadata::indexmanager::IndexInfo,
-    plan::plan::Plan, query::scan::Scan, record::schema::Schema,
+    index::query::indexjoinscan::IndexJoinScan,
+    metadata::indexmanager::IndexInfo,
+    plan::plan::Plan,
+    query::scan::Scan,
+    record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Debug)]
@@ -81,14 +85,17 @@ impl Plan for IndexJoinPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        format!(
-            "IndexJoinPlan{{p1:{}, p2:{}, ii:{}, joinfield:{}}}",
-            self.p1.dump(),
-            self.p2.dump(),
-            self.ii,
-            self.joinfield
-        )
+}
+
+impl PlanRepr for IndexJoinPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

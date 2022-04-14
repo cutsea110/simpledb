@@ -9,6 +9,7 @@ use crate::{
     plan::plan::Plan,
     query::{scan::Scan, updatescan::UpdateScan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -165,8 +166,17 @@ impl Plan for SortPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        format!("SortPlan{{p:{}, comp:{:?}}}", self.p.dump(), self.comp)
+}
+
+impl PlanRepr for SortPlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 

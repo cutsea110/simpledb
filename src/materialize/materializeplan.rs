@@ -6,6 +6,7 @@ use crate::{
     plan::plan::Plan,
     query::scan::Scan,
     record::{layout::Layout, schema::Schema},
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -71,8 +72,17 @@ impl Plan for MaterializePlan {
     fn schema(&self) -> Arc<Schema> {
         self.srcplan.schema()
     }
-    fn dump(&self) -> String {
-        format!("MaterializePlan{{srcplan:{}}}", self.srcplan.dump())
+}
+
+impl PlanRepr for MaterializePlan {
+    fn operation(&self) -> Operation {
+        panic!("TODO")
+    }
+    fn reads(&self) -> Option<i32> {
+        panic!("TODO")
+    }
+    fn buffers(&self) -> Option<i32> {
+        panic!("TODO")
     }
 }
 
