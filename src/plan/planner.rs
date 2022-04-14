@@ -175,42 +175,45 @@ mod tests {
         iter.close()?;
         println!("Rows = {}", rows);
 
-        // SELECT View
-        let query = "SELECT SName, DName FROM name_dep WHERE GradYear = 2020";
-        println!("Query: {}", query);
-        let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
-        let scan = plan.open()?;
-        let mut rows = 0;
-        let mut iter = scan.lock().unwrap();
-        println!("SName     DName");
-        println!("-------------------");
-        while iter.next() {
-            rows += 1;
-            let name = iter.get_string("SName")?;
-            let dep = iter.get_string("DName")?;
-            println!("{:<10}{:<10}", name, dep);
-        }
-        iter.close()?;
-        println!("Rows = {}", rows);
+        /* TODO: heuristicqueryplanner does not support yet.
 
-        // SELECT View + Table
-        let query = "SELECT SName, DName, Title FROM name_dep, COURSE WHERE MajorId = DeptId";
-        println!("Query: {}", query);
-        let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
-        let scan = plan.open()?;
-        let mut rows = 0;
-        let mut iter = scan.lock().unwrap();
-        println!("SName     DName    Title");
-        println!("-----------------------------------");
-        while iter.next() {
-            rows += 1;
-            let name = iter.get_string("SName")?;
-            let dep = iter.get_string("DName")?;
-            let title = iter.get_string("Title")?;
-            println!("{:<10}{:<10}{:<16}", name, dep, title);
-        }
-        iter.close()?;
-        println!("Rows = {}", rows);
+           // SELECT View
+           let query = "SELECT SName, DName FROM name_dep WHERE GradYear = 2020";
+           println!("Query: {}", query);
+           let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
+           let scan = plan.open()?;
+           let mut rows = 0;
+           let mut iter = scan.lock().unwrap();
+           println!("SName     DName");
+           println!("-------------------");
+           while iter.next() {
+               rows += 1;
+               let name = iter.get_string("SName")?;
+               let dep = iter.get_string("DName")?;
+               println!("{:<10}{:<10}", name, dep);
+           }
+           iter.close()?;
+           println!("Rows = {}", rows);
+
+           // SELECT View + Table
+           let query = "SELECT SName, DName, Title FROM name_dep, COURSE WHERE MajorId = DeptId";
+           println!("Query: {}", query);
+           let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
+           let scan = plan.open()?;
+           let mut rows = 0;
+           let mut iter = scan.lock().unwrap();
+           println!("SName     DName    Title");
+           println!("-----------------------------------");
+           while iter.next() {
+               rows += 1;
+               let name = iter.get_string("SName")?;
+               let dep = iter.get_string("DName")?;
+               let title = iter.get_string("Title")?;
+               println!("{:<10}{:<10}{:<16}", name, dep, title);
+           }
+           iter.close()?;
+           println!("Rows = {}", rows);
+        */
 
         // UPDATE
         let update = "UPDATE STUDENT SET MajorId = 30 WHERE GradYear = 2020";
