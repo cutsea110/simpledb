@@ -108,7 +108,12 @@ impl Plan for MergeJoinPlan {
     }
 }
 
-impl PlanRepr for MergeJoinPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct MergeJoinPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for MergeJoinPlanRepr {
     fn operation(&self) -> Operation {
         Operation::MergeJoinScan
     }

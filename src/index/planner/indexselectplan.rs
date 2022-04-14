@@ -70,7 +70,12 @@ impl Plan for IndexSelectPlan {
     }
 }
 
-impl PlanRepr for IndexSelectPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct IndexSelectPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for IndexSelectPlanRepr {
     fn operation(&self) -> Operation {
         Operation::IndexSelectScan
     }

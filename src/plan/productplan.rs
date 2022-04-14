@@ -44,7 +44,12 @@ impl Plan for ProductPlan {
     }
 }
 
-impl PlanRepr for ProductPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct ProductPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for ProductPlanRepr {
     fn operation(&self) -> Operation {
         Operation::ProductScan
     }

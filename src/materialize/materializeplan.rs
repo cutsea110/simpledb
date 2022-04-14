@@ -78,7 +78,12 @@ impl Plan for MaterializePlan {
     }
 }
 
-impl PlanRepr for MaterializePlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct MaterializePlanRepr {
+    // TODO
+}
+
+impl PlanRepr for MaterializePlanRepr {
     fn operation(&self) -> Operation {
         Operation::Materialize
     }

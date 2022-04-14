@@ -50,7 +50,12 @@ impl Plan for SelectPlan {
     }
 }
 
-impl PlanRepr for SelectPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct SelectPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for SelectPlanRepr {
     fn operation(&self) -> Operation {
         Operation::SelectScan
     }

@@ -40,7 +40,12 @@ impl Plan for ProjectPlan {
     }
 }
 
-impl PlanRepr for ProjectPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct ProjectPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for ProjectPlanRepr {
     fn operation(&self) -> Operation {
         Operation::ProjectScan
     }

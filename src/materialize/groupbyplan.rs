@@ -84,7 +84,12 @@ impl Plan for GroupByPlan {
     }
 }
 
-impl PlanRepr for GroupByPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct GroupByPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for GroupByPlanRepr {
     fn operation(&self) -> Operation {
         Operation::GroupByScan
     }

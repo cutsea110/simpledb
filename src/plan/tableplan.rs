@@ -46,7 +46,12 @@ impl Plan for TablePlan {
     }
 }
 
-impl PlanRepr for TablePlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct TablePlanRepr {
+    // TODO
+}
+
+impl PlanRepr for TablePlanRepr {
     fn operation(&self) -> Operation {
         Operation::TableScan
     }

@@ -172,7 +172,12 @@ impl Plan for SortPlan {
     }
 }
 
-impl PlanRepr for SortPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct SortPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for SortPlanRepr {
     fn operation(&self) -> Operation {
         Operation::SortScan
     }

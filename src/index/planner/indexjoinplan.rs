@@ -91,7 +91,12 @@ impl Plan for IndexJoinPlan {
     }
 }
 
-impl PlanRepr for IndexJoinPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct IndexJoinPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for IndexJoinPlanRepr {
     fn operation(&self) -> Operation {
         Operation::IndexJoinScan
     }

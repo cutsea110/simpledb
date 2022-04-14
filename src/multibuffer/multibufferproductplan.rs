@@ -133,7 +133,12 @@ impl Plan for MultibufferProductPlan {
     }
 }
 
-impl PlanRepr for MultibufferProductPlan {
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct MultibufferProductPlanRepr {
+    // TODO
+}
+
+impl PlanRepr for MultibufferProductPlanRepr {
     fn operation(&self) -> Operation {
         Operation::MultibufferProductScan
     }
