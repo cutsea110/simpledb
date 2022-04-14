@@ -42,24 +42,30 @@ impl Plan for TablePlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(TablePlanRepr {
+            tblname: self.tblname.to_string(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct TablePlanRepr {
-    // TODO
+    tblname: String,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for TablePlanRepr {
     fn operation(&self) -> Operation {
         Operation::TableScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

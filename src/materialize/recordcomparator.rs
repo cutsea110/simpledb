@@ -26,4 +26,8 @@ impl RecordComparator {
 
         Ordering::Equal
     }
+    // my own extends
+    pub fn fields(&self) -> Vec<String> {
+        self.fields.clone()
+    }
 }

@@ -66,24 +66,36 @@ impl Plan for IndexSelectPlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(IndexSelectPlanRepr {
+            p: self.p.repr(),
+            idxname: self.ii.index_name().to_string(),
+            idxfldname: self.ii.field_name().to_string(),
+            val: self.val.clone(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone)]
 pub struct IndexSelectPlanRepr {
-    // TODO
+    p: Arc<dyn PlanRepr>,
+    idxname: String,
+    idxfldname: String,
+    val: Constant,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for IndexSelectPlanRepr {
     fn operation(&self) -> Operation {
         Operation::IndexSelectScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

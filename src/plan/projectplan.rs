@@ -36,24 +36,30 @@ impl Plan for ProjectPlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(ProjectPlanRepr {
+            p: self.p.repr(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone)]
 pub struct ProjectPlanRepr {
-    // TODO
+    p: Arc<dyn PlanRepr>,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for ProjectPlanRepr {
     fn operation(&self) -> Operation {
         Operation::ProjectScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

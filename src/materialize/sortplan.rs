@@ -168,24 +168,32 @@ impl Plan for SortPlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(SortPlanRepr {
+            p: self.p.repr(),
+            compflds: self.comp.fields(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone)]
 pub struct SortPlanRepr {
-    // TODO
+    p: Arc<dyn PlanRepr>,
+    compflds: Vec<String>,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for SortPlanRepr {
     fn operation(&self) -> Operation {
         Operation::SortScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use super::{aggregationfn::AggregationFn, groupbyscan::GroupByScan, sortplan::SortPlan};
 use crate::{
     plan::plan::Plan,
-    query::scan::Scan,
+    query::{constant::Constant, scan::Scan},
     record::schema::Schema,
     repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
@@ -48,6 +48,10 @@ impl GroupByPlan {
             sch: Arc::new(sch),
         }
     }
+    // my own extends
+    pub fn aggregation_fns(&self) -> Vec<Arc<dyn AggregationFn>> {
+        self.aggfns.clone()
+    }
 }
 
 impl Plan for GroupByPlan {
@@ -80,24 +84,40 @@ impl Plan for GroupByPlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(GroupByPlanRepr {
+            p: self.p.repr(),
+            fields: self.groupfields.clone(),
+            aggfns: self
+                .aggregation_fns()
+                .iter()
+                .map(|f| {
+                    return (f.field_name(), f.value());
+                })
+                .collect(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone)]
 pub struct GroupByPlanRepr {
-    // TODO
+    p: Arc<dyn PlanRepr>,
+    fields: Vec<String>,
+    aggfns: Vec<(String, Constant)>,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for GroupByPlanRepr {
     fn operation(&self) -> Operation {
         Operation::GroupByScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

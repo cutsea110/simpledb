@@ -129,24 +129,32 @@ impl Plan for MultibufferProductPlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(MultibufferProductPlanRepr {
+            lhs: self.lhs.repr(),
+            rhs: self.rhs.repr(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone)]
 pub struct MultibufferProductPlanRepr {
-    // TODO
+    lhs: Arc<dyn PlanRepr>,
+    rhs: Arc<dyn PlanRepr>,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for MultibufferProductPlanRepr {
     fn operation(&self) -> Operation {
         Operation::MultibufferProductScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

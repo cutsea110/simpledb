@@ -104,24 +104,36 @@ impl Plan for MergeJoinPlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(MergeJoinPlanRepr {
+            p1: self.p1.repr(),
+            p2: self.p2.repr(),
+            fldname1: self.fldname1.clone(),
+            fldname2: self.fldname2.clone(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone)]
 pub struct MergeJoinPlanRepr {
-    // TODO
+    p1: Arc<dyn PlanRepr>,
+    p2: Arc<dyn PlanRepr>,
+    fldname1: String,
+    fldname2: String,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for MergeJoinPlanRepr {
     fn operation(&self) -> Operation {
         Operation::MergeJoinScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

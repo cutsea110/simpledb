@@ -87,24 +87,38 @@ impl Plan for IndexJoinPlan {
     }
 
     fn repr(&self) -> Arc<dyn PlanRepr> {
-        panic!("TODO")
+        Arc::new(IndexJoinPlanRepr {
+            p1: self.p1.repr(),
+            p2: self.p2.repr(),
+            idxname: self.ii.index_name().to_string(),
+            idxfldname: self.ii.field_name().to_string(),
+            joinfld: self.joinfield.clone(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone)]
 pub struct IndexJoinPlanRepr {
-    // TODO
+    p1: Arc<dyn PlanRepr>,
+    p2: Arc<dyn PlanRepr>,
+    idxname: String,
+    idxfldname: String,
+    joinfld: String,
+    r: i32,
+    w: i32,
 }
 
 impl PlanRepr for IndexJoinPlanRepr {
     fn operation(&self) -> Operation {
         Operation::IndexJoinScan
     }
-    fn reads(&self) -> Option<i32> {
-        panic!("TODO")
+    fn reads(&self) -> i32 {
+        self.r
     }
-    fn writes(&self) -> Option<i32> {
-        panic!("TODO")
+    fn writes(&self) -> i32 {
+        self.w
     }
 }
 

@@ -15,6 +15,6 @@ pub enum Operation {
 
 pub trait PlanRepr {
     fn operation(&self) -> Operation;
-    fn reads(&self) -> Option<i32>;
-    fn writes(&self) -> Option<i32>;
+    fn reads(&self) -> i32;
+    fn writes(&self) -> i32;
 }
