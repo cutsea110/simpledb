@@ -192,7 +192,6 @@ mod tests {
         let plan =
             MultibufferProductPlan::new(Arc::clone(&next_table_num), Arc::clone(&tx), lhs, rhs);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

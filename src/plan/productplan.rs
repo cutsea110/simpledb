@@ -115,7 +115,6 @@ mod tests {
 
         let plan = ProductPlan::new(p1, p2);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

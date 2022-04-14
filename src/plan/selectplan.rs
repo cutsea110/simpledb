@@ -114,7 +114,6 @@ mod tests {
         ));
         let plan = SelectPlan::new(srcplan, pred);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

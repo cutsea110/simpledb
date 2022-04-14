@@ -166,7 +166,6 @@ mod tests {
 
         let plan = MergeJoinPlan::new(next_table_num, Arc::clone(&tx), p1, p2, "MajorId", "DId");
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

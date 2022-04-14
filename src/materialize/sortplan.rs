@@ -232,7 +232,6 @@ mod tests {
             Arc::clone(&tx),
         );
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

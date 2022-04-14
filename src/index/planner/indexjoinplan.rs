@@ -155,7 +155,6 @@ mod tests {
         let p2 = Arc::clone(&student_plan);
         let plan = IndexJoinPlan::new(p1, p2, ii, "DId");
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

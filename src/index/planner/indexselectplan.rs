@@ -130,7 +130,6 @@ mod tests {
         let p = Arc::clone(&srcplan);
         let plan = IndexSelectPlan::new(p, ii, Constant::I32(2020));
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

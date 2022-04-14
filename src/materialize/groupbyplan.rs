@@ -146,7 +146,6 @@ mod tests {
             vec![Arc::new(MaxFn::new("GradYear"))],
         );
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

@@ -108,7 +108,6 @@ mod tests {
 
         let plan = ProjectPlan::new(srcplan, vec!["SName".to_string(), "MajorId".to_string()]);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();
