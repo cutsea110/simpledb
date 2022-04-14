@@ -78,6 +78,10 @@ impl Plan for GroupByPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        panic!("TODO")
+    }
 }
 
 impl PlanRepr for GroupByPlan {

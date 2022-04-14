@@ -166,6 +166,10 @@ impl Plan for SortPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        panic!("TODO")
+    }
 }
 
 impl PlanRepr for SortPlan {

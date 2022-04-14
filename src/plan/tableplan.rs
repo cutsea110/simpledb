@@ -40,6 +40,10 @@ impl Plan for TablePlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.layout.schema())
     }
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        panic!("TODO")
+    }
 }
 
 impl PlanRepr for TablePlan {

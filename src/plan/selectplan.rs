@@ -44,6 +44,10 @@ impl Plan for SelectPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.p.schema())
     }
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        panic!("TODO")
+    }
 }
 
 impl PlanRepr for SelectPlan {

@@ -72,6 +72,10 @@ impl Plan for MaterializePlan {
     fn schema(&self) -> Arc<Schema> {
         self.srcplan.schema()
     }
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        panic!("TODO")
+    }
 }
 
 impl PlanRepr for MaterializePlan {

@@ -64,6 +64,10 @@ impl Plan for IndexSelectPlan {
     fn schema(&self) -> Arc<Schema> {
         self.p.schema()
     }
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        panic!("TODO")
+    }
 }
 
 impl PlanRepr for IndexSelectPlan {

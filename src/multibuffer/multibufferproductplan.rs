@@ -127,6 +127,10 @@ impl Plan for MultibufferProductPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        panic!("TODO")
+    }
 }
 
 impl PlanRepr for MultibufferProductPlan {
