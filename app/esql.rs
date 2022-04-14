@@ -130,6 +130,9 @@ fn print_result_set(mut results: EmbeddedResultSet) -> Result<i32> {
         print_record(&mut results, &meta)?;
     }
 
+    // unpin!
+    results.close()?;
+
     Ok(c)
 }
 
