@@ -83,7 +83,6 @@ impl SimpleDB {
         db.mdm = Some(Arc::new(Mutex::new(meta)));
         let next_table_num = Arc::new(Mutex::new(0));
         let qp = HeuristicQueryPlanner::new(next_table_num, Arc::clone(&db.mdm.as_ref().unwrap()));
-        // let qp = BasicQueryPlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
         db.qp = Some(Arc::new(Mutex::new(qp)));
         let up = IndexUpdatePlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
         db.up = Some(Arc::new(Mutex::new(up)));
