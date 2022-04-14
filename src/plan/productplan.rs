@@ -56,7 +56,7 @@ impl PlanRepr for ProductPlanRepr {
     fn reads(&self) -> Option<i32> {
         panic!("TODO")
     }
-    fn buffers(&self) -> Option<i32> {
+    fn writes(&self) -> Option<i32> {
         panic!("TODO")
     }
 }
