@@ -106,7 +106,7 @@ impl Plan for MergeJoinPlan {
 
 impl PlanRepr for MergeJoinPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::MergeJoinScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

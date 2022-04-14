@@ -38,7 +38,7 @@ impl Plan for ProjectPlan {
 
 impl PlanRepr for ProjectPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::ProjectScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

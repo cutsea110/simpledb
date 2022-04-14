@@ -68,7 +68,7 @@ impl Plan for IndexSelectPlan {
 
 impl PlanRepr for IndexSelectPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::IndexSelectScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

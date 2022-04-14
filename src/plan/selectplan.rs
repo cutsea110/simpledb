@@ -48,7 +48,7 @@ impl Plan for SelectPlan {
 
 impl PlanRepr for SelectPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::SelectScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

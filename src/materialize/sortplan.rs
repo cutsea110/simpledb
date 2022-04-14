@@ -170,7 +170,7 @@ impl Plan for SortPlan {
 
 impl PlanRepr for SortPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::SortScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

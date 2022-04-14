@@ -89,7 +89,7 @@ impl Plan for IndexJoinPlan {
 
 impl PlanRepr for IndexJoinPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::IndexJoinScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

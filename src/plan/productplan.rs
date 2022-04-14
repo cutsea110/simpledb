@@ -42,7 +42,7 @@ impl Plan for ProductPlan {
 
 impl PlanRepr for ProductPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::ProductScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

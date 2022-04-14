@@ -131,7 +131,7 @@ impl Plan for MultibufferProductPlan {
 
 impl PlanRepr for MultibufferProductPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::MultibufferProductScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

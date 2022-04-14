@@ -82,7 +82,7 @@ impl Plan for GroupByPlan {
 
 impl PlanRepr for GroupByPlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::GroupByScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

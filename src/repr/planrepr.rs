@@ -1,6 +1,16 @@
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Operation {
-    // TODO
+    IndexJoinScan,
+    IndexSelectScan,
+    GroupByScan,
+    Materialize,
+    MergeJoinScan,
+    SortScan,
+    MultibufferProductScan,
+    ProductScan,
+    ProjectScan,
+    SelectScan,
+    TableScan,
 }
 
 pub trait PlanRepr {

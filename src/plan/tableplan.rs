@@ -44,7 +44,7 @@ impl Plan for TablePlan {
 
 impl PlanRepr for TablePlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::TableScan
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")

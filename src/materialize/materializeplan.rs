@@ -76,7 +76,7 @@ impl Plan for MaterializePlan {
 
 impl PlanRepr for MaterializePlan {
     fn operation(&self) -> Operation {
-        panic!("TODO")
+        Operation::Materialize
     }
     fn reads(&self) -> Option<i32> {
         panic!("TODO")
