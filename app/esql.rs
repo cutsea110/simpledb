@@ -2,11 +2,13 @@ use anyhow::Result;
 use getopts::Options;
 use itertools::Itertools;
 use std::{
+    cell::RefCell,
     collections::HashMap,
     env,
     io::{stdout, Write},
     path::Path,
     process,
+    rc::Rc,
     sync::Arc,
     time::Instant,
 };
@@ -20,12 +22,14 @@ use simpledb::{
             connection::EmbeddedConnection, driver::EmbeddedDriver, metadata::EmbeddedMetaData,
             planrepr::EmbeddedPlanRepr, resultset::EmbeddedResultSet, statement::EmbeddedStatement,
         },
+        planrepradapter::PlanReprAdapter,
         resultsetadapter::ResultSetAdapter,
         resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
         statementadapter::StatementAdapter,
     },
     record::schema::FieldType,
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 const DB_DIR: &str = "data";
@@ -192,8 +196,59 @@ fn print_help_meta_cmd() {
     println!(":v, :view  <view_name>          Show view definition");
 }
 
-fn print_explain_plan(repr: EmbeddedPlanRepr) {
-    println!("OK!");
+fn format_operation(op: Operation) -> String {
+    match op {
+        Operation::IndexJoinScan {
+            idxname,
+            idxfldname,
+            joinfld,
+        } => format!("IndexJoinScan"),
+        Operation::IndexSelectScan {
+            idxname,
+            idxfldname,
+            val,
+        } => format!("IndexSelectScan"),
+        Operation::GroupByScan { fields, aggfns } => format!("GroupBy"),
+        Operation::Materialize => format!("Materialize"),
+        Operation::MergeJoinScan { fldname1, fldname2 } => format!("MergeJoinScan"),
+        Operation::SortScan { compflds } => format!("SortScan"),
+        Operation::MultibufferProductScan => format!("MultibufferProductScan"),
+        Operation::ProductScan => format!("ProductScan"),
+        Operation::ProjectScan => format!("ProjectScan"),
+        Operation::SelectScan { pred } => format!("SelectScan"),
+        Operation::TableScan { tblname } => format!("TableScan"),
+    }
+}
+
+fn print_explain_plan(epr: EmbeddedPlanRepr) {
+    fn print_pr(pr: Arc<dyn PlanRepr>, n: Rc<RefCell<i32>>, depth: usize) {
+        let raw_op_str = format_operation(pr.operation());
+        let mut op_str = format!("{:width$}{}", "", raw_op_str, width = depth * 2);
+        if op_str.len() > 60 {
+            op_str = format!("{}...", &op_str[0..57]);
+        }
+        println!(
+            "{:>3} {:<60}{:>8}{:>8}",
+            n.borrow(),
+            op_str,
+            pr.reads(),
+            pr.writes(),
+        );
+        *n.borrow_mut() += 1;
+
+        for sub_pr in pr.sub_plan_reprs() {
+            print_pr(sub_pr, Rc::clone(&n), depth + 1);
+        }
+    }
+
+    let row_num = Rc::new(RefCell::new(1));
+    let pr = epr.repr();
+    println!(
+        "{:>3} {:<60}{:>8}{:>8}",
+        "#", "Operation", "Reads", "Writes"
+    );
+    println!("{}", "-".repeat(80));
+    print_pr(pr, row_num, 0);
 }
 
 fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
