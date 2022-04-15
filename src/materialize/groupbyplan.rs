@@ -10,7 +10,7 @@ use crate::{
 pub struct GroupByPlan {
     p: Arc<dyn Plan>,
     groupfields: Vec<String>,
-    aggfns: Vec<Arc<Mutex<dyn AggregationFn>>>,
+    aggfns: Vec<Arc<dyn AggregationFn>>,
     sch: Arc<Schema>,
 }
 
@@ -20,7 +20,7 @@ impl GroupByPlan {
         tx: Arc<Mutex<Transaction>>,
         p: Arc<dyn Plan>,
         groupfields: Vec<String>,
-        aggfns: Vec<Arc<Mutex<dyn AggregationFn>>>,
+        aggfns: Vec<Arc<dyn AggregationFn>>,
     ) -> Self {
         let plan = SortPlan::new(
             Arc::clone(&next_table_num),
@@ -34,7 +34,7 @@ impl GroupByPlan {
             sch.add(fldname, plan.schema());
         }
         for aggfn in aggfns.iter() {
-            sch.add_i32_field(&aggfn.lock().unwrap().field_name());
+            sch.add_i32_field(&aggfn.field_name());
         }
 
         Self {
@@ -131,7 +131,7 @@ mod tests {
             Arc::clone(&tx),
             srcplan,
             vec!["MajorId".to_string()],
-            vec![Arc::new(Mutex::new(MaxFn::new("GradYear")))],
+            vec![Arc::new(MaxFn::new("GradYear"))],
         );
 
         println!("PLAN: {}", plan.dump());

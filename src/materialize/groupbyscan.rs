@@ -32,7 +32,7 @@ impl fmt::Display for GroupByScanError {
 pub struct GroupByScan {
     s: Arc<Mutex<dyn Scan>>,
     groupfields: Vec<String>,
-    aggfns: Vec<Arc<Mutex<dyn AggregationFn>>>,
+    aggfns: Vec<Arc<dyn AggregationFn>>,
     groupval: Option<GroupValue>,
     moregroups: bool,
 }
@@ -41,7 +41,7 @@ impl GroupByScan {
     pub fn new(
         s: Arc<Mutex<dyn Scan>>,
         groupfields: Vec<String>,
-        aggfns: Vec<Arc<Mutex<dyn AggregationFn>>>,
+        aggfns: Vec<Arc<dyn AggregationFn>>,
     ) -> Self {
         let mut scan = Self {
             s,
@@ -68,7 +68,7 @@ impl Scan for GroupByScan {
             return false;
         }
         for aggfn in self.aggfns.iter() {
-            aggfn.lock().unwrap().process_first(Arc::clone(&self.s));
+            aggfn.process_first(Arc::clone(&self.s));
         }
         self.groupval = Some(GroupValue::new(
             Arc::clone(&self.s),
@@ -88,7 +88,7 @@ impl Scan for GroupByScan {
                 break;
             }
             for aggfn in self.aggfns.iter() {
-                aggfn.lock().unwrap().process_next(Arc::clone(&self.s));
+                aggfn.process_next(Arc::clone(&self.s));
             }
         }
 
@@ -109,8 +109,8 @@ impl Scan for GroupByScan {
             }
         }
         for aggfn in self.aggfns.iter() {
-            if aggfn.lock().unwrap().field_name() == fldname {
-                let val = aggfn.lock().unwrap().value();
+            if aggfn.field_name() == fldname {
+                let val = aggfn.value();
                 return Ok(val);
             }
         }
@@ -124,7 +124,7 @@ impl Scan for GroupByScan {
             return true;
         }
         for aggfn in self.aggfns.iter() {
-            if aggfn.lock().unwrap().field_name() == fldname {
+            if aggfn.field_name() == fldname {
                 return true;
             }
         }
