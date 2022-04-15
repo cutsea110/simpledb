@@ -49,7 +49,7 @@ impl GroupByPlan {
         }
     }
     // my own extends
-    pub fn aggregation_fns(&self) -> Vec<Arc<dyn AggregationFn>> {
+    pub fn aggfns(&self) -> Vec<Arc<dyn AggregationFn>> {
         self.aggfns.clone()
     }
 }
@@ -88,11 +88,9 @@ impl Plan for GroupByPlan {
             p: self.p.repr(),
             fields: self.groupfields.clone(),
             aggfns: self
-                .aggregation_fns()
+                .aggfns()
                 .iter()
-                .map(|f| {
-                    return (f.field_name(), f.value());
-                })
+                .map(|f| (f.field_name(), f.value()))
                 .collect(),
             r: self.blocks_accessed(),
             w: self.records_output(),
