@@ -200,26 +200,29 @@ fn print_help_meta_cmd() {
 fn format_operation(op: Operation) -> String {
     match op {
         Operation::IndexJoinScan {
-            idxname,
+            idxname: _,
             idxfldname,
             joinfld,
-        } => format!("INDEX JOIN SCAN BY {} = {}", idxfldname, joinfld),
+        } => format!("INDEX JOIN SCAN BY {}={}", idxfldname, joinfld),
         Operation::IndexSelectScan {
-            idxname,
+            idxname: _,
             idxfldname,
             val,
-        } => format!("INDEX SELECT SCAN BY {} = {}", idxfldname, val),
-        Operation::GroupByScan { fields, aggfns } => format!("GROUP BY",),
+        } => format!("INDEX SELECT SCAN BY {}={}", idxfldname, val),
+        Operation::GroupByScan {
+            fields: _,
+            aggfns: _,
+        } => format!("GROUP BY",),
         Operation::Materialize => format!("MATERIALIZE"),
         Operation::MergeJoinScan { fldname1, fldname2 } => {
-            format!("MERGE JOIN SCAN BY {} = {}", fldname1, fldname2)
+            format!("MERGE JOIN SCAN BY {}={}", fldname1, fldname2)
         }
-        Operation::SortScan { compflds } => format!("SORT SCAN"),
+        Operation::SortScan { compflds } => format!("SORT SCAN BY ({})", compflds.iter().join(",")),
         Operation::MultibufferProductScan => format!("MULTIBUFFER PRODUCT SCAN"),
         Operation::ProductScan => format!("PRODUCT SCAN"),
         Operation::ProjectScan => format!("PROJECT SCAN"),
-        Operation::SelectScan { pred } => format!("SELECT SCAN"),
-        Operation::TableScan { tblname } => format!("TABLE SCAN"),
+        Operation::SelectScan { pred: _ } => format!("SELECT SCAN"),
+        Operation::TableScan { tblname: _ } => format!("TABLE SCAN"),
     }
 }
 
@@ -227,22 +230,28 @@ fn format_name(op: Operation) -> String {
     match op {
         Operation::IndexJoinScan {
             idxname,
-            idxfldname,
-            joinfld,
+            idxfldname: _,
+            joinfld: _,
         } => format!("{}", idxname),
         Operation::IndexSelectScan {
             idxname,
-            idxfldname,
-            val,
+            idxfldname: _,
+            val: _,
         } => format!("{}", idxname),
-        Operation::GroupByScan { fields, aggfns } => format!(""),
+        Operation::GroupByScan {
+            fields: _,
+            aggfns: _,
+        } => format!(""),
         Operation::Materialize => format!(""),
-        Operation::MergeJoinScan { fldname1, fldname2 } => format!(""),
-        Operation::SortScan { compflds } => format!(""),
+        Operation::MergeJoinScan {
+            fldname1: _,
+            fldname2: _,
+        } => format!(""),
+        Operation::SortScan { compflds: _ } => format!(""),
         Operation::MultibufferProductScan => format!(""),
         Operation::ProductScan => format!(""),
         Operation::ProjectScan => format!(""),
-        Operation::SelectScan { pred } => format!(""),
+        Operation::SelectScan { pred: _ } => format!(""),
         Operation::TableScan { tblname } => format!("{}", tblname),
     }
 }
