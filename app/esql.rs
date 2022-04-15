@@ -192,8 +192,9 @@ fn print_view_definition(viewname: &str, viewdef: &str) {
 fn print_help_meta_cmd() {
     println!(":h, :help                       Show this help");
     println!(":q, :quit, :exit                Quit the program");
-    println!(":t, :table <table_name>         Show table schema");
-    println!(":v, :view  <view_name>          Show view definition");
+    println!(":t, :table   <table_name>       Show table schema");
+    println!(":v, :view    <view_name>        Show view definition");
+    println!(":e, :explain <sql>              Explain plan");
 }
 
 fn format_operation(op: Operation) -> String {
@@ -202,21 +203,47 @@ fn format_operation(op: Operation) -> String {
             idxname,
             idxfldname,
             joinfld,
-        } => format!("IndexJoinScan"),
+        } => format!("INDEX JOIN SCAN BY {} = {}", idxfldname, joinfld),
         Operation::IndexSelectScan {
             idxname,
             idxfldname,
             val,
-        } => format!("IndexSelectScan"),
-        Operation::GroupByScan { fields, aggfns } => format!("GroupBy"),
-        Operation::Materialize => format!("Materialize"),
-        Operation::MergeJoinScan { fldname1, fldname2 } => format!("MergeJoinScan"),
-        Operation::SortScan { compflds } => format!("SortScan"),
-        Operation::MultibufferProductScan => format!("MultibufferProductScan"),
-        Operation::ProductScan => format!("ProductScan"),
-        Operation::ProjectScan => format!("ProjectScan"),
-        Operation::SelectScan { pred } => format!("SelectScan"),
-        Operation::TableScan { tblname } => format!("TableScan"),
+        } => format!("INDEX SELECT SCAN BY {} = {}", idxfldname, val),
+        Operation::GroupByScan { fields, aggfns } => format!("GROUP BY",),
+        Operation::Materialize => format!("MATERIALIZE"),
+        Operation::MergeJoinScan { fldname1, fldname2 } => {
+            format!("MERGE JOIN SCAN BY {} = {}", fldname1, fldname2)
+        }
+        Operation::SortScan { compflds } => format!("SORT SCAN"),
+        Operation::MultibufferProductScan => format!("MULTIBUFFER PRODUCT SCAN"),
+        Operation::ProductScan => format!("PRODUCT SCAN"),
+        Operation::ProjectScan => format!("PROJECT SCAN"),
+        Operation::SelectScan { pred } => format!("SELECT SCAN"),
+        Operation::TableScan { tblname } => format!("TABLE SCAN"),
+    }
+}
+
+fn format_name(op: Operation) -> String {
+    match op {
+        Operation::IndexJoinScan {
+            idxname,
+            idxfldname,
+            joinfld,
+        } => format!("{}", idxname),
+        Operation::IndexSelectScan {
+            idxname,
+            idxfldname,
+            val,
+        } => format!("{}", idxname),
+        Operation::GroupByScan { fields, aggfns } => format!(""),
+        Operation::Materialize => format!(""),
+        Operation::MergeJoinScan { fldname1, fldname2 } => format!(""),
+        Operation::SortScan { compflds } => format!(""),
+        Operation::MultibufferProductScan => format!(""),
+        Operation::ProductScan => format!(""),
+        Operation::ProjectScan => format!(""),
+        Operation::SelectScan { pred } => format!(""),
+        Operation::TableScan { tblname } => format!("{}", tblname),
     }
 }
 
@@ -228,9 +255,10 @@ fn print_explain_plan(epr: EmbeddedPlanRepr) {
             op_str = format!("{}...", &op_str[0..57]);
         }
         println!(
-            "{:>3} {:<60}{:>8}{:>8}",
+            "{:>3} {:<60}{:<20}{:>8}{:>8}",
             n.borrow(),
             op_str,
+            format_name(pr.operation()),
             pr.reads(),
             pr.writes(),
         );
@@ -244,10 +272,10 @@ fn print_explain_plan(epr: EmbeddedPlanRepr) {
     let row_num = Rc::new(RefCell::new(1));
     let pr = epr.repr();
     println!(
-        "{:>3} {:<60}{:>8}{:>8}",
-        "#", "Operation", "Reads", "Writes"
+        "{:<3} {:<60}{:<20}{:>8}{:>8}",
+        "#", "Operation", "Name", "Reads", "Writes"
     );
-    println!("{}", "-".repeat(80));
+    println!("{}", "-".repeat(100));
     print_pr(pr, row_num, 0);
 }
 
