@@ -1,7 +1,7 @@
 use anyhow::Result;
 use core::fmt;
 
-use super::resultsetadapter::ResultSetAdapter;
+use super::{planrepradapter::PlanReprAdapter, resultsetadapter::ResultSetAdapter};
 
 #[derive(Debug)]
 pub enum StatementError {
@@ -21,8 +21,11 @@ impl fmt::Display for StatementError {
 
 pub trait StatementAdapter<'a> {
     type Set: ResultSetAdapter;
+    type PlanRepr: PlanReprAdapter;
 
     fn execute_query(&'a mut self) -> Result<Self::Set>;
     fn execute_update(&mut self) -> Result<i32>;
     fn close(&mut self) -> Result<()>;
+    // my own extends
+    fn explain_plan(&mut self) -> Result<Self::PlanRepr>;
 }

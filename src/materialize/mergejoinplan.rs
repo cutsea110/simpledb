@@ -127,13 +127,19 @@ pub struct MergeJoinPlanRepr {
 
 impl PlanRepr for MergeJoinPlanRepr {
     fn operation(&self) -> Operation {
-        Operation::MergeJoinScan
+        Operation::MergeJoinScan {
+            fldname1: self.fldname1.clone(),
+            fldname2: self.fldname2.clone(),
+        }
     }
     fn reads(&self) -> i32 {
         self.r
     }
     fn writes(&self) -> i32 {
         self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p1), Arc::clone(&self.p2)]
     }
 }
 

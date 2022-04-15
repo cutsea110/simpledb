@@ -156,6 +156,9 @@ impl PlanRepr for MultibufferProductPlanRepr {
     fn writes(&self) -> i32 {
         self.w
     }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.lhs), Arc::clone(&self.rhs)]
+    }
 }
 
 #[cfg(test)]

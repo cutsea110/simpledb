@@ -112,13 +112,20 @@ pub struct IndexJoinPlanRepr {
 
 impl PlanRepr for IndexJoinPlanRepr {
     fn operation(&self) -> Operation {
-        Operation::IndexJoinScan
+        Operation::IndexJoinScan {
+            idxname: self.idxname.clone(),
+            idxfldname: self.idxfldname.clone(),
+            joinfld: self.joinfld.clone(),
+        }
     }
     fn reads(&self) -> i32 {
         self.r
     }
     fn writes(&self) -> i32 {
         self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p1), Arc::clone(&self.p2)]
     }
 }
 

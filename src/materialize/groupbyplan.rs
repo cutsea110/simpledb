@@ -109,13 +109,19 @@ pub struct GroupByPlanRepr {
 
 impl PlanRepr for GroupByPlanRepr {
     fn operation(&self) -> Operation {
-        Operation::GroupByScan
+        Operation::GroupByScan {
+            fields: self.fields.clone(),
+            aggfns: self.aggfns.clone(),
+        }
     }
     fn reads(&self) -> i32 {
         self.r
     }
     fn writes(&self) -> i32 {
         self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 

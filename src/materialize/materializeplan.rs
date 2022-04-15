@@ -99,6 +99,9 @@ impl PlanRepr for MaterializePlanRepr {
     fn writes(&self) -> i32 {
         self.w
     }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 use anyhow::Result;
 
 use super::connection::EmbeddedConnection;
+use super::planrepr::EmbeddedPlanRepr;
 use super::resultset::EmbeddedResultSet;
 use crate::plan::planner::Planner;
 use crate::rdbc::connectionadapter::ConnectionAdapter;
@@ -27,6 +28,7 @@ impl<'a> EmbeddedStatement<'a> {
 
 impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
     type Set = EmbeddedResultSet<'a>;
+    type PlanRepr = EmbeddedPlanRepr;
 
     fn execute_query(&'a mut self) -> Result<Self::Set> {
         let tx = self.conn.get_transaction();
@@ -50,5 +52,16 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
     }
     fn close(&mut self) -> Result<()> {
         self.conn.close()
+    }
+
+    fn explain_plan(&mut self) -> Result<Self::PlanRepr> {
+        let tx = self.conn.get_transaction();
+        match self.planner.create_query_plan(&self.sql, tx) {
+            Ok(pln) => Ok(EmbeddedPlanRepr::new(pln.repr())),
+            Err(_) => self
+                .conn
+                .rollback()
+                .and_then(|_| Err(From::from(StatementError::RuntimeError))),
+        }
     }
 }

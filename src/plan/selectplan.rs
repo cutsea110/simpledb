@@ -65,13 +65,18 @@ pub struct SelectPlanRepr {
 
 impl PlanRepr for SelectPlanRepr {
     fn operation(&self) -> Operation {
-        Operation::SelectScan
+        Operation::SelectScan {
+            pred: self.pred.clone(),
+        }
     }
     fn reads(&self) -> i32 {
         self.r
     }
     fn writes(&self) -> i32 {
         self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 

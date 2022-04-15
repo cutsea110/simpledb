@@ -187,13 +187,18 @@ pub struct SortPlanRepr {
 
 impl PlanRepr for SortPlanRepr {
     fn operation(&self) -> Operation {
-        Operation::SortScan
+        Operation::SortScan {
+            compflds: self.compflds.clone(),
+        }
     }
     fn reads(&self) -> i32 {
         self.r
     }
     fn writes(&self) -> i32 {
         self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 

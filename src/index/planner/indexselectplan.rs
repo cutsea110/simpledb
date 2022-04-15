@@ -89,13 +89,20 @@ pub struct IndexSelectPlanRepr {
 
 impl PlanRepr for IndexSelectPlanRepr {
     fn operation(&self) -> Operation {
-        Operation::IndexSelectScan
+        Operation::IndexSelectScan {
+            idxname: self.idxname.clone(),
+            idxfldname: self.idxfldname.clone(),
+            val: self.val.clone(),
+        }
     }
     fn reads(&self) -> i32 {
         self.r
     }
     fn writes(&self) -> i32 {
         self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 

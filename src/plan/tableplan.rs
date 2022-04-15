@@ -59,13 +59,18 @@ pub struct TablePlanRepr {
 
 impl PlanRepr for TablePlanRepr {
     fn operation(&self) -> Operation {
-        Operation::TableScan
+        Operation::TableScan {
+            tblname: self.tblname.clone(),
+        }
     }
     fn reads(&self) -> i32 {
         self.r
     }
     fn writes(&self) -> i32 {
         self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![]
     }
 }
 

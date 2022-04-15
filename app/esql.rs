@@ -18,7 +18,7 @@ use simpledb::{
         driveradapter::DriverAdapter,
         embedded::{
             connection::EmbeddedConnection, driver::EmbeddedDriver, metadata::EmbeddedMetaData,
-            resultset::EmbeddedResultSet, statement::EmbeddedStatement,
+            planrepr::EmbeddedPlanRepr, resultset::EmbeddedResultSet, statement::EmbeddedStatement,
         },
         resultsetadapter::ResultSetAdapter,
         resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
@@ -192,6 +192,10 @@ fn print_help_meta_cmd() {
     println!(":v, :view  <view_name>          Show view definition");
 }
 
+fn print_explain_plan(repr: EmbeddedPlanRepr) {
+    println!("OK!");
+}
+
 fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
@@ -225,6 +229,26 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
             let viewname = args[0];
             if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
                 print_view_definition(&viewname, &viewdef);
+            }
+        }
+        ":e" | ":explain" => {
+            if args.is_empty() {
+                println!("SQL is required.");
+                return;
+            }
+            let sql = &qry[tokens[0].len()..].trim();
+            println!("EXPLAIN PLAN FOR: {}", sql);
+            let mut stmt = conn.create(sql).expect("create statement");
+            let words: Vec<&str> = sql.split_whitespace().collect();
+            if !words.is_empty() {
+                let cmd = words[0].trim().to_ascii_lowercase();
+                if &cmd == "select" {
+                    if let Ok(plan_repr) = stmt.explain_plan() {
+                        print_explain_plan(plan_repr);
+                    }
+                } else {
+                    println!("expect query(not command).");
+                }
             }
         }
         cmd => {
