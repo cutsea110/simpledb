@@ -257,19 +257,22 @@ fn format_name(op: Operation) -> String {
 }
 
 fn print_explain_plan(epr: EmbeddedPlanRepr) {
+    const MAX_OP_WIDTH: usize = 60;
+
     fn print_pr(pr: Arc<dyn PlanRepr>, n: Rc<RefCell<i32>>, depth: usize) {
         let raw_op_str = format_operation(pr.operation());
         let mut indented_op_str = format!("{:width$}{}", "", raw_op_str, width = depth * 2);
-        if indented_op_str.len() > 60 {
-            indented_op_str = format!("{}...", &indented_op_str[0..57]);
+        if indented_op_str.len() > MAX_OP_WIDTH {
+            indented_op_str = format!("{}...", &indented_op_str[0..MAX_OP_WIDTH - 3]);
         }
         println!(
-            "{:>3} {:<60}{:<20}{:>8}{:>8}",
+            "{:>2} {:<width$} {:<20} {:>8} {:>8}",
             n.borrow(),
             indented_op_str,
             format_name(pr.operation()),
             pr.reads(),
             pr.writes(),
+            width = MAX_OP_WIDTH,
         );
         *n.borrow_mut() += 1;
 
@@ -281,10 +284,15 @@ fn print_explain_plan(epr: EmbeddedPlanRepr) {
     let row_num = Rc::new(RefCell::new(1));
     let pr = epr.repr();
     println!(
-        "{:<3} {:<60}{:<20}{:>8}{:>8}",
-        "#", "Operation", "Name", "Reads", "Writes"
+        "{:<2} {:<width$} {:<20} {:>8} {:>8}",
+        "#",
+        "Operation",
+        "Name",
+        "Reads",
+        "Writes",
+        width = MAX_OP_WIDTH
     );
-    println!("{}", "-".repeat(100));
+    println!("{:-<width$}", "", width = 102);
     print_pr(pr, row_num, 0);
 }
 
