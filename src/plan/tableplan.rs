@@ -6,6 +6,7 @@ use crate::{
     metadata::{manager::MetadataMgr, statmanager::StatInfo},
     query::scan::Scan,
     record::{layout::Layout, schema::Schema, tablescan::TableScan},
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -39,8 +40,37 @@ impl Plan for TablePlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.layout.schema())
     }
-    fn dump(&self) -> String {
-        format!("TablePlan{{tblname:{}}}", self.tblname)
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(TablePlanRepr {
+            tblname: self.tblname.to_string(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct TablePlanRepr {
+    tblname: String,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for TablePlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::TableScan {
+            tblname: self.tblname.clone(),
+        }
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![]
     }
 }
 
@@ -103,7 +133,6 @@ mod tests {
         )?);
         assert_eq!(tx.lock().unwrap().available_buffs(), 8);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

@@ -3,7 +3,11 @@ use std::sync::{Arc, Mutex};
 
 use super::{aggregationfn::AggregationFn, groupbyscan::GroupByScan, sortplan::SortPlan};
 use crate::{
-    plan::plan::Plan, query::scan::Scan, record::schema::Schema, tx::transaction::Transaction,
+    plan::plan::Plan,
+    query::{constant::Constant, scan::Scan},
+    record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
+    tx::transaction::Transaction,
 };
 
 #[derive(Clone)]
@@ -44,6 +48,10 @@ impl GroupByPlan {
             sch: Arc::new(sch),
         }
     }
+    // my own extends
+    pub fn aggfns(&self) -> Vec<Arc<dyn AggregationFn>> {
+        self.aggfns.clone()
+    }
 }
 
 impl Plan for GroupByPlan {
@@ -74,13 +82,46 @@ impl Plan for GroupByPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        // TODO: aggfns
-        format!(
-            "GroupByPlan{{p:{}, groupfields:{:?}}}",
-            self.p.dump(),
-            self.groupfields
-        )
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(GroupByPlanRepr {
+            p: self.p.repr(),
+            fields: self.groupfields.clone(),
+            aggfns: self
+                .aggfns()
+                .iter()
+                .map(|f| (f.field_name(), f.value()))
+                .collect(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct GroupByPlanRepr {
+    p: Arc<dyn PlanRepr>,
+    fields: Vec<String>,
+    aggfns: Vec<(String, Constant)>,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for GroupByPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::GroupByScan {
+            fields: self.fields.clone(),
+            aggfns: self.aggfns.clone(),
+        }
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 
@@ -134,7 +175,6 @@ mod tests {
             vec![Arc::new(MaxFn::new("GradYear"))],
         );
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

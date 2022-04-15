@@ -5,6 +5,7 @@ use super::plan::Plan;
 use crate::{
     query::{productscan::ProductScan, scan::Scan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Clone)]
@@ -37,12 +38,37 @@ impl Plan for ProductPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
-    fn dump(&self) -> String {
-        format!(
-            "ProductPlan{{p1:{}, p2:{}}}",
-            self.p1.dump(),
-            self.p2.dump()
-        )
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(ProductPlanRepr {
+            p1: self.p1.repr(),
+            p2: self.p2.repr(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct ProductPlanRepr {
+    p1: Arc<dyn PlanRepr>,
+    p2: Arc<dyn PlanRepr>,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for ProductPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::ProductScan
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p1), Arc::clone(&self.p2)]
     }
 }
 
@@ -105,7 +131,6 @@ mod tests {
 
         let plan = ProductPlan::new(p1, p2);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

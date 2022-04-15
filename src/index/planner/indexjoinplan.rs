@@ -3,8 +3,12 @@ use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    index::query::indexjoinscan::IndexJoinScan, metadata::indexmanager::IndexInfo,
-    plan::plan::Plan, query::scan::Scan, record::schema::Schema,
+    index::query::indexjoinscan::IndexJoinScan,
+    metadata::indexmanager::IndexInfo,
+    plan::plan::Plan,
+    query::scan::Scan,
+    record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Debug)]
@@ -81,14 +85,47 @@ impl Plan for IndexJoinPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        format!(
-            "IndexJoinPlan{{p1:{}, p2:{}, ii:{}, joinfield:{}}}",
-            self.p1.dump(),
-            self.p2.dump(),
-            self.ii,
-            self.joinfield
-        )
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(IndexJoinPlanRepr {
+            p1: self.p1.repr(),
+            p2: self.p2.repr(),
+            idxname: self.ii.index_name().to_string(),
+            idxfldname: self.ii.field_name().to_string(),
+            joinfld: self.joinfield.clone(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct IndexJoinPlanRepr {
+    p1: Arc<dyn PlanRepr>,
+    p2: Arc<dyn PlanRepr>,
+    idxname: String,
+    idxfldname: String,
+    joinfld: String,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for IndexJoinPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::IndexJoinScan {
+            idxname: self.idxname.clone(),
+            idxfldname: self.idxfldname.clone(),
+            joinfld: self.joinfld.clone(),
+        }
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p1), Arc::clone(&self.p2)]
     }
 }
 
@@ -144,7 +181,6 @@ mod tests {
         let p2 = Arc::clone(&student_plan);
         let plan = IndexJoinPlan::new(p1, p2, ii, "DId");
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

@@ -8,6 +8,7 @@ use crate::{
     plan::plan::Plan,
     query::scan::Scan,
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -126,13 +127,37 @@ impl Plan for MultibufferProductPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
-    fn dump(&self) -> String {
-        format!(
-            "MultibufferProductPlan{{lhs:{}, rhs:{}, fields:{:?}}}",
-            self.lhs.dump(),
-            self.rhs.dump(),
-            self.schema.fields()
-        )
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(MultibufferProductPlanRepr {
+            lhs: self.lhs.repr(),
+            rhs: self.rhs.repr(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct MultibufferProductPlanRepr {
+    lhs: Arc<dyn PlanRepr>,
+    rhs: Arc<dyn PlanRepr>,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for MultibufferProductPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::MultibufferProductScan
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.lhs), Arc::clone(&self.rhs)]
     }
 }
 
@@ -183,7 +208,6 @@ mod tests {
         let plan =
             MultibufferProductPlan::new(Arc::clone(&next_table_num), Arc::clone(&tx), lhs, rhs);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

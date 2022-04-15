@@ -8,6 +8,7 @@ use crate::{
     plan::plan::Plan,
     query::{constant::Constant, scan::Scan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Debug)]
@@ -63,8 +64,45 @@ impl Plan for IndexSelectPlan {
     fn schema(&self) -> Arc<Schema> {
         self.p.schema()
     }
-    fn dump(&self) -> String {
-        format!("IndexSelectPlan{{p:{}, val:{}}}", self.p.dump(), self.val)
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(IndexSelectPlanRepr {
+            p: self.p.repr(),
+            idxname: self.ii.index_name().to_string(),
+            idxfldname: self.ii.field_name().to_string(),
+            val: self.val.clone(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct IndexSelectPlanRepr {
+    p: Arc<dyn PlanRepr>,
+    idxname: String,
+    idxfldname: String,
+    val: Constant,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for IndexSelectPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::IndexSelectScan {
+            idxname: self.idxname.clone(),
+            idxfldname: self.idxfldname.clone(),
+            val: self.val.clone(),
+        }
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 
@@ -116,7 +154,6 @@ mod tests {
         let p = Arc::clone(&srcplan);
         let plan = IndexSelectPlan::new(p, ii, Constant::I32(2020));
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

@@ -6,6 +6,7 @@ use crate::{
     plan::plan::Plan,
     query::scan::Scan,
     record::{layout::Layout, schema::Schema},
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -71,8 +72,35 @@ impl Plan for MaterializePlan {
     fn schema(&self) -> Arc<Schema> {
         self.srcplan.schema()
     }
-    fn dump(&self) -> String {
-        format!("MaterializePlan{{srcplan:{}}}", self.srcplan.dump())
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(MaterializePlanRepr {
+            p: self.srcplan.repr(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct MaterializePlanRepr {
+    p: Arc<dyn PlanRepr>,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for MaterializePlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::Materialize
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
-use crate::{query::scan::Scan, record::schema::Schema};
+use crate::{query::scan::Scan, record::schema::Schema, repr::planrepr::PlanRepr};
 
 pub trait Plan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>>;
@@ -10,5 +10,5 @@ pub trait Plan {
     fn distinct_values(&self, fldname: &str) -> i32;
     fn schema(&self) -> Arc<Schema>;
     // my own extends
-    fn dump(&self) -> String;
+    fn repr(&self) -> Arc<dyn PlanRepr>;
 }

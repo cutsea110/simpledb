@@ -9,6 +9,7 @@ use crate::{
     plan::plan::Plan,
     query::{scan::Scan, updatescan::UpdateScan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -165,8 +166,39 @@ impl Plan for SortPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        format!("SortPlan{{p:{}, comp:{:?}}}", self.p.dump(), self.comp)
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(SortPlanRepr {
+            p: self.p.repr(),
+            compflds: self.comp.fields(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct SortPlanRepr {
+    p: Arc<dyn PlanRepr>,
+    compflds: Vec<String>,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for SortPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::SortScan {
+            compflds: self.compflds.clone(),
+        }
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 
@@ -218,7 +250,6 @@ mod tests {
             Arc::clone(&tx),
         );
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

@@ -5,6 +5,7 @@ use super::plan::Plan;
 use crate::{
     query::{projectscan::ProjectScan, scan::Scan},
     record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
 };
 
 #[derive(Clone)]
@@ -33,12 +34,35 @@ impl Plan for ProjectPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.schema)
     }
-    fn dump(&self) -> String {
-        format!(
-            "ProjectPlan{{p:{}, fields:{:?}}}",
-            self.p.dump(),
-            self.schema.fields()
-        )
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(ProjectPlanRepr {
+            p: self.p.repr(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct ProjectPlanRepr {
+    p: Arc<dyn PlanRepr>,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for ProjectPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::ProjectScan
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p)]
     }
 }
 
@@ -98,7 +122,6 @@ mod tests {
 
         let plan = ProjectPlan::new(srcplan, vec!["SName".to_string(), "MajorId".to_string()]);
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();

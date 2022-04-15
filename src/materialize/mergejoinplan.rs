@@ -7,7 +7,11 @@ use std::{
 
 use super::mergejoinscan::MergeJoinScan;
 use crate::{
-    materialize::sortplan::SortPlan, plan::plan::Plan, query::scan::Scan, record::schema::Schema,
+    materialize::sortplan::SortPlan,
+    plan::plan::Plan,
+    query::scan::Scan,
+    record::schema::Schema,
+    repr::planrepr::{Operation, PlanRepr},
     tx::transaction::Transaction,
 };
 
@@ -98,14 +102,44 @@ impl Plan for MergeJoinPlan {
     fn schema(&self) -> Arc<Schema> {
         Arc::clone(&self.sch)
     }
-    fn dump(&self) -> String {
-        format!(
-            "MergeJoinPlan{{p1:{}, p2:{}, fldname1:{}, fldname2:{}}}",
-            self.p1.dump(),
-            self.p2.dump(),
-            self.fldname1,
-            self.fldname2
-        )
+
+    fn repr(&self) -> Arc<dyn PlanRepr> {
+        Arc::new(MergeJoinPlanRepr {
+            p1: self.p1.repr(),
+            p2: self.p2.repr(),
+            fldname1: self.fldname1.clone(),
+            fldname2: self.fldname2.clone(),
+            r: self.blocks_accessed(),
+            w: self.records_output(),
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct MergeJoinPlanRepr {
+    p1: Arc<dyn PlanRepr>,
+    p2: Arc<dyn PlanRepr>,
+    fldname1: String,
+    fldname2: String,
+    r: i32,
+    w: i32,
+}
+
+impl PlanRepr for MergeJoinPlanRepr {
+    fn operation(&self) -> Operation {
+        Operation::MergeJoinScan {
+            fldname1: self.fldname1.clone(),
+            fldname2: self.fldname2.clone(),
+        }
+    }
+    fn reads(&self) -> i32 {
+        self.r
+    }
+    fn writes(&self) -> i32 {
+        self.w
+    }
+    fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
+        vec![Arc::clone(&self.p1), Arc::clone(&self.p2)]
     }
 }
 
@@ -155,7 +189,6 @@ mod tests {
 
         let plan = MergeJoinPlan::new(next_table_num, Arc::clone(&tx), p1, p2, "MajorId", "DId");
 
-        println!("PLAN: {}", plan.dump());
         let scan = plan.open()?;
         scan.lock().unwrap().before_first()?;
         let mut iter = scan.lock().unwrap();
