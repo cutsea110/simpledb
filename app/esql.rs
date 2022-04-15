@@ -259,14 +259,14 @@ fn format_name(op: Operation) -> String {
 fn print_explain_plan(epr: EmbeddedPlanRepr) {
     fn print_pr(pr: Arc<dyn PlanRepr>, n: Rc<RefCell<i32>>, depth: usize) {
         let raw_op_str = format_operation(pr.operation());
-        let mut op_str = format!("{:width$}{}", "", raw_op_str, width = depth * 2);
-        if op_str.len() > 60 {
-            op_str = format!("{}...", &op_str[0..57]);
+        let mut indented_op_str = format!("{:width$}{}", "", raw_op_str, width = depth * 2);
+        if indented_op_str.len() > 60 {
+            indented_op_str = format!("{}...", &indented_op_str[0..57]);
         }
         println!(
             "{:>3} {:<60}{:<20}{:>8}{:>8}",
             n.borrow(),
-            op_str,
+            indented_op_str,
             format_name(pr.operation()),
             pr.reads(),
             pr.writes(),
