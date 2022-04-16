@@ -2,35 +2,30 @@ use anyhow::Result;
 use getopts::Options;
 use itertools::Itertools;
 use std::{
-    cell::RefCell,
-    collections::HashMap,
     env,
     io::{stdout, Write},
     path::Path,
     process,
-    rc::Rc,
-    sync::Arc,
-    time::Instant,
 };
 
-use simpledb::{
-    metadata::indexmanager::IndexInfo,
-    rdbc::{
-        connectionadapter::ConnectionAdapter,
-        driveradapter::DriverAdapter,
-        embedded::{
-            connection::EmbeddedConnection, driver::EmbeddedDriver, metadata::EmbeddedMetaData,
-            planrepr::EmbeddedPlanRepr, resultset::EmbeddedResultSet, statement::EmbeddedStatement,
-        },
-        planrepradapter::PlanReprAdapter,
-        resultsetadapter::ResultSetAdapter,
-        resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
-        statementadapter::StatementAdapter,
-    },
-    record::schema::FieldType,
-    record::schema::Schema,
-    repr::planrepr::{Operation, PlanRepr},
+use simpledb::rdbc::{
+    connectionadapter::ConnectionAdapter,
+    driveradapter::DriverAdapter,
+    embedded::{connection::EmbeddedConnection, driver::EmbeddedDriver},
+    statementadapter::StatementAdapter,
 };
+
+use execquery::exec_query;
+use explainplan::print_explain_plan;
+use tableschema::print_table_schema;
+use updatecmd::exec_update_cmd;
+use viewdef::print_view_definition;
+
+pub mod execquery;
+pub mod explainplan;
+pub mod tableschema;
+pub mod updatecmd;
+pub mod viewdef;
 
 const DB_DIR: &str = "data";
 const VERSION: &str = "0.1.0";
@@ -87,59 +82,6 @@ fn read_query() -> Result<String> {
     Ok(input)
 }
 
-fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedMetaData) -> Result<()> {
-    for i in 0..meta.get_column_count() {
-        let fldname = meta.get_column_name(i).expect("get column name");
-        let w = meta
-            .get_column_display_size(i)
-            .expect("get column display size");
-        match meta.get_column_type(i).expect("get column type") {
-            DataType::Int32 => {
-                print!("{:width$} ", results.get_i32(fldname)?, width = w);
-            }
-            DataType::Varchar => {
-                print!("{:width$} ", results.get_string(fldname)?, width = w);
-            }
-        }
-    }
-    println!();
-
-    Ok(())
-}
-
-fn print_result_set(mut results: EmbeddedResultSet) -> Result<i32> {
-    // resultset metadata
-    let meta = results.get_meta_data()?;
-    // print header
-    for i in 0..meta.get_column_count() {
-        let name = meta.get_column_name(i).expect("get column name");
-        let w = meta
-            .get_column_display_size(i)
-            .expect("get column display size");
-        print!("{:width$} ", name, width = w);
-    }
-    println!();
-    // separater
-    for i in 0..meta.get_column_count() {
-        let w = meta
-            .get_column_display_size(i)
-            .expect("get column display size");
-        print!("{:-<width$}", "", width = w + 1);
-    }
-    println!();
-    // scan record
-    let mut c = 0;
-    while results.next() {
-        c += 1;
-        print_record(&mut results, &meta)?;
-    }
-
-    // unpin!
-    results.close()?;
-
-    Ok(c)
-}
-
 fn confirm_new_db(dbname: &str) {
     print!("create new '{}'? [Yes/no]> ", dbname);
     stdout().flush().expect("confirm");
@@ -153,147 +95,12 @@ fn confirm_new_db(dbname: &str) {
     }
 }
 
-fn print_table_schema(tblname: &str, schema: Arc<Schema>, idx_info: HashMap<String, IndexInfo>) {
-    println!(
-        " * table: {} has {} fields.\n",
-        tblname,
-        schema.fields().len()
-    );
-
-    println!(" #   name             type");
-    println!("--------------------------------------");
-    for (i, fldname) in schema.fields().iter().enumerate() {
-        let fldtyp = match schema.field_type(fldname) {
-            FieldType::INTEGER => "int32".to_string(),
-            FieldType::VARCHAR => format!("varchar({})", schema.length(fldname)),
-        };
-        println!("{:>4} {:16} {:16}", i + 1, fldname, fldtyp);
-    }
-    println!();
-
-    if !idx_info.is_empty() {
-        println!(" * indexes on {}\n", tblname);
-
-        println!(" #   name             field");
-        println!("--------------------------------------");
-        for (i, (_, ii)) in idx_info.iter().enumerate() {
-            println!("{:>4} {:16} {:16}", i + 1, ii.index_name(), ii.field_name());
-        }
-        println!();
-    }
-}
-
-fn print_view_definition(viewname: &str, viewdef: &str) {
-    println!("view name: {}", viewname);
-    println!("view def:\n > {}", viewdef);
-    println!();
-}
-
 fn print_help_meta_cmd() {
     println!(":h, :help                       Show this help");
     println!(":q, :quit, :exit                Quit the program");
     println!(":t, :table   <table_name>       Show table schema");
     println!(":v, :view    <view_name>        Show view definition");
     println!(":e, :explain <sql>              Explain plan");
-}
-
-fn format_operation(op: Operation) -> String {
-    match op {
-        Operation::IndexJoinScan {
-            idxname: _,
-            idxfldname,
-            joinfld,
-        } => format!("INDEX JOIN SCAN BY {}={}", idxfldname, joinfld),
-        Operation::IndexSelectScan {
-            idxname: _,
-            idxfldname,
-            val,
-        } => format!("INDEX SELECT SCAN BY {}={}", idxfldname, val),
-        Operation::GroupByScan {
-            fields: _,
-            aggfns: _,
-        } => format!("GROUP BY",),
-        Operation::Materialize => format!("MATERIALIZE"),
-        Operation::MergeJoinScan { fldname1, fldname2 } => {
-            format!("MERGE JOIN SCAN BY {}={}", fldname1, fldname2)
-        }
-        Operation::SortScan { compflds } => format!("SORT SCAN BY ({})", compflds.iter().join(",")),
-        Operation::MultibufferProductScan => format!("MULTIBUFFER PRODUCT SCAN"),
-        Operation::ProductScan => format!("PRODUCT SCAN"),
-        Operation::ProjectScan => format!("PROJECT SCAN"),
-        Operation::SelectScan { pred: _ } => format!("SELECT SCAN"),
-        Operation::TableScan { tblname: _ } => format!("TABLE SCAN"),
-    }
-}
-
-fn format_name(op: Operation) -> String {
-    match op {
-        Operation::IndexJoinScan {
-            idxname,
-            idxfldname: _,
-            joinfld: _,
-        } => format!("{}", idxname),
-        Operation::IndexSelectScan {
-            idxname,
-            idxfldname: _,
-            val: _,
-        } => format!("{}", idxname),
-        Operation::GroupByScan {
-            fields: _,
-            aggfns: _,
-        } => format!(""),
-        Operation::Materialize => format!(""),
-        Operation::MergeJoinScan {
-            fldname1: _,
-            fldname2: _,
-        } => format!(""),
-        Operation::SortScan { compflds: _ } => format!(""),
-        Operation::MultibufferProductScan => format!(""),
-        Operation::ProductScan => format!(""),
-        Operation::ProjectScan => format!(""),
-        Operation::SelectScan { pred: _ } => format!(""),
-        Operation::TableScan { tblname } => format!("{}", tblname),
-    }
-}
-
-fn print_explain_plan(epr: EmbeddedPlanRepr) {
-    const MAX_OP_WIDTH: usize = 60;
-
-    fn print_pr(pr: Arc<dyn PlanRepr>, n: Rc<RefCell<i32>>, depth: usize) {
-        let raw_op_str = format_operation(pr.operation());
-        let mut indented_op_str = format!("{:width$}{}", "", raw_op_str, width = depth * 2);
-        if indented_op_str.len() > MAX_OP_WIDTH {
-            indented_op_str = format!("{}...", &indented_op_str[0..MAX_OP_WIDTH - 3]);
-        }
-        println!(
-            "{:>2} {:<width$} {:<20} {:>8} {:>8}",
-            n.borrow(),
-            indented_op_str,
-            format_name(pr.operation()),
-            pr.reads(),
-            pr.writes(),
-            width = MAX_OP_WIDTH,
-        );
-        *n.borrow_mut() += 1;
-
-        for sub_pr in pr.sub_plan_reprs() {
-            print_pr(sub_pr, Rc::clone(&n), depth + 1);
-        }
-    }
-
-    let row_num = Rc::new(RefCell::new(1));
-    let pr = epr.repr();
-    println!(
-        "{:<2} {:<width$} {:<20} {:>8} {:>8}",
-        "#",
-        "Operation",
-        "Name",
-        "Reads",
-        "Writes",
-        width = MAX_OP_WIDTH
-    );
-    println!("{:-<width$}", "", width = 102);
-    print_pr(pr, row_num, 0);
 }
 
 fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
@@ -353,41 +160,6 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
         }
         cmd => {
             println!("Unknown command: {}", cmd)
-        }
-    }
-}
-
-fn exec_query<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
-    let qry = stmt.sql().to_string();
-    let start = Instant::now();
-    match stmt.execute_query() {
-        Err(_) => println!("invalid query: {}", qry),
-        Ok(result) => {
-            let cnt = print_result_set(result).expect("print result set");
-            let end = start.elapsed();
-            println!(
-                "Rows {} ({}.{:03}s)",
-                cnt,
-                end.as_secs(),
-                end.subsec_nanos() / 1_000_000
-            );
-        }
-    }
-}
-
-fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
-    let qry = stmt.sql().to_string();
-    let start = Instant::now();
-    match stmt.execute_update() {
-        Err(_) => println!("invalid command: {}", qry),
-        Ok(affected) => {
-            let end = start.elapsed();
-            println!(
-                "Affected {} ({}.{:03}s)",
-                affected,
-                end.as_secs(),
-                end.subsec_nanos() / 1_000_000
-            );
         }
     }
 }
