@@ -144,7 +144,6 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
                 return;
             }
             let sql = &qry[tokens[0].len()..].trim();
-            println!("EXPLAIN PLAN FOR: {}", sql);
             let mut stmt = conn.create(sql).expect("create statement");
             let words: Vec<&str> = sql.split_whitespace().collect();
             if !words.is_empty() {

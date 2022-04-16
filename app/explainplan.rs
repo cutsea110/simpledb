@@ -12,19 +12,19 @@ fn format_operation(op: Operation) -> String {
             idxname: _,
             idxfldname,
             joinfld,
-        } => format!("INDEX JOIN SCAN BY {}={}", idxfldname, joinfld),
+        } => format!("INDEX JOIN SCAN BY {} = {}", idxfldname, joinfld),
         Operation::IndexSelectScan {
             idxname: _,
             idxfldname,
             val,
-        } => format!("INDEX SELECT SCAN BY {}={}", idxfldname, val),
+        } => format!("INDEX SELECT SCAN BY {} = {}", idxfldname, val),
         Operation::GroupByScan {
             fields: _,
             aggfns: _,
         } => format!("GROUP BY",),
         Operation::Materialize => format!("MATERIALIZE"),
         Operation::MergeJoinScan { fldname1, fldname2 } => {
-            format!("MERGE JOIN SCAN BY {}={}", fldname1, fldname2)
+            format!("MERGE JOIN SCAN BY {} = {}", fldname1, fldname2)
         }
         Operation::SortScan { compflds } => format!("SORT SCAN BY ({})", compflds.iter().join(",")),
         Operation::MultibufferProductScan => format!("MULTIBUFFER PRODUCT SCAN"),
