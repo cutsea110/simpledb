@@ -151,11 +151,11 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
                 if &cmd == "select" {
                     if let Ok(plan_repr) = stmt.explain_plan() {
                         print_explain_plan(plan_repr);
+                        return;
                     }
-                } else {
-                    println!("expect query(not command).");
                 }
             }
+            println!("expect query(not command).");
         }
         cmd => {
             println!("Unknown command: {}", cmd)
