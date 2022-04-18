@@ -164,7 +164,7 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
 }
 
 fn exec(conn: &mut EmbeddedConnection, qry: &str) {
-    if qry.to_ascii_lowercase().starts_with(":") {
+    if qry.starts_with(":") {
         exec_meta_cmd(conn, qry);
         return;
     }
