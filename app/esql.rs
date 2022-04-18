@@ -164,7 +164,7 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
 }
 
 fn exec(conn: &mut EmbeddedConnection, qry: &str) {
-    if qry.trim().to_ascii_lowercase().starts_with(":") {
+    if qry.to_ascii_lowercase().starts_with(":") {
         exec_meta_cmd(conn, qry);
         return;
     }
@@ -196,6 +196,6 @@ fn main() {
     });
 
     while let Ok(qry) = read_query() {
-        exec(&mut conn, &qry);
+        exec(&mut conn, &qry.trim());
     }
 }
