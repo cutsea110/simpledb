@@ -148,7 +148,7 @@ impl IndexInfo {
     }
     pub fn blocks_accessed(&self) -> i32 {
         let rpb = self.tx.lock().unwrap().block_size() / self.idx_layout.slot_size() as i32;
-        let numblocks = self.si.records_output() / rpb;
+        let numblocks = (self.si.records_output() as f32 / rpb as f32).ceil() as i32;
         BTreeIndex::search_cost(numblocks, rpb)
     }
     pub fn records_output(&self) -> i32 {
