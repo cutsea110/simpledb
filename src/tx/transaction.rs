@@ -1,5 +1,4 @@
 use anyhow::Result;
-use log::info;
 use std::{
     sync::{Arc, Mutex},
     usize,
@@ -68,7 +67,7 @@ impl Transaction {
             .commit()?;
         self.concur_mgr.release()?;
         self.mybuffers.unpin_all()?;
-        info!("transaction {} committed", self.txnum);
+        println!("transaction {} committed", self.txnum);
 
         Ok(())
     }
@@ -81,7 +80,7 @@ impl Transaction {
             .rollback()?;
         self.concur_mgr.release()?;
         self.mybuffers.unpin_all()?;
-        info!("transaction {} rolled back", self.txnum);
+        println!("transaction {} rolled back", self.txnum);
 
         Ok(())
     }
