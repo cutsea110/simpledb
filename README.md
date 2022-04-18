@@ -7,8 +7,6 @@ text: [Database Design and Implementation: Second Edition](https://www.amazon.co
 ## Status
 
 Done to implement all of book contents, except for exercises and chap 11 remote server.
-Use heuristic query planner, therefore, we can't execute queries related to any view.
-
 
 ## Build
 
