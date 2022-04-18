@@ -1,5 +1,6 @@
 use anyhow::Result;
 use core::fmt;
+use log::trace;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -74,9 +75,9 @@ impl SimpleDB {
         let tx = Arc::new(Mutex::new(db.new_tx()?));
         let isnew = db.file_mgr().lock().unwrap().is_new();
         if isnew {
-            println!("creating new database");
+            trace!("creating new database");
         } else {
-            println!("recovering existing database");
+            trace!("recovering existing database");
             tx.lock().unwrap().recover()?;
         }
         let meta = MetadataMgr::new(isnew, Arc::clone(&tx))?;

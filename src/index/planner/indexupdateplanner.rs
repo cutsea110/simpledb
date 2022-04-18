@@ -1,5 +1,6 @@
 use anyhow::Result;
 use core::fmt;
+use log::info;
 use std::sync::{Arc, Mutex};
 
 use crate::{
@@ -56,7 +57,7 @@ impl UpdatePlanner for IndexUpdatePlanner {
             let mut valiter = data.vals().iter();
             for fldname in data.fields() {
                 let val = valiter.next().unwrap();
-                println!("Modify field {} to val {}", fldname, &val);
+                info!("Modify field {} to val {}", fldname, &val);
                 s.set_val(fldname, val.clone())?;
                 if let Some(ii) = indexes.get(fldname) {
                     let idx = ii.open();

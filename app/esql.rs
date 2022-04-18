@@ -1,4 +1,5 @@
 use anyhow::Result;
+use env_logger;
 use getopts::Options;
 use itertools::Itertools;
 use std::{
@@ -182,6 +183,8 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
 }
 
 fn main() {
+    env_logger::init();
+
     let args = parse_args();
     let dbpath = format!("{}/{}", DB_DIR, args.dbname);
 
