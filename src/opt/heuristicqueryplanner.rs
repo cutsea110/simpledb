@@ -1,11 +1,12 @@
 use anyhow::Result;
+use combine::Parser;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use super::tableplanner::TablePlanner;
 use crate::{
     metadata::manager::MetadataMgr,
-    parser::querydata::QueryData,
+    parser::{parser::query, querydata::QueryData},
     plan::{plan::Plan, planner::Planner, projectplan::ProjectPlan, queryplanner::QueryPlanner},
     tx::transaction::Transaction,
 };
@@ -107,16 +108,26 @@ impl HeuristicQueryPlanner {
         // for use in planning views, which
         // for simplicity this code doesn't do.
     }
-}
 
-impl QueryPlanner for HeuristicQueryPlanner {
-    fn create_plan(
+    // view support
+    fn create_tableplanners_rec(
         &mut self,
-        data: QueryData,
+        data: &QueryData,
         tx: Arc<Mutex<Transaction>>,
-    ) -> Result<Arc<dyn Plan>> {
-        // Step 1, Create a TablePlanner object for each mentioned table
+    ) -> Result<()> {
         for tblname in data.tables().iter() {
+            let viewdef = self
+                .mdm
+                .lock()
+                .unwrap()
+                .get_view_def(tblname, Arc::clone(&tx))?;
+            if !viewdef.is_empty() {
+                let mut parser = query();
+                let (viewdata, _) = parser.parse(viewdef.as_str())?;
+                self.create_tableplanners_rec(&viewdata, Arc::clone(&tx))?;
+                continue;
+            }
+
             let tp = TablePlanner::new(
                 Arc::clone(&self.next_table_num),
                 tblname,
@@ -126,6 +137,19 @@ impl QueryPlanner for HeuristicQueryPlanner {
             );
             self.tableplanners.push(tp)
         }
+
+        Ok(())
+    }
+}
+
+impl QueryPlanner for HeuristicQueryPlanner {
+    fn create_plan(
+        &mut self,
+        data: QueryData,
+        tx: Arc<Mutex<Transaction>>,
+    ) -> Result<Arc<dyn Plan>> {
+        // Step 1, Create a TablePlanner object for each mentioned table
+        self.create_tableplanners_rec(&data, Arc::clone(&tx))?;
 
         // Step 2, Choose the lowest-size plan to begin the join order
         let mut currentplan = self.get_lowest_select_plan()?;
