@@ -72,6 +72,7 @@ pub fn print_explain_plan(epr: EmbeddedPlanRepr) {
         let raw_op_str = format_operation(pr.operation());
         let mut indented_op_str = format!("{:width$}{}", "", raw_op_str, width = depth * 2);
         if indented_op_str.len() > MAX_OP_WIDTH {
+            // 3 is length of "..."
             indented_op_str = format!("{}...", &indented_op_str[0..MAX_OP_WIDTH - 3]);
         }
         println!(
