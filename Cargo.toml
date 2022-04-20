@@ -23,4 +23,4 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "esql"
-path = "app/esql.rs"
+path = "app/esql/main.rs"
