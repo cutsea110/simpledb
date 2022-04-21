@@ -1,5 +1,5 @@
 use anyhow::Result;
-use env_logger;
+use env_logger::{self, Env};
 use getopts::Options;
 use itertools::Itertools;
 use std::{
@@ -31,7 +31,7 @@ pub mod viewdef;
 const DB_DIR: &str = "data";
 const VERSION: &str = "0.1.0";
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 struct Args {
     dbname: String,
 }
@@ -55,6 +55,7 @@ fn parse_args() -> Args {
 
     let mut opts = Options::new();
     opts.optopt("d", "dbname", "set database name", "DBNAME");
+    opts.optopt("l", "log", "set log level", "LOGG");
     opts.optflag("h", "help", "print this help menu");
     opts.optflag("v", "version", "print version");
 
@@ -183,7 +184,7 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
 }
 
 fn main() {
-    env_logger::init();
+    env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
 
     let args = parse_args();
     let dbpath = format!("{}/{}", DB_DIR, args.dbname);
