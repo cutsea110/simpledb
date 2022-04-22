@@ -35,3 +35,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "esql"
 path = "app/esql/main.rs"
+
+[[bin]]
+name = "remote"
+path = "app/rsql/main.rs"
