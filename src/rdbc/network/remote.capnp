@@ -89,8 +89,21 @@ interface RemoteStatement {
 }
 
 interface RemoteResultSet {
-  next      @0 () -> (exists: Bool);
-  close     @1 ();
-  getI32    @2 (fldname: Text) -> (val: Int32);
-  getString @3 (fldname: Text) -> (val: Text);
+  next        @0 () -> (exists: Bool);
+  close       @1 ();
+  getI32      @2 (fldname: Text) -> (val: Int32);
+  getString   @3 (fldname: Text) -> (val: Text);
+  getMetaData @4 () -> (meta: RemoteMetaData);
+}
+
+interface RemoteMetaData {
+  enum DataType {
+    int32   @0;
+    varchar @1;
+  }
+
+  getColumnCount       @0 () -> (size: Int32);
+  getColumnName        @1 (column: Int32) -> (name: Text);
+  getColumnType        @2 (column: Int32) -> (type: DataType);
+  getColumnDisplaySize @3 (column: Int32) -> (size: Int32);
 }
