@@ -67,7 +67,7 @@ interface RemoteStatement {
     writes       @2 :Int32;
     subPlanReprs @3 :List(PlanRepr);
   }
-  
+
   enum Operation {
     indexJoinScan          @0;
     indexSelectScan        @1;
