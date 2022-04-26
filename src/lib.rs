@@ -1,12 +1,3 @@
-#[macro_use]
-extern crate capnp_rpc;
-pub mod remote_capnp {
-    include!(concat!(
-        env!("OUT_DIR"),
-        "/src/rdbc/network/remote_capnp.rs"
-    ));
-}
-
 pub mod buffer;
 pub mod file;
 pub mod index;
