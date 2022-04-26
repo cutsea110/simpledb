@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -6,7 +5,6 @@ use anyhow::Result;
 use capnp::capability::Promise;
 
 use crate::metadata::indexmanager::IndexInfo;
-use crate::rdbc::driveradapter::DriverAdapter;
 use crate::rdbc::{
     connectionadapter, driveradapter, planrepradapter, resultsetadapter, resultsetmetadataadapter,
     statementadapter,
@@ -30,10 +28,10 @@ impl<'a> driveradapter::DriverAdapter<'a> for RemoteDriverImpl {
         panic!("TODO")
     }
     fn get_major_version(&self) -> i32 {
-        0
+        panic!("TODO")
     }
     fn get_minor_version(&self) -> i32 {
-        1
+        panic!("TODO")
     }
 }
 
@@ -48,14 +46,9 @@ impl remote_driver::Server for RemoteDriverImpl {
     fn get_version(
         &mut self,
         _: remote_driver::GetVersionParams,
-        mut reply: remote_driver::GetVersionResults,
+        _: remote_driver::GetVersionResults,
     ) -> Promise<(), capnp::Error> {
-        reply.get().init_ver();
-        let mut ver = reply.get().get_ver().unwrap();
-        ver.borrow_mut().set_major_ver(self.get_major_version());
-        ver.borrow_mut().set_minor_ver(self.get_minor_version());
-
-        Promise::ok(())
+        panic!("TODO")
     }
 }
 
