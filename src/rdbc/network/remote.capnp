@@ -64,28 +64,7 @@ interface RemoteStatement {
   executeQuery  @0 () -> (result: RemoteResultSet);
   executeUpdate @1 () -> (affected: Int32);
   close         @2 ();
-  explainPlan   @3 () -> (planrepr: PlanRepr);
-
-  struct PlanRepr {
-    operation    @0 :Operation;
-    reads        @1 :Int32;
-    writes       @2 :Int32;
-    subPlanReprs @3 :List(PlanRepr);
-  }
-  
-  enum Operation {
-    indexJoinScan          @0;
-    indexSelectScan        @1;
-    groupByScan            @2;
-    materialize            @3;
-    mergeJoinScan          @4;
-    sortScan               @5;
-    multibufferProductScan @6;
-    productScan            @7;
-    projectScan            @8;
-    selectScan             @9;
-    tableScan              @10;
-  }
+  explainPlan   @3 () -> (planrepr: RemotePlanRepr);
 }
 
 interface RemoteResultSet {
@@ -105,5 +84,26 @@ interface RemoteMetaData {
   enum DataType {
     int32   @0;
     varchar @1;
+  }
+}
+
+interface RemotePlanRepr {
+  operation @0 () -> (op: Operation);
+  reads     @1 () -> (result: Int32);
+  writes    @2 () -> (result: Int32);
+  subPlanReprs @3 () -> (children: List(RemotePlanRepr));
+  
+  enum Operation {
+    indexJoinScan          @0;
+    indexSelectScan        @1;
+    groupByScan            @2;
+    materialize            @3;
+    mergeJoinScan          @4;
+    sortScan               @5;
+    multibufferProductScan @6;
+    productScan            @7;
+    projectScan            @8;
+    selectScan             @9;
+    tableScan              @10;
   }
 }
