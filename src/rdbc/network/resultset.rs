@@ -1,11 +1,18 @@
 use anyhow::Result;
 
 use super::metadata::NetworkResultSetMetaData;
-use crate::rdbc::resultsetadapter::ResultSetAdapter;
+use crate::{rdbc::resultsetadapter::ResultSetAdapter, remote_capnp};
+use remote_capnp::remote_result_set;
 
 pub struct NetworkResultSet {
-    // TODO
+    client: remote_result_set::Client,
 }
+impl NetworkResultSet {
+    pub fn new(client: remote_result_set::Client) -> Self {
+        Self { client }
+    }
+}
+
 impl ResultSetAdapter for NetworkResultSet {
     type Meta = NetworkResultSetMetaData;
 
