@@ -7,12 +7,19 @@ use std::{
 use super::statement::NetworkStatement;
 use crate::{
     metadata::indexmanager::IndexInfo, rdbc::connectionadapter::ConnectionAdapter,
-    record::schema::Schema, tx::transaction::Transaction,
+    record::schema::Schema, remote_capnp, tx::transaction::Transaction,
 };
+use remote_capnp::remote_connection;
 
 pub struct NetworkConnection {
-    // TODO
+    client: remote_connection::Client,
 }
+impl NetworkConnection {
+    pub fn new(client: remote_connection::Client) -> Self {
+        Self { client }
+    }
+}
+
 impl<'a> ConnectionAdapter<'a> for NetworkConnection {
     type Stmt = NetworkStatement;
 
