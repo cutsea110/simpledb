@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use crate::{
-    rdbc::planrepradapter::PlanReprAdapter, remote_capnp::remote_statement,
-    repr::planrepr::PlanRepr,
+    rdbc::planrepradapter::PlanReprAdapter,
+    remote_capnp::remote_statement,
+    repr::planrepr::{self, PlanRepr},
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -36,8 +37,9 @@ impl Operation {
         }
     }
 }
-impl Into<crate::repr::planrepr::Operation> for Operation {
-    fn into(self) -> crate::repr::planrepr::Operation {
+
+impl From<Operation> for planrepr::Operation {
+    fn from(op: Operation) -> Self {
         panic!("TODO")
     }
 }
@@ -70,7 +72,7 @@ impl NetworkPlanRepr {
 }
 
 impl PlanRepr for NetworkPlanRepr {
-    fn operation(&self) -> crate::repr::planrepr::Operation {
+    fn operation(&self) -> planrepr::Operation {
         self.operation.clone().into()
     }
     fn reads(&self) -> i32 {
