@@ -24,16 +24,43 @@ impl<'a> ConnectionAdapter<'a> for NetworkConnection {
     type Stmt = NetworkStatement;
 
     fn create(&'a mut self, sql: &str) -> Result<Self::Stmt> {
-        panic!("TODO")
+        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
+        let stmt = rt.block_on(async {
+            let mut request = self.client.create_request();
+            request
+                .get()
+                .set_sql(::capnp::text::new_reader(sql.as_bytes()).unwrap());
+            request.send().pipeline.get_stmt()
+        });
+
+        Ok(NetworkStatement::new(stmt))
     }
     fn close(&mut self) -> Result<()> {
-        panic!("TODO")
+        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
+        rt.block_on(async {
+            let request = self.client.close_request();
+            request.send().promise.await.unwrap(); // TODO
+        });
+
+        Ok(())
     }
     fn commit(&mut self) -> Result<()> {
-        panic!("TODO")
+        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
+        rt.block_on(async {
+            let request = self.client.commit_request();
+            request.send().promise.await.unwrap(); // TODO
+        });
+
+        Ok(())
     }
     fn rollback(&mut self) -> Result<()> {
-        panic!("TODO")
+        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
+        rt.block_on(async {
+            let request = self.client.rollback_request();
+            request.send().promise.await.unwrap(); // TODO
+        });
+
+        Ok(())
     }
     fn get_transaction(&self) -> Arc<Mutex<Transaction>> {
         panic!("TODO")
