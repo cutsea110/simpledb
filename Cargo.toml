@@ -5,7 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-build = "src/rdbc/network/build.rs"
+build = "capnp/build.rs"
 
 [build-dependencies]
 capnpc = "0.14"
