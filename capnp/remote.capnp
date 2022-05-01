@@ -1,5 +1,10 @@
 @0xa9ab30b6c567e6ae;
 
+struct Tuple(T, U) {
+  fst @0 :T;
+  snd @1 :U;
+}
+
 struct Map(Key, Value) {
   entries @0 :List(Entry);
 
@@ -80,6 +85,62 @@ interface RemoteStatement {
     projectScan            @8;
     selectScan             @9;
     tableScan              @10;
+  }
+
+  struct IndexJoinScan {
+    idxname    @0 :Text;
+    idxfldname @1 :Text;
+    joinfld    @2 :Text;
+  }
+  struct IndexSelectScan {
+    idxname    @0 :Text;
+    idxfldname @1 :Text;
+    val        @2 :Constant;
+  }
+  struct GroupByScan {
+    fields @0 :List(Text);
+    aggfns @1 :List(Tuple(Text, Constant));
+  }
+  struct Materialize {
+  }
+  struct MergeJoinScan {
+    fldname1 @0 :Text;
+    fldname2 @1 :Text;
+  }
+  struct SortScan {
+    compflds @0 :List(Text);
+  }
+  struct MultibufferProductScan {
+  }
+  struct ProductScan {
+  }
+  struct ProjectScan {
+  }
+  struct SelectScan {
+    pred @0 :Predicate;
+  }
+  struct TableScan {
+    tblname @0 :Text;
+  }
+
+  struct Constant {
+    union {
+      int32  @0 :Int32;
+      string @1 :Text;
+    }
+  }
+  struct Predicate {
+    terms @0 :List(Term);
+  }
+  struct Term {
+    lhs @0 :Expression;
+    rhs @1 :Expression;
+  }
+  struct Expression {
+    union {
+      val     @0 :Constant;
+      fldname @1 :Text;
+    }
   }
 
   executeQuery  @0 () -> (result: RemoteResultSet);
