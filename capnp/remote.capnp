@@ -148,8 +148,21 @@ interface RemoteStatement {
 }
 
 interface RemoteResultSet {
-  next      @0 () -> (exists: Bool);
-  close     @1 ();
-  getI32    @2 (fldname: Text) -> (val: Int32);
-  getString @3 (fldname: Text) -> (val: Text);
+  next          @0 () -> (exists: Bool);
+  close         @1 ();
+  getRecordsAll @2 () -> (results: Record);
+
+  struct Results {
+    count   @0 :Int32;
+    records @1 :List(Record);
+  }
+  struct Record {
+    map @0 :Map(Text, Value);
+  }
+  struct Value {
+    union {
+      int32  @0 :Int32;
+      string @1 :Text;
+    }
+  }
 }
