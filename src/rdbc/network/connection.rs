@@ -34,7 +34,7 @@ impl NetworkConnection {
 impl<'a> ConnectionAdapter<'a> for NetworkConnection {
     type Stmt = NetworkStatement;
 
-    fn create(&'a mut self, sql: &str) -> Result<Self::Stmt> {
+    fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt> {
         let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
         let stmt = rt.block_on(async {
             let mut request = self.client.create_request();

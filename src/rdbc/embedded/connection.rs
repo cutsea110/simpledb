@@ -69,7 +69,7 @@ impl EmbeddedConnection {
 impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     type Stmt = EmbeddedStatement<'a>;
 
-    fn create(&'a mut self, sql: &str) -> Result<Self::Stmt> {
+    fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt> {
         self.db
             .planner()
             .and_then(|planner| Ok(EmbeddedStatement::new(self, planner, sql)))

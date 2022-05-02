@@ -80,7 +80,7 @@ mod tests {
         // init database
         for sql in sqls {
             println!("< {}", sql);
-            if let Ok(n) = conn.create(sql)?.execute_update() {
+            if let Ok(n) = conn.create_statement(sql)?.execute_update() {
                 println!("> Affected {}", n);
             }
         }
@@ -92,7 +92,7 @@ mod tests {
         let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
         println!("> {}", qry);
         // statement
-        let mut stmt = conn.create(qry)?;
+        let mut stmt = conn.create_statement(qry)?;
         // resultset
         let mut results = stmt.execute_query()?;
         // resultset metadata
@@ -136,7 +136,7 @@ mod tests {
         let cmd = "update STUDENT set GradYear = 2023 where MajorId = 30";
         println!("> {}", cmd);
         // statement
-        let mut stmt = conn.create(cmd)?;
+        let mut stmt = conn.create_statement(cmd)?;
         // affected
         let affected = stmt.execute_update()?;
         println!("> Affected {}", affected);

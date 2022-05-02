@@ -145,7 +145,7 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
                 return;
             }
             let sql = &qry[tokens[0].len()..].trim();
-            let mut stmt = conn.create(sql).expect("create statement");
+            let mut stmt = conn.create_statement(sql).expect("create statement");
             let words: Vec<&str> = sql.split_whitespace().collect();
             if !words.is_empty() {
                 let cmd = words[0].trim().to_ascii_lowercase();
@@ -170,7 +170,7 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
         return;
     }
 
-    let mut stmt = conn.create(&qry).expect("create statement");
+    let mut stmt = conn.create_statement(&qry).expect("create statement");
     let words: Vec<&str> = qry.split_whitespace().collect();
     if !words.is_empty() {
         let cmd = words[0].trim().to_ascii_lowercase();
