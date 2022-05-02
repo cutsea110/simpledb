@@ -108,7 +108,15 @@ impl ResultSetAdapter for NetworkResultSet {
         )))
     }
     fn get_meta_data(&self) -> Result<Self::Meta> {
-        panic!("TODO")
+        let rt = tokio::runtime::Runtime::new()?;
+        let meta = rt.block_on(async {
+            let request = self.client.get_metadata_request();
+            let reply = request.send().promise.await.unwrap(); // TODO
+            let meta = reply.get().unwrap().get_metadata().unwrap();
+            panic!("TODO")
+        });
+
+        Ok(meta)
     }
     fn close(&mut self) -> Result<()> {
         self.count = -1;

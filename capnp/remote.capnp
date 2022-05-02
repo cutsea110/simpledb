@@ -14,6 +14,33 @@ struct Map(Key, Value) {
   }
 }
 
+
+enum FieldType {
+  integer @0;
+  varchar @1;
+}
+
+struct FieldInfo {
+  type   @0 :FieldType;
+  length @1 :Int32;
+}
+
+struct Schema {
+  fields @0 :List(Text);
+  info   @1 :Map(Text, FieldInfo);
+}
+
+struct ViewDef {
+  vwname @0 :Text;
+  vwdef  @1 :Text;
+}
+
+struct IndexInfo {
+  idxname @0 :Text;
+  fldname @1 :Text;
+}
+
+
 interface RemoteDriver {
   connect    @0 (connString :Text) -> (conn :RemoteConnection);
   getVersion @1 () -> (ver :Version);
@@ -25,44 +52,14 @@ interface RemoteDriver {
 }
 
 interface RemoteConnection {
-  struct Transaction {
-    txNum @0 :Int32;
-  }
-
-  enum FieldType {
-    integer @0;
-    varchar @1;
-  }
-
-  struct FieldInfo {
-    type   @0 :FieldType;
-    length @1 :Int32;
-  }
-
-  struct Schema {
-    fields @0 :List(Text);
-    info   @1 :Map(Text, FieldInfo);
-  }
-
-  struct ViewDef {
-    vwname @0 :Text;
-    vwdef  @1 :Text;
-  }
-
-  struct IndexInfo {
-    idxname @0 :Text;
-    fldname @1 :Text;
-  }
-
   create            @0 (sql :Text) -> (stmt :RemoteStatement);
-  close             @1();
+  close             @1 ();
   commit            @2 ();
   rollback          @3 ();
 
-  getTransaction    @4 () -> (tx :Transaction);
-  getTableSchema    @5 () -> (sch :Schema);
-  getViewDefinition @6 () -> (vwdef :ViewDef);
-  getIndexInfo      @7 () -> (ii :Map(Text, IndexInfo));
+  getTableSchema    @4 () -> (sch :Schema);
+  getViewDefinition @5 () -> (vwdef :ViewDef);
+  getIndexInfo      @6 () -> (ii :Map(Text, IndexInfo));
 }
 
 interface RemoteStatement {
@@ -150,7 +147,12 @@ interface RemoteStatement {
 interface RemoteResultSet {
   next          @0 () -> (exists :Bool);
   close         @1 ();
-  getRecordsAll @2 () -> (results :Results);
+  getMetadata   @2 () -> (metadata: MetaData);
+  getRecordsAll @3 () -> (results :Results);
+
+  struct MetaData {
+    schema @0 :Schema;
+  }
 
   struct Results {
     count   @0 :Int32;
