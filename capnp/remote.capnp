@@ -15,8 +15,8 @@ struct Map(Key, Value) {
 }
 
 interface RemoteDriver {
-  connect    @0 (connString: Text) -> (conn: RemoteConnection);
-  getVersion @1 () -> (ver: Version);
+  connect    @0 (connString :Text) -> (conn :RemoteConnection);
+  getVersion @1 () -> (ver :Version);
 
   struct Version {
     majorVer @0 :Int32;
@@ -54,15 +54,15 @@ interface RemoteConnection {
     fldname @1 :Text;
   }
 
-  create            @0 (sql: Text) -> (stmt: RemoteStatement);
+  create            @0 (sql :Text) -> (stmt :RemoteStatement);
   close             @1();
   commit            @2 ();
   rollback          @3 ();
 
-  getTransaction    @4 () -> (tx: Transaction);
-  getTableSchema    @5 () -> (sch: Schema);
-  getViewDefinition @6 () -> (vwdef: ViewDef);
-  getIndexInfo      @7 () -> (ii: Map(Text, IndexInfo));
+  getTransaction    @4 () -> (tx :Transaction);
+  getTableSchema    @5 () -> (sch :Schema);
+  getViewDefinition @6 () -> (vwdef :ViewDef);
+  getIndexInfo      @7 () -> (ii :Map(Text, IndexInfo));
 }
 
 interface RemoteStatement {
@@ -141,16 +141,16 @@ interface RemoteStatement {
     }
   }
 
-  executeQuery  @0 () -> (result: RemoteResultSet);
-  executeUpdate @1 () -> (affected: Int32);
+  executeQuery  @0 () -> (result :RemoteResultSet);
+  executeUpdate @1 () -> (affected :Int32);
   close         @2 ();
-  explainPlan   @3 () -> (planrepr: PlanRepr);
+  explainPlan   @3 () -> (planrepr :PlanRepr);
 }
 
 interface RemoteResultSet {
-  next          @0 () -> (exists: Bool);
+  next          @0 () -> (exists :Bool);
   close         @1 ();
-  getRecordsAll @2 () -> (results: Record);
+  getRecordsAll @2 () -> (results :Results);
 
   struct Results {
     count   @0 :Int32;
