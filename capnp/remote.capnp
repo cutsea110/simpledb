@@ -67,24 +67,22 @@ interface RemoteConnection {
 
 interface RemoteStatement {
   struct PlanRepr {
-    operation    @0 :Operation;
-    reads        @1 :Int32;
-    writes       @2 :Int32;
-    subPlanReprs @3 :List(PlanRepr);
-  }
-
-  enum Operation {
-    indexJoinScan          @0;
-    indexSelectScan        @1;
-    groupByScan            @2;
-    materialize            @3;
-    mergeJoinScan          @4;
-    sortScan               @5;
-    multibufferProductScan @6;
-    productScan            @7;
-    projectScan            @8;
-    selectScan             @9;
-    tableScan              @10;
+    operation :union {
+      indexJoinScan          @0  :IndexJoinScan;
+      indexSelectScan        @1  :IndexSelectScan;
+      groupByScan            @2  :GroupByScan;
+      materialize            @3  :Materialize;
+      mergeJoinScan          @4  :MergeJoinScan;
+      sortScan               @5  :SortScan;
+      multibufferProductScan @6  :MultibufferProductScan;
+      productScan            @7  :ProductScan;
+      projectScan            @8  :ProjectScan;
+      selectScan             @9  :SelectScan;
+      tableScan              @10 :TableScan;
+    }
+    reads        @11 :Int32;
+    writes       @12 :Int32;
+    subPlanReprs @13 :List(PlanRepr);
   }
 
   struct IndexJoinScan {

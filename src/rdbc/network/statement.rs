@@ -52,7 +52,7 @@ impl<'a> StatementAdapter<'a> for NetworkStatement {
             let reply = request.send().promise.await.unwrap();
             let repr = reply.get().unwrap().get_planrepr().unwrap();
 
-            NetworkPlanRepr::from_reader(repr)
+            NetworkPlanRepr::from(repr)
         });
 
         Ok(planrepr)

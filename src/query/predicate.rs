@@ -92,4 +92,8 @@ impl Predicate {
         }
         None
     }
+    // my own extends
+    pub fn init_with_terms(&mut self, terms: Vec<Term>) {
+        self.terms = terms;
+    }
 }
