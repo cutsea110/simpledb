@@ -18,6 +18,24 @@ impl NetworkConnection {
     pub fn new(client: remote_connection::Client) -> Self {
         Self { client }
     }
+    pub fn commit(&mut self) -> Result<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
+        rt.block_on(async {
+            let request = self.client.commit_request();
+            request.send().promise.await.unwrap(); // TODO
+        });
+
+        Ok(())
+    }
+    pub fn rollback(&mut self) -> Result<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
+        rt.block_on(async {
+            let request = self.client.rollback_request();
+            request.send().promise.await.unwrap(); // TODO
+        });
+
+        Ok(())
+    }
 }
 
 impl<'a> ConnectionAdapter<'a> for NetworkConnection {
@@ -43,27 +61,6 @@ impl<'a> ConnectionAdapter<'a> for NetworkConnection {
         });
 
         Ok(())
-    }
-    fn commit(&mut self) -> Result<()> {
-        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
-        rt.block_on(async {
-            let request = self.client.commit_request();
-            request.send().promise.await.unwrap(); // TODO
-        });
-
-        Ok(())
-    }
-    fn rollback(&mut self) -> Result<()> {
-        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
-        rt.block_on(async {
-            let request = self.client.rollback_request();
-            request.send().promise.await.unwrap(); // TODO
-        });
-
-        Ok(())
-    }
-    fn get_transaction(&self) -> Arc<Mutex<Transaction>> {
-        panic!("TODO")
     }
     fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
         panic!("TODO")

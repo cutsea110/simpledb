@@ -27,6 +27,31 @@ impl EmbeddedConnection {
             current_tx: Arc::new(Mutex::new(tx)),
         }
     }
+    pub fn commit(&mut self) -> Result<()> {
+        if self.current_tx.lock().unwrap().commit().is_err() {
+            return Err(From::from(ConnectionError::CommitFailed));
+        }
+        if let Ok(tx) = self.db.new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
+            return Ok(());
+        }
+
+        Err(From::from(ConnectionError::StartNewTransactionFailed))
+    }
+    pub fn rollback(&mut self) -> Result<()> {
+        if self.current_tx.lock().unwrap().rollback().is_err() {
+            return Err(From::from(ConnectionError::RollbackFailed));
+        }
+        if let Ok(tx) = self.db.new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
+            return Ok(());
+        }
+
+        Err(From::from(ConnectionError::StartNewTransactionFailed))
+    }
+    pub fn get_transaction(&self) -> Arc<Mutex<Transaction>> {
+        Arc::clone(&self.current_tx)
+    }
 }
 
 impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
@@ -41,31 +66,6 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     fn close(&mut self) -> Result<()> {
         self.commit()
             .or_else(|_| Err(From::from(ConnectionError::CloseFailed)))
-    }
-    fn commit(&mut self) -> Result<()> {
-        if self.current_tx.lock().unwrap().commit().is_err() {
-            return Err(From::from(ConnectionError::CommitFailed));
-        }
-        if let Ok(tx) = self.db.new_tx() {
-            self.current_tx = Arc::new(Mutex::new(tx));
-            return Ok(());
-        }
-
-        Err(From::from(ConnectionError::StartNewTransactionFailed))
-    }
-    fn rollback(&mut self) -> Result<()> {
-        if self.current_tx.lock().unwrap().rollback().is_err() {
-            return Err(From::from(ConnectionError::RollbackFailed));
-        }
-        if let Ok(tx) = self.db.new_tx() {
-            self.current_tx = Arc::new(Mutex::new(tx));
-            return Ok(());
-        }
-
-        Err(From::from(ConnectionError::StartNewTransactionFailed))
-    }
-    fn get_transaction(&self) -> Arc<Mutex<Transaction>> {
-        Arc::clone(&self.current_tx)
     }
     fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
         self.db
