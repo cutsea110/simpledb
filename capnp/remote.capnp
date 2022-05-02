@@ -148,16 +148,12 @@ interface RemoteResultSet {
   next          @0 () -> (exists :Bool);
   close         @1 ();
   getMetadata   @2 () -> (metadata: MetaData);
-  getRecordsAll @3 () -> (results :Results);
+  getNextRecord @3 () -> (record :Record);
 
   struct MetaData {
     schema @0 :Schema;
   }
 
-  struct Results {
-    count   @0 :Int32;
-    records @1 :List(Record);
-  }
   struct Record {
     map @0 :Map(Text, Value);
   }
