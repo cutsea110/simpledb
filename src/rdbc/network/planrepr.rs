@@ -1,10 +1,7 @@
 use itertools::Itertools;
 use std::sync::Arc;
 
-use crate::{
-    query, rdbc::planrepradapter::PlanReprAdapter, remote_capnp::remote_statement, repr,
-    repr::planrepr::PlanRepr,
-};
+use crate::{query, remote_capnp::remote_statement, repr, repr::planrepr::PlanRepr};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Constant {
@@ -263,6 +260,10 @@ impl NetworkPlanRepr {
     fn to_plan_repr(&self) -> Arc<dyn PlanRepr> {
         Arc::new(self.clone())
     }
+
+    pub fn repr(&self) -> Arc<dyn PlanRepr> {
+        self.to_plan_repr()
+    }
 }
 
 impl<'a> From<remote_statement::plan_repr::Reader<'a>> for NetworkPlanRepr {
@@ -293,11 +294,5 @@ impl PlanRepr for NetworkPlanRepr {
     }
     fn sub_plan_reprs(&self) -> Vec<Arc<dyn PlanRepr>> {
         self.sub_plan_reprs.clone()
-    }
-}
-
-impl PlanReprAdapter for NetworkPlanRepr {
-    fn repr(&self) -> Arc<dyn PlanRepr> {
-        self.to_plan_repr()
     }
 }

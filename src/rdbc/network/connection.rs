@@ -1,11 +1,7 @@
 use anyhow::Result;
-use std::{collections::HashMap, sync::Arc};
 
 use super::statement::NetworkStatement;
-use crate::{
-    metadata::indexmanager::IndexInfo, rdbc::connectionadapter::ConnectionAdapter,
-    record::schema::Schema, remote_capnp,
-};
+use crate::{rdbc::connectionadapter::ConnectionAdapter, remote_capnp};
 use remote_capnp::remote_connection;
 
 pub struct NetworkConnection {

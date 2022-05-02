@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use simpledb::{
-    rdbc::{embedded::planrepr::EmbeddedPlanRepr, planrepradapter::PlanReprAdapter},
+    rdbc::embedded::planrepr::EmbeddedPlanRepr,
     repr::planrepr::{Operation, PlanRepr},
 };
 

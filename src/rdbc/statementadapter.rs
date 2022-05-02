@@ -1,7 +1,7 @@
 use anyhow::Result;
 use core::fmt;
 
-use super::{planrepradapter::PlanReprAdapter, resultsetadapter::ResultSetAdapter};
+use super::resultsetadapter::ResultSetAdapter;
 
 #[derive(Debug)]
 pub enum StatementError {
