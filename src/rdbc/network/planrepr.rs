@@ -257,12 +257,8 @@ pub struct NetworkPlanRepr {
 }
 
 impl NetworkPlanRepr {
-    fn to_plan_repr(&self) -> Arc<dyn PlanRepr> {
-        Arc::new(self.clone())
-    }
-
     pub fn repr(&self) -> Arc<dyn PlanRepr> {
-        self.to_plan_repr()
+        Arc::new(self.clone())
     }
 }
 
@@ -270,7 +266,7 @@ impl<'a> From<remote_statement::plan_repr::Reader<'a>> for NetworkPlanRepr {
     fn from(repr: remote_statement::plan_repr::Reader<'a>) -> Self {
         let mut subs = vec![];
         for v in repr.get_sub_plan_reprs().unwrap().iter() {
-            let v = NetworkPlanRepr::from(v).to_plan_repr();
+            let v = NetworkPlanRepr::from(v).repr();
             subs.push(v);
         }
         Self {
