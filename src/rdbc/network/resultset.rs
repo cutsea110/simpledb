@@ -110,7 +110,8 @@ impl ResultSetAdapter for NetworkResultSet {
             let request = self.client.get_metadata_request();
             let reply = request.send().promise.await.unwrap(); // TODO
             let meta = reply.get().unwrap().get_metadata().unwrap();
-            panic!("TODO")
+
+            NetworkResultSetMetaData::from(meta)
         });
 
         Ok(meta)
