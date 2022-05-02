@@ -47,8 +47,4 @@ pub trait ConnectionAdapter<'a> {
 
     fn create(&'a mut self, sql: &str) -> Result<Self::Stmt>;
     fn close(&mut self) -> Result<()>;
-    // my own extends
-    fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>>;
-    fn get_view_definition(&self, viewname: &str) -> Result<(String, String)>;
-    fn get_index_info(&self, tblname: &str) -> Result<HashMap<String, IndexInfo>>;
 }

@@ -1,13 +1,10 @@
 use anyhow::Result;
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use super::statement::NetworkStatement;
 use crate::{
     metadata::indexmanager::IndexInfo, rdbc::connectionadapter::ConnectionAdapter,
-    record::schema::Schema, remote_capnp, tx::transaction::Transaction,
+    record::schema::Schema, remote_capnp,
 };
 use remote_capnp::remote_connection;
 
@@ -61,14 +58,5 @@ impl<'a> ConnectionAdapter<'a> for NetworkConnection {
         });
 
         Ok(())
-    }
-    fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
-        panic!("TODO")
-    }
-    fn get_view_definition(&self, viewname: &str) -> Result<(String, String)> {
-        panic!("TODO")
-    }
-    fn get_index_info(&self, tblname: &str) -> Result<HashMap<String, IndexInfo>> {
-        panic!("TODO")
     }
 }

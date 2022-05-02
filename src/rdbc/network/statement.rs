@@ -11,11 +11,22 @@ impl NetworkStatement {
     pub fn new(client: remote_statement::Client) -> Self {
         Self { client }
     }
+    pub fn explain_plan(&mut self) -> Result<NetworkPlanRepr> {
+        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
+        let planrepr = rt.block_on(async {
+            let request = self.client.explain_plan_request();
+            let reply = request.send().promise.await.unwrap();
+            let repr = reply.get().unwrap().get_planrepr().unwrap();
+
+            NetworkPlanRepr::from(repr)
+        });
+
+        Ok(planrepr)
+    }
 }
 
 impl<'a> StatementAdapter<'a> for NetworkStatement {
     type Set = NetworkResultSet;
-    type PlanRepr = NetworkPlanRepr;
 
     fn execute_query(&'a mut self) -> Result<Self::Set> {
         let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
@@ -44,17 +55,5 @@ impl<'a> StatementAdapter<'a> for NetworkStatement {
         });
 
         Ok(())
-    }
-    fn explain_plan(&mut self) -> Result<Self::PlanRepr> {
-        let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
-        let planrepr = rt.block_on(async {
-            let request = self.client.explain_plan_request();
-            let reply = request.send().promise.await.unwrap();
-            let repr = reply.get().unwrap().get_planrepr().unwrap();
-
-            NetworkPlanRepr::from(repr)
-        });
-
-        Ok(planrepr)
     }
 }

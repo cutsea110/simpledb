@@ -52,6 +52,18 @@ impl EmbeddedConnection {
     pub fn get_transaction(&self) -> Arc<Mutex<Transaction>> {
         Arc::clone(&self.current_tx)
     }
+    pub fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
+        self.db
+            .get_table_schema(tblname, Arc::clone(&self.current_tx))
+    }
+    pub fn get_view_definition(&self, viewname: &str) -> Result<(String, String)> {
+        self.db
+            .get_view_definitoin(viewname, Arc::clone(&self.current_tx))
+    }
+    pub fn get_index_info(&self, tblname: &str) -> Result<HashMap<String, IndexInfo>> {
+        self.db
+            .get_index_info(tblname, Arc::clone(&self.current_tx))
+    }
 }
 
 impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
@@ -66,17 +78,5 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     fn close(&mut self) -> Result<()> {
         self.commit()
             .or_else(|_| Err(From::from(ConnectionError::CloseFailed)))
-    }
-    fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
-        self.db
-            .get_table_schema(tblname, Arc::clone(&self.current_tx))
-    }
-    fn get_view_definition(&self, viewname: &str) -> Result<(String, String)> {
-        self.db
-            .get_view_definitoin(viewname, Arc::clone(&self.current_tx))
-    }
-    fn get_index_info(&self, tblname: &str) -> Result<HashMap<String, IndexInfo>> {
-        self.db
-            .get_index_info(tblname, Arc::clone(&self.current_tx))
     }
 }
