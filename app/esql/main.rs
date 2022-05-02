@@ -13,7 +13,6 @@ use simpledb::rdbc::{
     connectionadapter::ConnectionAdapter,
     driveradapter::DriverAdapter,
     embedded::{connection::EmbeddedConnection, driver::EmbeddedDriver},
-    statementadapter::StatementAdapter,
 };
 
 use execquery::exec_query;

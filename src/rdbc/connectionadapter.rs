@@ -1,14 +1,7 @@
 use anyhow::Result;
 use core::fmt;
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
 
 use super::statementadapter::StatementAdapter;
-use crate::{
-    metadata::indexmanager::IndexInfo, record::schema::Schema, tx::transaction::Transaction,
-};
 
 #[derive(Debug)]
 pub enum ConnectionError {
