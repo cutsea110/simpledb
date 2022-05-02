@@ -54,10 +54,10 @@ interface RemoteConnection {
     fldname @1 :Text;
   }
 
-  create @0 (sql: Text) -> (stmt: RemoteStatement);
-  close    @1();
-  commit   @2 ();
-  rollback @3 ();
+  create            @0 (sql: Text) -> (stmt: RemoteStatement);
+  close             @1();
+  commit            @2 ();
+  rollback          @3 ();
 
   getTransaction    @4 () -> (tx: Transaction);
   getTableSchema    @5 () -> (sch: Schema);
@@ -80,9 +80,9 @@ interface RemoteStatement {
       selectScan             @9  :SelectScan;
       tableScan              @10 :TableScan;
     }
-    reads        @11 :Int32;
-    writes       @12 :Int32;
-    subPlanReprs @13 :List(PlanRepr);
+    reads                    @11 :Int32;
+    writes                   @12 :Int32;
+    subPlanReprs             @13 :List(PlanRepr);
   }
 
   struct IndexJoinScan {
