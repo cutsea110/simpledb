@@ -1,11 +1,12 @@
 use core::cmp::max;
+use itertools::Itertools;
 use std::collections::HashMap;
 
-use itertools::Itertools;
-
-use crate::rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
-use crate::record;
 use crate::remote_capnp::{self, remote_result_set};
+use crate::{
+    rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
+    record,
+};
 
 struct Schema {
     fields: Vec<String>,

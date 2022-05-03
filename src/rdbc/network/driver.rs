@@ -12,6 +12,7 @@ struct Config<'a> {
 }
 
 impl<'a> Config<'a> {
+    // url is like as "rdbc:simpledb://127.0.0.1:1099/sampledb".
     pub fn from_str(url: &str) -> Self {
         // TODO: get addr and dbname by parsing url.
         let addr = "127.0.0.1:4000".to_socket_addrs().unwrap().next().unwrap();
