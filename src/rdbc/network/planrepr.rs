@@ -43,7 +43,7 @@ impl<'a> From<remote_statement::predicate::Reader<'a>> for Predicate {
 impl From<Predicate> for query::predicate::Predicate {
     fn from(pred: Predicate) -> Self {
         let terms = pred.terms.into_iter().map(|t| t.into()).collect_vec();
-        let mut result = query::predicate::Predicate::new_empty();
+        let mut result = Self::new_empty();
         result.init_with_terms(terms);
         result
     }
@@ -57,12 +57,12 @@ impl<'a> From<remote_statement::term::Reader<'a>> for Term {
     fn from(t: remote_statement::term::Reader<'a>) -> Self {
         let lhs = Expression::from(t.get_lhs().unwrap());
         let rhs = Expression::from(t.get_rhs().unwrap());
-        Term { lhs, rhs }
+        Self { lhs, rhs }
     }
 }
 impl From<Term> for query::term::Term {
     fn from(t: Term) -> Self {
-        query::term::Term::new(t.lhs.into(), t.rhs.into())
+        Self::new(t.lhs.into(), t.rhs.into())
     }
 }
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -87,8 +87,8 @@ impl<'a> From<remote_statement::expression::Reader<'a>> for Expression {
 impl From<Expression> for query::expression::Expression {
     fn from(expr: Expression) -> Self {
         match expr {
-            Expression::Val(v) => query::expression::Expression::Val(v.into()),
-            Expression::Fldname(s) => query::expression::Expression::Fldname(s),
+            Expression::Val(v) => Self::Val(v.into()),
+            Expression::Fldname(s) => Self::Fldname(s),
         }
     }
 }
@@ -214,7 +214,7 @@ impl From<Operation> for repr::planrepr::Operation {
                 idxname,
                 idxfldname,
                 joinfld,
-            } => repr::planrepr::Operation::IndexJoinScan {
+            } => Self::IndexJoinScan {
                 idxname,
                 idxfldname,
                 joinfld,
@@ -223,27 +223,25 @@ impl From<Operation> for repr::planrepr::Operation {
                 idxname,
                 idxfldname,
                 val,
-            } => repr::planrepr::Operation::IndexSelectScan {
+            } => Self::IndexSelectScan {
                 idxname,
                 idxfldname,
                 val: val.into(),
             },
-            Operation::GroupByScan { fields, aggfns } => repr::planrepr::Operation::GroupByScan {
+            Operation::GroupByScan { fields, aggfns } => Self::GroupByScan {
                 fields,
                 aggfns: aggfns.into_iter().map(|(s, v)| (s, v.into())).collect_vec(),
             },
-            Operation::Materialize => repr::planrepr::Operation::Materialize,
+            Operation::Materialize => Self::Materialize,
             Operation::MergeJoinScan { fldname1, fldname2 } => {
-                repr::planrepr::Operation::MergeJoinScan { fldname1, fldname2 }
+                Self::MergeJoinScan { fldname1, fldname2 }
             }
-            Operation::SortScan { compflds } => repr::planrepr::Operation::SortScan { compflds },
-            Operation::MultibufferProductScan => repr::planrepr::Operation::MultibufferProductScan,
-            Operation::ProductScan => repr::planrepr::Operation::ProductScan,
-            Operation::ProjectScan => repr::planrepr::Operation::ProjectScan,
-            Operation::SelectScan { pred } => {
-                repr::planrepr::Operation::SelectScan { pred: pred.into() }
-            }
-            Operation::TableScan { tblname } => repr::planrepr::Operation::TableScan { tblname },
+            Operation::SortScan { compflds } => Self::SortScan { compflds },
+            Operation::MultibufferProductScan => Self::MultibufferProductScan,
+            Operation::ProductScan => Self::ProductScan,
+            Operation::ProjectScan => Self::ProjectScan,
+            Operation::SelectScan { pred } => Self::SelectScan { pred: pred.into() },
+            Operation::TableScan { tblname } => Self::TableScan { tblname },
         }
     }
 }

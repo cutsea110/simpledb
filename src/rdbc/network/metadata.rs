@@ -25,12 +25,18 @@ struct FieldInfo {
 }
 impl<'a> From<remote_capnp::field_info::Reader<'a>> for FieldInfo {
     fn from(fi: remote_capnp::field_info::Reader<'a>) -> Self {
-        panic!("TODO")
+        Self {
+            fld_type: fi.get_type().unwrap().into(),
+            length: fi.get_length() as usize,
+        }
     }
 }
 impl From<FieldInfo> for record::schema::FieldInfo {
     fn from(fi: FieldInfo) -> Self {
-        panic!("TODO")
+        Self {
+            fld_type: record::schema::FieldType::from(fi.fld_type),
+            length: fi.length,
+        }
     }
 }
 
