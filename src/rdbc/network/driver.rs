@@ -31,20 +31,15 @@ impl<'a> Config<'a> {
     // url is like as "rdbc:simpledb://127.0.0.1:1099/sampledb".
     pub fn from_str(url: &'a str) -> Result<Self> {
         if let Some(trimed) = url.strip_prefix("rdbc:simpledb://") {
-            let addr_dbname: Vec<&str> = trimed.split('/').collect();
-            if addr_dbname.len() == 2 {
-                let addr = addr_dbname[0]
-                    .to_socket_addrs()?
-                    .next()
-                    .expect("socket addr");
-                let dbname = addr_dbname[1];
+            let elems: Vec<&str> = trimed.split('/').collect();
+            if elems.len() == 2 {
+                let addr = elems[0].to_socket_addrs()?.next().expect("socket addr");
+                let dbname = elems[1];
 
                 return Ok(Self { addr, dbname });
             }
-
             return Err(From::from(NetworkDriverError::InvalidUrl));
         }
-
         Err(From::from(NetworkDriverError::InvalidUrl))
     }
 }
