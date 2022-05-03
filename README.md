@@ -10,6 +10,12 @@ Done to implement all of book contents, except for exercises and chap 11 remote 
 
 ## Build
 
+You need to install capnproto for building this project.
+
+``` shell
+sudo apt install capnproto
+```
+
 ``` shell
 cargo build
 ```
