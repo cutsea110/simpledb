@@ -1,10 +1,26 @@
 use anyhow::Result;
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
+use core::fmt;
 use futures::AsyncReadExt;
 use std::net::{SocketAddr, ToSocketAddrs};
 
 use super::connection::NetworkConnection;
 use crate::{rdbc::driveradapter::DriverAdapter, remote_capnp::remote_driver};
+
+#[derive(Debug)]
+pub enum NetworkDriverError {
+    InvalidUrl,
+}
+impl std::error::Error for NetworkDriverError {}
+impl fmt::Display for NetworkDriverError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            NetworkDriverError::InvalidUrl => {
+                write!(f, "invalid url")
+            }
+        }
+    }
+}
 
 struct Config<'a> {
     addr: SocketAddr,
@@ -13,12 +29,23 @@ struct Config<'a> {
 
 impl<'a> Config<'a> {
     // url is like as "rdbc:simpledb://127.0.0.1:1099/sampledb".
-    pub fn from_str(url: &str) -> Self {
-        // TODO: get addr and dbname by parsing url.
-        let addr = "127.0.0.1:4000".to_socket_addrs().unwrap().next().unwrap();
-        let dbname = "demo";
+    pub fn from_str(url: &'a str) -> Result<Self> {
+        if let Some(trimed) = url.strip_prefix("rdbc:simpledb://") {
+            let addr_dbname: Vec<&str> = trimed.split('/').collect();
+            if addr_dbname.len() == 2 {
+                let addr = addr_dbname[0]
+                    .to_socket_addrs()?
+                    .next()
+                    .expect("socket addr");
+                let dbname = addr_dbname[1];
 
-        Self { addr, dbname }
+                return Ok(Self { addr, dbname });
+            }
+
+            return Err(From::from(NetworkDriverError::InvalidUrl));
+        }
+
+        Err(From::from(NetworkDriverError::InvalidUrl))
     }
 }
 
@@ -28,7 +55,7 @@ impl<'a> DriverAdapter<'a> for NetworkDriver {
     type Con = NetworkConnection;
 
     fn connect(&self, url: &str) -> Result<Self::Con> {
-        let cfg = Config::from_str(url);
+        let cfg = Config::from_str(url)?;
 
         let rt = tokio::runtime::Runtime::new().unwrap();
         let con = rt.block_on(async {
