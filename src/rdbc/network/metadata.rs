@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
+
 use crate::rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
 use crate::record;
 use crate::remote_capnp::{self, remote_result_set};
@@ -8,14 +10,34 @@ struct Schema {
     fields: Vec<String>,
     info: HashMap<String, FieldInfo>,
 }
+
 impl<'a> From<remote_capnp::schema::Reader<'a>> for Schema {
     fn from(sch: remote_capnp::schema::Reader<'a>) -> Self {
-        panic!("TODO")
+        let fields = sch
+            .get_fields()
+            .unwrap()
+            .into_iter()
+            .map(|s| s.unwrap().to_string())
+            .collect_vec();
+        let mut info = HashMap::new();
+        for kv in sch.get_info().unwrap().get_entries().unwrap().into_iter() {
+            let key = kv.get_key().unwrap().to_string();
+            let fi = FieldInfo::from(kv.get_value().unwrap());
+            info.insert(key, fi);
+        }
+        Self { fields, info }
     }
 }
 impl From<Schema> for record::schema::Schema {
     fn from(sch: Schema) -> Self {
-        panic!("TODO")
+        let mut result = Self::new();
+        for (fldname, FieldInfo { fld_type, length }) in sch.info.into_iter() {
+            match fld_type {
+                FieldType::INTEGER => result.add_i32_field(&fldname),
+                FieldType::VARCHAR => result.add_string_field(&fldname, length),
+            }
+        }
+        result
     }
 }
 
