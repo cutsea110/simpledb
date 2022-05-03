@@ -1,3 +1,4 @@
+use core::cmp::max;
 use std::collections::HashMap;
 
 use itertools::Itertools;
@@ -9,6 +10,14 @@ use crate::remote_capnp::{self, remote_result_set};
 struct Schema {
     fields: Vec<String>,
     info: HashMap<String, FieldInfo>,
+}
+impl Schema {
+    pub fn field_type(&self, fldname: &str) -> FieldType {
+        self.info.get(fldname).unwrap().fld_type
+    }
+    pub fn length(&self, fldname: &str) -> usize {
+        self.info.get(fldname).unwrap().length
+    }
 }
 
 impl<'a> From<remote_capnp::schema::Reader<'a>> for Schema {
@@ -41,6 +50,7 @@ impl From<Schema> for record::schema::Schema {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct FieldInfo {
     fld_type: FieldType,
     length: usize,
@@ -62,6 +72,7 @@ impl From<FieldInfo> for record::schema::FieldInfo {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 enum FieldType {
     INTEGER,
     VARCHAR,
@@ -89,21 +100,38 @@ pub struct NetworkResultSetMetaData {
 
 impl<'a> From<remote_result_set::meta_data::Reader<'a>> for NetworkResultSetMetaData {
     fn from(meta: remote_result_set::meta_data::Reader) -> Self {
-        panic!("TODO")
+        let sch = Schema::from(meta.get_schema().unwrap());
+        Self { sch }
     }
 }
 
 impl ResultSetMetaDataAdapter for NetworkResultSetMetaData {
     fn get_column_count(&self) -> usize {
-        panic!("TODO")
+        self.sch.fields.len()
     }
     fn get_column_name(&self, column: usize) -> Option<&String> {
-        panic!("TODO")
+        self.sch.fields.get(column)
     }
     fn get_column_type(&self, column: usize) -> Option<DataType> {
-        panic!("TODO")
+        if let Some(fldname) = self.get_column_name(column) {
+            match self.sch.field_type(fldname) {
+                FieldType::INTEGER => return Some(DataType::Int32),
+                FieldType::VARCHAR => return Some(DataType::Varchar),
+            }
+        }
+
+        None
     }
     fn get_column_display_size(&self, column: usize) -> Option<usize> {
-        panic!("TODO")
+        if let Some(fldname) = self.get_column_name(column) {
+            let fldlength = match self.sch.field_type(fldname) {
+                FieldType::INTEGER => 6,
+                FieldType::VARCHAR => self.sch.length(fldname),
+            };
+
+            return Some(max(fldname.len(), fldlength) + 1);
+        }
+
+        None
     }
 }
