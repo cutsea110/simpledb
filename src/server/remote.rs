@@ -1,9 +1,17 @@
-use crate::remote_capnp::{self, remote_driver};
 use capnp::capability::Promise;
+use capnp_rpc::pry;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
+
+use super::simpledb::SimpleDB;
+use crate::remote_capnp::{self, remote_connection, remote_driver};
 
 pub struct RemoteDriverImpl {
     major_ver: i32,
     minor_ver: i32,
+    dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
 }
 
 impl RemoteDriverImpl {
@@ -11,6 +19,7 @@ impl RemoteDriverImpl {
         Self {
             major_ver: 0,
             minor_ver: 1,
+            dbs: HashMap::new(),
         }
     }
 }
@@ -18,10 +27,20 @@ impl RemoteDriverImpl {
 impl remote_driver::Server for RemoteDriverImpl {
     fn connect(
         &mut self,
-        _: remote_driver::ConnectParams,
-        _: remote_driver::ConnectResults,
+        params: remote_driver::ConnectParams,
+        mut results: remote_driver::ConnectResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let dbname = pry!(pry!(params.get()).get_dbname());
+        if !self.dbs.contains_key(dbname) {
+            let db = SimpleDB::new(dbname).expect("new database");
+            self.dbs
+                .insert(dbname.to_string(), Arc::new(Mutex::new(db)));
+        }
+        let conn: remote_connection::Client =
+            capnp_rpc::new_client(RemoteConnectionImpl::new(dbname));
+        results.get().set_conn(conn);
+
+        Promise::ok(())
     }
     fn get_version(
         &mut self,
@@ -35,7 +54,17 @@ impl remote_driver::Server for RemoteDriverImpl {
     }
 }
 
-pub struct RemoteConnectionImpl;
+pub struct RemoteConnectionImpl {
+    dbname: String,
+}
+
+impl RemoteConnectionImpl {
+    pub fn new(dbname: &str) -> Self {
+        Self {
+            dbname: dbname.to_string(),
+        }
+    }
+}
 
 impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     fn create(
