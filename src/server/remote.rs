@@ -1,5 +1,6 @@
 use capnp::capability::Promise;
 use capnp_rpc::pry;
+use log::{debug, info, trace};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -30,15 +31,20 @@ impl remote_driver::Server for RemoteDriverImpl {
         params: remote_driver::ConnectParams,
         mut results: remote_driver::ConnectResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("connecting");
         let dbname = pry!(pry!(params.get()).get_dbname());
+        info!("connect db: {}", dbname);
         if !self.dbs.contains_key(dbname) {
+            debug!("don't cached yet: {}", dbname);
             let db = SimpleDB::new(dbname).expect("new database");
             self.dbs
                 .insert(dbname.to_string(), Arc::new(Mutex::new(db)));
+            info!("loaded db: {}", dbname);
         }
         let conn: remote_connection::Client =
             capnp_rpc::new_client(RemoteConnectionImpl::new(dbname));
         results.get().set_conn(conn);
+        trace!("connected");
 
         Promise::ok(())
     }
@@ -47,8 +53,10 @@ impl remote_driver::Server for RemoteDriverImpl {
         _: remote_driver::GetVersionParams,
         mut results: remote_driver::GetVersionResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("get version");
         results.get().init_ver().set_major_ver(self.major_ver);
         results.get().init_ver().set_minor_ver(self.minor_ver);
+        info!("version: {}.{}", self.major_ver, self.minor_ver);
 
         Promise::ok(())
     }
