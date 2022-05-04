@@ -1,7 +1,19 @@
 use crate::remote_capnp::{self, remote_driver};
 use capnp::capability::Promise;
 
-pub struct RemoteDriverImpl;
+pub struct RemoteDriverImpl {
+    major_ver: i32,
+    minor_ver: i32,
+}
+
+impl RemoteDriverImpl {
+    pub fn new() -> Self {
+        Self {
+            major_ver: 0,
+            minor_ver: 1,
+        }
+    }
+}
 
 impl remote_driver::Server for RemoteDriverImpl {
     fn connect(
@@ -16,8 +28,8 @@ impl remote_driver::Server for RemoteDriverImpl {
         _: remote_driver::GetVersionParams,
         mut results: remote_driver::GetVersionResults,
     ) -> Promise<(), capnp::Error> {
-        results.get().init_ver().set_major_ver(0);
-        results.get().init_ver().set_minor_ver(1);
+        results.get().init_ver().set_major_ver(self.major_ver);
+        results.get().init_ver().set_minor_ver(self.minor_ver);
 
         Promise::ok(())
     }

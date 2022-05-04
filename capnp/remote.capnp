@@ -42,7 +42,7 @@ struct IndexInfo {
 
 
 interface RemoteDriver {
-  connect    @0 (connString :Text) -> (conn :RemoteConnection);
+  connect    @0 (dbname :Text) -> (conn :RemoteConnection);
   getVersion @1 () -> (ver :Version);
 
   struct Version {

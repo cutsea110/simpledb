@@ -69,7 +69,7 @@ impl<'a> DriverAdapter<'a> for NetworkDriver {
                 rpc_system.bootstrap(rpc_twoparty_capnp::Side::Server);
 
             let mut request = drvc.connect_request();
-            request.get().set_conn_string(cfg.dbname);
+            request.get().set_dbname(cfg.dbname);
             request.send().pipeline.get_conn()
         });
 
