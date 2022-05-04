@@ -14,9 +14,12 @@ impl remote_driver::Server for RemoteDriverImpl {
     fn get_version(
         &mut self,
         _: remote_driver::GetVersionParams,
-        _: remote_driver::GetVersionResults,
+        mut results: remote_driver::GetVersionResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        results.get().init_ver().set_major_ver(0);
+        results.get().init_ver().set_minor_ver(1);
+
+        Promise::ok(())
     }
 }
 
