@@ -67,10 +67,10 @@ impl RemoteConnectionImpl {
 }
 
 impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
-    fn create(
+    fn create_statement(
         &mut self,
-        _: remote_capnp::remote_connection::CreateParams,
-        _: remote_capnp::remote_connection::CreateResults,
+        _: remote_connection::CreateStatementParams,
+        _: remote_connection::CreateStatementResults,
     ) -> Promise<(), capnp::Error> {
         panic!("TODO")
     }

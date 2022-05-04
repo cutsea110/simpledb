@@ -52,7 +52,7 @@ interface RemoteDriver {
 }
 
 interface RemoteConnection {
-  create            @0 (sql :Text) -> (stmt :RemoteStatement);
+  createStatement   @0 (sql :Text) -> (stmt :RemoteStatement);
   close             @1 ();
   commit            @2 ();
   rollback          @3 ();

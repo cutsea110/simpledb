@@ -37,7 +37,7 @@ impl<'a> ConnectionAdapter<'a> for NetworkConnection {
     fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt> {
         let rt = tokio::runtime::Runtime::new().unwrap(); // TODO
         let stmt = rt.block_on(async {
-            let mut request = self.client.create_request();
+            let mut request = self.client.create_statement_request();
             request
                 .get()
                 .set_sql(::capnp::text::new_reader(sql.as_bytes()).unwrap());
