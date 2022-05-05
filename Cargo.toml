@@ -38,3 +38,7 @@ path = "app/esql/main.rs"
 [[bin]]
 name = "server"
 path = "app/network/server.rs"
+
+[[bin]]
+name = "client"
+path = "app/network/client.rs"
