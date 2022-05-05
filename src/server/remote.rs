@@ -9,6 +9,9 @@ use std::{
 use super::simpledb::SimpleDB;
 use crate::remote_capnp::{self, remote_connection, remote_driver};
 
+const MAJOR_VERSION: i32 = 0;
+const MINOR_VERSION: i32 = 1;
+
 pub struct RemoteDriverImpl {
     major_ver: i32,
     minor_ver: i32,
@@ -18,8 +21,8 @@ pub struct RemoteDriverImpl {
 impl RemoteDriverImpl {
     pub fn new() -> Self {
         Self {
-            major_ver: 0,
-            minor_ver: 1,
+            major_ver: MAJOR_VERSION,
+            minor_ver: MINOR_VERSION,
             dbs: HashMap::new(),
         }
     }
