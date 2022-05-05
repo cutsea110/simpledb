@@ -46,6 +46,12 @@ impl<'a> Config<'a> {
 
 pub struct NetworkDriver;
 
+impl NetworkDriver {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
 impl<'a> DriverAdapter<'a> for NetworkDriver {
     type Con = NetworkConnection;
 
