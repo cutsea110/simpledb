@@ -1,10 +1,7 @@
 use capnp::capability::Promise;
 use capnp_rpc::pry;
-use log::{debug, info, trace};
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use log::{info, trace};
+use std::sync::{Arc, Mutex};
 
 use super::simpledb::SimpleDB;
 use crate::remote_capnp::{self, remote_connection, remote_driver};
@@ -12,18 +9,22 @@ use crate::remote_capnp::{self, remote_connection, remote_driver};
 const MAJOR_VERSION: i32 = 0;
 const MINOR_VERSION: i32 = 1;
 
+pub trait Server {
+    fn get_database(&mut self, dbname: &str) -> Arc<Mutex<SimpleDB>>;
+}
+
 pub struct RemoteDriverImpl {
     major_ver: i32,
     minor_ver: i32,
-    dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
+    server: Arc<dyn Server>,
 }
 
 impl RemoteDriverImpl {
-    pub fn new() -> Self {
+    pub fn new(srv: Arc<dyn Server>) -> Self {
         Self {
             major_ver: MAJOR_VERSION,
             minor_ver: MINOR_VERSION,
-            dbs: HashMap::new(),
+            server: srv,
         }
     }
 }
@@ -37,15 +38,10 @@ impl remote_driver::Server for RemoteDriverImpl {
         trace!("connecting");
         let dbname = pry!(pry!(params.get()).get_dbname());
         info!("connect db: {}", dbname);
-        if !self.dbs.contains_key(dbname) {
-            debug!("don't cached yet: {}", dbname);
-            let db = SimpleDB::new(dbname).expect("new database");
-            self.dbs
-                .insert(dbname.to_string(), Arc::new(Mutex::new(db)));
-            info!("loaded db: {}", dbname);
-        }
+        // TODO: get this db from server.
+        let db = SimpleDB::new(dbname).expect("new database");
         let conn: remote_connection::Client =
-            capnp_rpc::new_client(RemoteConnectionImpl::new(dbname));
+            capnp_rpc::new_client(RemoteConnectionImpl::new(dbname, Arc::new(Mutex::new(db))));
         results.get().set_conn(conn);
         trace!("connected");
 
@@ -67,12 +63,14 @@ impl remote_driver::Server for RemoteDriverImpl {
 
 pub struct RemoteConnectionImpl {
     dbname: String,
+    db: Arc<Mutex<SimpleDB>>,
 }
 
 impl RemoteConnectionImpl {
-    pub fn new(dbname: &str) -> Self {
+    pub fn new(dbname: &str, db: Arc<Mutex<SimpleDB>>) -> Self {
         Self {
             dbname: dbname.to_string(),
+            db,
         }
     }
 }

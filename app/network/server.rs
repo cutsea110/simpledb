@@ -7,11 +7,38 @@ use env_logger::Env;
 use futures::{AsyncReadExt, FutureExt};
 use log::trace;
 use std::{
+    collections::HashMap,
     error::Error,
     net::{SocketAddr, ToSocketAddrs},
+    sync::{Arc, Mutex},
 };
 
-use simpledb::{remote_capnp::remote_driver, server::remote::RemoteDriverImpl};
+use simpledb::{
+    remote_capnp::remote_driver,
+    server::{remote::RemoteDriverImpl, simpledb::SimpleDB},
+};
+
+pub struct ServerImpl {
+    dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
+}
+impl ServerImpl {
+    pub fn new() -> Self {
+        Self {
+            dbs: HashMap::new(),
+        }
+    }
+}
+impl simpledb::server::remote::Server for ServerImpl {
+    fn get_database(&mut self, dbname: &str) -> Arc<Mutex<SimpleDB>> {
+        if !self.dbs.contains_key(dbname) {
+            let db = SimpleDB::new(dbname).expect("new database");
+            self.dbs
+                .insert(dbname.to_string(), Arc::new(Mutex::new(db)));
+        }
+
+        Arc::clone(self.dbs.get(dbname).expect("get database"))
+    }
+}
 
 #[tokio::main(flavor = "current_thread")]
 pub async fn main() -> Result<(), Box<dyn Error>> {
@@ -23,21 +50,22 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
         .to_socket_addrs()?
         .next()
         .expect("could not parse address");
-    let dbname = "demo";
 
-    tokio::task::LocalSet::new()
-        .run_until(try_main(addr, dbname))
-        .await
+    tokio::task::LocalSet::new().run_until(try_main(addr)).await
 }
 
-async fn try_main(addr: SocketAddr, dbname: &str) -> Result<(), Box<dyn Error>> {
+async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn Error>> {
     trace!("start server");
+    let srv = ServerImpl::new();
+
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    let driver_impl = RemoteDriverImpl::new();
+    let driver_impl = RemoteDriverImpl::new(Arc::new(srv));
     let driver_client: remote_driver::Client = capnp_rpc::new_client(driver_impl);
 
     loop {
+        trace!("listening...");
         let (stream, _) = listener.accept().await?;
+        trace!("accepted");
         stream.set_nodelay(true)?;
         let (reader, writer) = tokio_util::compat::TokioAsyncReadCompatExt::compat(stream).split();
         let rpc_network = Box::new(twoparty::VatNetwork::new(
