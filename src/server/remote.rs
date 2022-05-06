@@ -1,10 +1,13 @@
 use capnp::capability::Promise;
 use capnp_rpc::pry;
-use log::{info, trace};
+use log::{debug, info, trace};
 use std::sync::{Arc, Mutex};
 
 use super::simpledb::SimpleDB;
-use crate::remote_capnp::{self, remote_connection, remote_driver};
+use crate::{
+    remote_capnp::{self, remote_connection, remote_driver},
+    tx::transaction::Transaction,
+};
 
 const MAJOR_VERSION: i32 = 0;
 const MINOR_VERSION: i32 = 1;
@@ -63,13 +66,18 @@ impl remote_driver::Server for RemoteDriverImpl {
 pub struct RemoteConnectionImpl {
     dbname: String,
     db: Arc<Mutex<SimpleDB>>,
+    current_tx: Arc<Mutex<Transaction>>,
 }
 
 impl RemoteConnectionImpl {
     pub fn new(dbname: &str, db: Arc<Mutex<SimpleDB>>) -> Self {
+        let tx = db.lock().unwrap().new_tx().expect("new transaction");
+        debug!("tx: {}", tx.tx_num());
+
         Self {
             dbname: dbname.to_string(),
             db,
+            current_tx: Arc::new(Mutex::new(tx)),
         }
     }
 }
