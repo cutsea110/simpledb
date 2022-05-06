@@ -26,6 +26,7 @@ impl fmt::Display for NetworkResultSetError {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Value {
     Int32(i32),
     String(String),
