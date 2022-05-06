@@ -1,4 +1,7 @@
-use capnp::capability::Promise;
+use capnp::{
+    capability::Promise,
+    traits::{FromStructBuilder, FromStructReader},
+};
 use capnp_rpc::pry;
 use log::{debug, info, trace};
 use std::sync::{Arc, Mutex};
@@ -258,10 +261,17 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
     ) -> Promise<(), capnp::Error> {
         panic!("TODO")
     }
-    fn get_next_record(
+    fn get_int32(
         &mut self,
-        _: remote_capnp::remote_result_set::GetNextRecordParams,
-        _: remote_capnp::remote_result_set::GetNextRecordResults,
+        params: remote_result_set::GetInt32Params,
+        _: remote_result_set::GetInt32Results,
+    ) -> Promise<(), capnp::Error> {
+        panic!("TODO")
+    }
+    fn get_string(
+        &mut self,
+        _: remote_result_set::GetStringParams,
+        _: remote_result_set::GetStringResults,
     ) -> Promise<(), capnp::Error> {
         panic!("TODO")
     }

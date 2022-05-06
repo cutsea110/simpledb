@@ -57,23 +57,19 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let stmt = stmt_request.send().promise.await?.get()?.get_stmt()?;
         let query_request = stmt.execute_query_request();
         let result = query_request.send().promise.await?.get()?.get_result()?;
+
+        let meta_request = result.get_metadata_request();
+        let reply = meta_request.send().promise.await?;
+        let metadata = reply.get()?.get_metadata()?;
+        let sch = metadata.get_schema()?;
+        for fld in sch.get_fields()?.into_iter() {
+            println!("field: {}", fld?);
+        }
+
         loop {
             let next_request = result.next_request();
             if !next_request.send().promise.await?.get()?.get_exists() {
                 break;
-            }
-            let request = result.get_next_record_request();
-            let reply = request.send().promise.await?;
-            let record = reply.get()?.get_record()?;
-            let entries = record.get_map()?.get_entries()?;
-            for kv in entries.into_iter() {
-                let key = kv.get_key()?.to_string();
-                let val = kv.get_value()?;
-                let val = match val.which()? {
-                    remote_result_set::value::Int32(v) => Value::Int32(v),
-                    remote_result_set::value::String(s) => Value::String(s?.to_string()),
-                };
-                println!("{} = {:?}", key, val)
             }
         }
     }

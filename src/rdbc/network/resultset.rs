@@ -43,29 +43,6 @@ impl NetworkResultSet {
             record: None,
         }
     }
-    // if you call this, you have to check next method return true.
-    pub fn get_next_record(&mut self) -> Result<HashMap<String, Value>> {
-        let rt = tokio::runtime::Runtime::new()?;
-        let mut map = HashMap::new();
-        rt.block_on(async {
-            let request = self.client.get_next_record_request();
-            let reply = request.send().promise.await.unwrap(); // TODO
-            let record = reply.get().unwrap().get_record().unwrap(); // TODO
-
-            let entries = record.get_map().unwrap().get_entries().unwrap(); // TODO
-            for kv in entries.into_iter() {
-                let key = kv.get_key().unwrap().to_string(); // TODO
-                let val = kv.get_value().unwrap(); // TODO
-                let val = match val.which().unwrap() {
-                    remote_result_set::value::Int32(v) => Value::Int32(v),
-                    remote_result_set::value::String(s) => Value::String(s.unwrap().to_string()),
-                };
-                map.insert(key, val);
-            }
-        });
-
-        Ok(map)
-    }
 }
 
 impl ResultSetAdapter for NetworkResultSet {
