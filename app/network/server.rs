@@ -59,7 +59,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn Error>> {
     let srv = ServerImpl::new();
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    let driver_impl = RemoteDriverImpl::new(Arc::new(srv));
+    let driver_impl = RemoteDriverImpl::new(Arc::new(Mutex::new(srv)));
     let driver_client: remote_driver::Client = capnp_rpc::new_client(driver_impl);
 
     loop {

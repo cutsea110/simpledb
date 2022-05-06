@@ -16,11 +16,11 @@ pub trait Server {
 pub struct RemoteDriverImpl {
     major_ver: i32,
     minor_ver: i32,
-    server: Arc<dyn Server>,
+    server: Arc<Mutex<dyn Server>>,
 }
 
 impl RemoteDriverImpl {
-    pub fn new(srv: Arc<dyn Server>) -> Self {
+    pub fn new(srv: Arc<Mutex<dyn Server>>) -> Self {
         Self {
             major_ver: MAJOR_VERSION,
             minor_ver: MINOR_VERSION,
