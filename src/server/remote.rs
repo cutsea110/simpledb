@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use super::simpledb::SimpleDB;
 use crate::{
-    remote_capnp::{self, remote_connection, remote_driver},
+    remote_capnp::{self, remote_connection, remote_driver, remote_statement},
     tx::transaction::Transaction,
 };
 
@@ -85,10 +85,15 @@ impl RemoteConnectionImpl {
 impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     fn create_statement(
         &mut self,
-        _: remote_connection::CreateStatementParams,
-        _: remote_connection::CreateStatementResults,
+        params: remote_connection::CreateStatementParams,
+        mut results: remote_connection::CreateStatementResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let sql = pry!(pry!(params.get()).get_sql());
+        trace!("SQL: {}", sql);
+        let stmt: remote_statement::Client = capnp_rpc::new_client(RemoteStatementImpl::new(sql));
+        results.get().set_stmt(stmt);
+
+        Promise::ok(())
     }
     fn close(
         &mut self,
@@ -134,7 +139,16 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
 }
 
-pub struct RemoteStatementImpl;
+pub struct RemoteStatementImpl {
+    sql: String,
+}
+impl RemoteStatementImpl {
+    pub fn new(sql: &str) -> Self {
+        Self {
+            sql: sql.to_string(),
+        }
+    }
+}
 
 impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
     fn execute_query(
