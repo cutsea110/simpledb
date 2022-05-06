@@ -39,6 +39,12 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
 
     // TODO
     {
+        let ver_req = driver.get_version_request();
+        let ver = ver_req.send().promise.await?;
+        let major_ver = ver.get()?.get_ver()?.get_major_ver();
+        let minor_ver = ver.get()?.get_ver()?.get_minor_ver();
+        println!("simpledb server version {}.{}", major_ver, minor_ver);
+
         let mut conn_request = driver.connect_request();
         conn_request
             .get()
