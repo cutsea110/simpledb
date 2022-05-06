@@ -5,7 +5,8 @@ use std::sync::{Arc, Mutex};
 
 use super::simpledb::SimpleDB;
 use crate::{
-    remote_capnp::{self, remote_connection, remote_driver, remote_statement},
+    plan::{plan::Plan, planner::Planner},
+    remote_capnp::{self, remote_connection, remote_driver, remote_result_set, remote_statement},
     tx::transaction::Transaction,
 };
 
@@ -88,9 +89,15 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         params: remote_connection::CreateStatementParams,
         mut results: remote_connection::CreateStatementResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("create statement");
         let sql = pry!(pry!(params.get()).get_sql());
         trace!("SQL: {}", sql);
-        let stmt: remote_statement::Client = capnp_rpc::new_client(RemoteStatementImpl::new(sql));
+        let planner = self.db.lock().unwrap().planner().expect("planner");
+        let stmt: remote_statement::Client = capnp_rpc::new_client(RemoteStatementImpl::new(
+            sql,
+            planner,
+            Arc::clone(&self.current_tx),
+        ));
         results.get().set_stmt(stmt);
 
         Promise::ok(())
@@ -107,14 +114,30 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         _: remote_capnp::remote_connection::CommitParams,
         _: remote_capnp::remote_connection::CommitResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        trace!("commit tx: {}", tx_num);
+        self.current_tx
+            .lock()
+            .unwrap()
+            .commit()
+            .expect("commit transaction");
+
+        Promise::ok(())
     }
     fn rollback(
         &mut self,
         _: remote_capnp::remote_connection::RollbackParams,
         _: remote_capnp::remote_connection::RollbackResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        trace!("rollback tx: {}", tx_num);
+        self.current_tx
+            .lock()
+            .unwrap()
+            .rollback()
+            .expect("rollback transaction");
+
+        Promise::ok(())
     }
     fn get_table_schema(
         &mut self,
@@ -141,11 +164,15 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
 
 pub struct RemoteStatementImpl {
     sql: String,
+    planner: Planner,
+    current_tx: Arc<Mutex<Transaction>>,
 }
 impl RemoteStatementImpl {
-    pub fn new(sql: &str) -> Self {
+    pub fn new(sql: &str, planner: Planner, tx: Arc<Mutex<Transaction>>) -> Self {
         Self {
             sql: sql.to_string(),
+            planner,
+            current_tx: tx,
         }
     }
 }
@@ -154,9 +181,19 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
     fn execute_query(
         &mut self,
         _: remote_capnp::remote_statement::ExecuteQueryParams,
-        _: remote_capnp::remote_statement::ExecuteQueryResults,
+        mut results: remote_capnp::remote_statement::ExecuteQueryResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        trace!("execute query: {}", self.sql);
+        let plan = self
+            .planner
+            .create_query_plan(&self.sql, Arc::clone(&self.current_tx))
+            .expect("create query plan");
+        trace!("planned");
+        let resultset: remote_result_set::Client =
+            capnp_rpc::new_client(RemoteResultSetImpl::new(plan));
+        results.get().set_result(resultset);
+
+        Promise::ok(())
     }
     fn execute_update(
         &mut self,
@@ -181,7 +218,14 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
     }
 }
 
-pub struct RemoteResultSetImpl;
+pub struct RemoteResultSetImpl {
+    plan: Arc<dyn Plan>,
+}
+impl RemoteResultSetImpl {
+    pub fn new(plan: Arc<dyn Plan>) -> Self {
+        Self { plan }
+    }
+}
 
 impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
     fn next(

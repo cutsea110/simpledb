@@ -18,6 +18,8 @@ use simpledb::{
     server::{remote::RemoteDriverImpl, simpledb::SimpleDB},
 };
 
+const DB_DIR: &str = "data";
+
 pub struct ServerImpl {
     dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
 }
@@ -31,7 +33,8 @@ impl ServerImpl {
 impl simpledb::server::remote::Server for ServerImpl {
     fn get_database(&mut self, dbname: &str) -> Arc<Mutex<SimpleDB>> {
         if !self.dbs.contains_key(dbname) {
-            let db = SimpleDB::new(dbname).expect("new database");
+            let db_path = format!("{}/{}", DB_DIR, dbname);
+            let db = SimpleDB::new(&db_path).expect("new database");
             self.dbs
                 .insert(dbname.to_string(), Arc::new(Mutex::new(db)));
         }
