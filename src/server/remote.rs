@@ -6,6 +6,8 @@ use std::sync::{Arc, Mutex};
 use super::simpledb::SimpleDB;
 use crate::{
     plan::{plan::Plan, planner::Planner},
+    query::scan::Scan,
+    record::schema::Schema,
     remote_capnp::{self, remote_connection, remote_driver, remote_result_set, remote_statement},
     tx::transaction::Transaction,
 };
@@ -219,11 +221,14 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
 }
 
 pub struct RemoteResultSetImpl {
-    plan: Arc<dyn Plan>,
+    scan: Arc<Mutex<dyn Scan>>,
+    sch: Arc<Schema>,
 }
 impl RemoteResultSetImpl {
     pub fn new(plan: Arc<dyn Plan>) -> Self {
-        Self { plan }
+        let scan = plan.open().expect("open plan");
+        let sch = plan.schema();
+        Self { scan, sch }
     }
 }
 
@@ -231,9 +236,13 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
     fn next(
         &mut self,
         _: remote_capnp::remote_result_set::NextParams,
-        _: remote_capnp::remote_result_set::NextResults,
+        mut results: remote_capnp::remote_result_set::NextResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let has_next = self.scan.lock().unwrap().next();
+        trace!("next: {}", has_next);
+        results.get().set_exists(has_next);
+
+        Promise::ok(())
     }
     fn close(
         &mut self,
