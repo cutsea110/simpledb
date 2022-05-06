@@ -38,10 +38,9 @@ impl remote_driver::Server for RemoteDriverImpl {
         trace!("connecting");
         let dbname = pry!(pry!(params.get()).get_dbname());
         info!("connect db: {}", dbname);
-        // TODO: get this db from server.
-        let db = SimpleDB::new(dbname).expect("new database");
+        let db = self.server.lock().unwrap().get_database(dbname);
         let conn: remote_connection::Client =
-            capnp_rpc::new_client(RemoteConnectionImpl::new(dbname, Arc::new(Mutex::new(db))));
+            capnp_rpc::new_client(RemoteConnectionImpl::new(dbname, db));
         results.get().set_conn(conn);
         trace!("connected");
 
