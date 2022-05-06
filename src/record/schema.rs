@@ -47,6 +47,10 @@ impl Schema {
     pub fn length(&self, fldname: &str) -> usize {
         self.info.get(fldname).unwrap().length
     }
+    // my own extends
+    pub fn info(&self) -> &HashMap<String, FieldInfo> {
+        &self.info
+    }
 }
 
 #[derive(FromPrimitive, Debug, Copy, Clone, Eq, PartialEq)]

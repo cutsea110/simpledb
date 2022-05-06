@@ -10,7 +10,7 @@ use super::simpledb::SimpleDB;
 use crate::{
     plan::{plan::Plan, planner::Planner},
     query::scan::Scan,
-    record::schema::Schema,
+    record::schema::{FieldType, Schema},
     remote_capnp::{self, remote_connection, remote_driver, remote_result_set, remote_statement},
     tx::transaction::Transaction,
 };
@@ -257,9 +257,38 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
     fn get_metadata(
         &mut self,
         _: remote_capnp::remote_result_set::GetMetadataParams,
-        _: remote_capnp::remote_result_set::GetMetadataResults,
+        mut results: remote_capnp::remote_result_set::GetMetadataResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let meta = results.get().init_metadata();
+        let mut schema = meta.init_schema();
+        let mut fields = schema
+            .reborrow()
+            .init_fields(self.sch.fields().len() as u32);
+        for i in 0..self.sch.fields().len() {
+            let fldname = self.sch.fields()[i].as_bytes();
+            fields.set(i as u32, ::capnp::text::new_reader(fldname).unwrap());
+        }
+        let mut info = schema.reborrow().init_info();
+        let mut entries = info
+            .reborrow()
+            .init_entries(self.sch.info().keys().len() as u32);
+        for (i, (k, fi)) in self.sch.info().into_iter().enumerate() {
+            let fldname = k.as_bytes();
+            entries
+                .reborrow()
+                .get(i as u32)
+                .set_key(::capnp::text::new_reader(fldname).unwrap())
+                .unwrap();
+            let mut val = entries.reborrow().get(i as u32).init_value();
+            val.reborrow().set_length(fi.length as i32);
+            let t = match fi.fld_type {
+                FieldType::INTEGER => remote_capnp::FieldType::Integer,
+                FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
+            };
+            val.reborrow().set_type(t);
+        }
+
+        Promise::ok(())
     }
     fn get_int32(
         &mut self,

@@ -3,7 +3,10 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use futures::{AsyncReadExt, FutureExt};
 use simpledb::{
-    rdbc::network::resultset::Value,
+    rdbc::{
+        network::{metadata::NetworkResultSetMetaData, resultset::Value},
+        resultsetmetadataadapter::{self, ResultSetMetaDataAdapter},
+    },
     remote_capnp::{remote_driver, remote_result_set},
 };
 
@@ -52,28 +55,48 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let conn = conn_request.send().promise.await?.get()?.get_conn()?;
         let mut stmt_request = conn.create_statement_request();
         stmt_request.get().set_sql(::capnp::text::new_reader(
-            "SELECT sid, sname FROM student".as_bytes(),
+            "SELECT sid, sname, dname FROM student, dept WHERE did = major_id".as_bytes(),
         )?);
         let stmt = stmt_request.send().promise.await?.get()?.get_stmt()?;
         let query_request = stmt.execute_query_request();
         let result = query_request.send().promise.await?.get()?.get_result()?;
+
+        let meta_request = result.get_metadata_request();
+        let meta_reply = meta_request.send().promise.await?;
+        let meta = meta_reply.get()?.get_metadata()?;
+
+        let metadata = NetworkResultSetMetaData::from(meta);
 
         loop {
             let next_request = result.next_request();
             if !next_request.send().promise.await?.get()?.get_exists() {
                 break;
             }
-            let mut sid_req = result.get_int32_request();
-            sid_req.get().set_fldname("sid".into());
-            let sid = sid_req.send().promise.await?;
-            let mut sname_req = result.get_string_request();
-            sname_req.get().set_fldname("sname".into());
-            let sname = sname_req.send().promise.await?;
-            println!(
-                "{:>4} {:<10}",
-                sid.get()?.get_val(),
-                sname.get()?.get_val()?
-            );
+
+            for i in 0..metadata.get_column_count() {
+                let fldname = metadata
+                    .get_column_name(i)
+                    .expect("get column name")
+                    .as_str();
+                let w = metadata
+                    .get_column_display_size(i)
+                    .expect("get column display size");
+                match metadata.get_column_type(i).expect("get column type") {
+                    resultsetmetadataadapter::DataType::Int32 => {
+                        let mut req = result.get_int32_request();
+                        req.get().set_fldname(fldname.into());
+                        let val = req.send().promise.await?;
+                        print!("{:width$} ", val.get()?.get_val(), width = w)
+                    }
+                    resultsetmetadataadapter::DataType::Varchar => {
+                        let mut req = result.get_string_request();
+                        req.get().set_fldname(fldname.into());
+                        let val = req.send().promise.await?;
+                        print!("{:width$} ", val.get()?.get_val()?, width = w)
+                    }
+                }
+            }
+            println!();
         }
     }
 
