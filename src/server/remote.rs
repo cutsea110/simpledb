@@ -264,15 +264,35 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
     fn get_int32(
         &mut self,
         params: remote_result_set::GetInt32Params,
-        _: remote_result_set::GetInt32Results,
+        mut results: remote_result_set::GetInt32Results,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let fldname = pry!(pry!(params.get()).get_fldname());
+        let val = self
+            .scan
+            .lock()
+            .unwrap()
+            .get_i32(fldname)
+            .expect("get int32");
+        results.get().set_val(val);
+
+        Promise::ok(())
     }
     fn get_string(
         &mut self,
-        _: remote_result_set::GetStringParams,
-        _: remote_result_set::GetStringResults,
+        params: remote_result_set::GetStringParams,
+        mut results: remote_result_set::GetStringResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let fldname = pry!(pry!(params.get()).get_fldname());
+        let val = self
+            .scan
+            .lock()
+            .unwrap()
+            .get_string(fldname)
+            .expect("get string");
+        results
+            .get()
+            .set_val(::capnp::text::new_reader(val.as_bytes()).unwrap()); // TODO
+
+        Promise::ok(())
     }
 }

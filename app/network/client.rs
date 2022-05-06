@@ -58,19 +58,22 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let query_request = stmt.execute_query_request();
         let result = query_request.send().promise.await?.get()?.get_result()?;
 
-        let meta_request = result.get_metadata_request();
-        let reply = meta_request.send().promise.await?;
-        let metadata = reply.get()?.get_metadata()?;
-        let sch = metadata.get_schema()?;
-        for fld in sch.get_fields()?.into_iter() {
-            println!("field: {}", fld?);
-        }
-
         loop {
             let next_request = result.next_request();
             if !next_request.send().promise.await?.get()?.get_exists() {
                 break;
             }
+            let mut sid_req = result.get_int32_request();
+            sid_req.get().set_fldname("sid".into());
+            let sid = sid_req.send().promise.await?;
+            let mut sname_req = result.get_string_request();
+            sname_req.get().set_fldname("sname".into());
+            let sname = sname_req.send().promise.await?;
+            println!(
+                "{:>4} {:<10}",
+                sid.get()?.get_val(),
+                sname.get()?.get_val()?
+            );
         }
     }
 
