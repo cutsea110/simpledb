@@ -40,7 +40,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let driver: remote_driver::Client = rpc_system.bootstrap(rpc_twoparty_capnp::Side::Server);
     tokio::task::spawn_local(Box::pin(rpc_system.map(|_| ())));
 
-    // TODO
+    // Query sample
     {
         let ver_req = driver.get_version_request();
         let ver = ver_req.send().promise.await?;
@@ -52,14 +52,14 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         conn_request
             .get()
             .set_dbname(::capnp::text::new_reader("demo".as_bytes())?);
-        let conn = conn_request.send().promise.await?.get()?.get_conn()?;
+        let conn = conn_request.send().pipeline.get_conn();
         let mut stmt_request = conn.create_statement_request();
         stmt_request.get().set_sql(::capnp::text::new_reader(
             "SELECT sid, sname, dname FROM student, dept WHERE did = major_id".as_bytes(),
         )?);
-        let stmt = stmt_request.send().promise.await?.get()?.get_stmt()?;
+        let stmt = stmt_request.send().pipeline.get_stmt();
         let query_request = stmt.execute_query_request();
-        let result = query_request.send().promise.await?.get()?.get_result()?;
+        let result = query_request.send().pipeline.get_result();
 
         let meta_request = result.get_metadata_request();
         let meta_reply = meta_request.send().promise.await?;

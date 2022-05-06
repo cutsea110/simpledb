@@ -259,6 +259,7 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         _: remote_capnp::remote_result_set::GetMetadataParams,
         mut results: remote_capnp::remote_result_set::GetMetadataResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("get metadata");
         let meta = results.get().init_metadata();
         let mut schema = meta.init_schema();
         let mut fields = schema
@@ -296,6 +297,7 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         mut results: remote_result_set::GetInt32Results,
     ) -> Promise<(), capnp::Error> {
         let fldname = pry!(pry!(params.get()).get_fldname());
+        debug!("get int32 value: {}", fldname);
         let val = self
             .scan
             .lock()
@@ -312,6 +314,7 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         mut results: remote_result_set::GetStringResults,
     ) -> Promise<(), capnp::Error> {
         let fldname = pry!(pry!(params.get()).get_fldname());
+        debug!("get string value: {}", fldname);
         let val = self
             .scan
             .lock()
