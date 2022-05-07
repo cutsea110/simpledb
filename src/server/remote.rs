@@ -145,13 +145,10 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     ) -> Promise<(), capnp::Error> {
         let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
         trace!("commit tx: {}", tx_num);
-        self.conn
-            .borrow()
-            .current_tx
-            .lock()
-            .unwrap()
-            .commit()
-            .expect("commit transaction");
+        if let Ok(mut tx) = self.conn.borrow().current_tx.lock() {
+            tx.commit().expect("commit transaction");
+            return Promise::ok(());
+        }
         let tx = self
             .conn
             .borrow()
@@ -172,13 +169,10 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     ) -> Promise<(), capnp::Error> {
         let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
         trace!("rollback tx: {}", tx_num);
-        self.conn
-            .borrow()
-            .current_tx
-            .lock()
-            .unwrap()
-            .rollback()
-            .expect("rollback transaction");
+        if let Ok(mut tx) = self.conn.borrow().current_tx.lock() {
+            tx.rollback().expect("rollback transaction");
+            return Promise::ok(());
+        }
         let tx = self
             .conn
             .borrow()
