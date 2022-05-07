@@ -1,4 +1,7 @@
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::{
+    collections::HashMap,
+    net::{SocketAddr, ToSocketAddrs},
+};
 
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use futures::{AsyncReadExt, FutureExt};
@@ -64,14 +67,20 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let meta_request = result.get_metadata_request();
         let meta_reply = meta_request.send().promise.await?;
         let meta = meta_reply.get()?.get_metadata()?;
-
         let metadata = NetworkResultSetMetaData::from(meta);
 
-        loop {
-            let next_request = result.next_request();
-            if !next_request.send().promise.await?.get()?.get_exists() {
-                break;
-            }
+        while result
+            .next_request()
+            .send()
+            .promise
+            .await?
+            .get()?
+            .get_exists()
+        {
+            let row_request = result.get_row_request();
+            let row_reply = row_request.send().promise.await?;
+            let row = row_reply.get()?.get_row()?;
+            let entry = to_hashmap(row);
 
             for i in 0..metadata.get_column_count() {
                 let fldname = metadata
@@ -83,16 +92,14 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
                     .expect("get column display size");
                 match metadata.get_column_type(i).expect("get column type") {
                     resultsetmetadataadapter::DataType::Int32 => {
-                        let mut req = result.get_int32_request();
-                        req.get().set_fldname(fldname.into());
-                        let val = req.send().promise.await?;
-                        print!("{:width$} ", val.get()?.get_val(), width = w)
+                        if let Some(Value::Int32(v)) = entry.get(fldname) {
+                            print!("{:width$} ", v, width = w);
+                        }
                     }
                     resultsetmetadataadapter::DataType::Varchar => {
-                        let mut req = result.get_string_request();
-                        req.get().set_fldname(fldname.into());
-                        let val = req.send().promise.await?;
-                        print!("{:width$} ", val.get()?.get_val()?, width = w)
+                        if let Some(Value::String(s)) = entry.get(fldname) {
+                            print!("{:width$} ", s, width = w);
+                        }
                     }
                 }
             }
@@ -101,4 +108,20 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn to_hashmap(row: remote_result_set::row::Reader) -> HashMap<&str, Value> {
+    let entries = row.get_map().unwrap().get_entries().unwrap(); // TODO
+    let mut result = HashMap::new();
+    for kv in entries.into_iter() {
+        let key = kv.get_key().unwrap(); // TODO
+        let val = match kv.get_value().unwrap().which().unwrap() {
+            remote_result_set::value::Int32(v) => Value::Int32(v),
+            remote_result_set::value::String(s) => Value::String(s.unwrap().to_string()),
+        };
+
+        result.insert(key, val);
+    }
+
+    result
 }

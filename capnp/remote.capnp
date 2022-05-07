@@ -147,11 +147,21 @@ interface RemoteStatement {
 interface RemoteResultSet {
   next          @0 () -> (exists :Bool);
   close         @1 ();
-  getMetadata   @2 () -> (metadata: MetaData);
-  getInt32      @3 (fldname :Text) -> (val :Int32);
-  getString     @4 (fldname :Text) -> (val :Text);
+  getMetadata   @2 () -> (metadata :MetaData);
+  getRow        @3 () -> (row :Row);
+  getInt32      @4 (fldname :Text) -> (val :Int32);
+  getString     @5 (fldname :Text) -> (val :Text);
 
   struct MetaData {
     schema @0 :Schema;
+  }
+  struct Row {
+    map @0 :Map(Text, Value);
+  }
+  struct Value {
+    union {
+      int32  @0 :Int32;
+      string @1 :Text;
+    }
   }
 }

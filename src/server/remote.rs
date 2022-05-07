@@ -3,6 +3,7 @@ use capnp::{
     traits::{FromStructBuilder, FromStructReader},
 };
 use capnp_rpc::pry;
+use core::panic;
 use log::{debug, info, trace};
 use std::sync::{Arc, Mutex};
 
@@ -287,6 +288,39 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
                 FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
             };
             val.reborrow().set_type(t);
+        }
+
+        Promise::ok(())
+    }
+    fn get_row(
+        &mut self,
+        _: remote_result_set::GetRowParams,
+        mut results: remote_result_set::GetRowResults,
+    ) -> Promise<(), capnp::Error> {
+        let row = results.get().init_row();
+        let mut map = row.init_map();
+        let mut entries = map.reborrow().init_entries(self.sch.fields().len() as u32);
+        for (i, (k, fi)) in self.sch.info().into_iter().enumerate() {
+            let fldname = k.as_bytes();
+            entries
+                .reborrow()
+                .get(i as u32)
+                .set_key(::capnp::text::new_reader(fldname).unwrap())
+                .unwrap();
+            let mut val = entries.reborrow().get(i as u32).init_value();
+            match fi.fld_type {
+                FieldType::INTEGER => {
+                    if let Ok(v) = self.scan.lock().unwrap().get_i32(k) {
+                        val.reborrow().set_int32(v);
+                    }
+                }
+                FieldType::VARCHAR => {
+                    if let Ok(s) = self.scan.lock().unwrap().get_string(k) {
+                        val.reborrow()
+                            .set_string(::capnp::text::new_reader(s.as_bytes()).unwrap());
+                    }
+                }
+            }
         }
 
         Promise::ok(())
