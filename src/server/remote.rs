@@ -259,7 +259,17 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
         _: remote_capnp::remote_statement::CloseParams,
         _: remote_capnp::remote_statement::CloseResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
+        trace!("close tx: {}", tx_num);
+        if let Ok(mut tx) = self.conn.borrow().current_tx.lock() {
+            tx.commit().expect("commit transaction");
+            return Promise::ok(());
+        }
+
+        Promise::err(::capnp::Error::failed(format!(
+            "failed to close tx: {}",
+            tx_num
+        )))
     }
     fn explain_plan(
         &mut self,
