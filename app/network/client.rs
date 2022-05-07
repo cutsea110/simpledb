@@ -13,7 +13,6 @@ use simpledb::{
     remote_capnp::{remote_driver, remote_result_set},
 };
 
-#[macro_use]
 extern crate capnp_rpc;
 extern crate simpledb;
 
@@ -58,7 +57,8 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let conn = conn_request.send().pipeline.get_conn();
         let mut stmt_request = conn.create_statement_request();
         stmt_request.get().set_sql(::capnp::text::new_reader(
-            "SELECT sid, sname, dname FROM student, dept WHERE did = major_id".as_bytes(),
+            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id"
+                .as_bytes(),
         )?);
         let stmt = stmt_request.send().pipeline.get_stmt();
         let query_request = stmt.execute_query_request();

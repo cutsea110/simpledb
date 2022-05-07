@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate capnp_rpc;
 extern crate simpledb;
 

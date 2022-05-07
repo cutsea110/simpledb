@@ -1,7 +1,4 @@
-use capnp::{
-    capability::Promise,
-    traits::{FromStructBuilder, FromStructReader},
-};
+use capnp::capability::Promise;
 use capnp_rpc::pry;
 use core::panic;
 use log::{debug, info, trace};
