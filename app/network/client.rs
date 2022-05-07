@@ -124,6 +124,9 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             }
             println!();
         }
+
+        let rollback_request = conn.rollback_request();
+        rollback_request.send().promise.await?;
     }
 
     Ok(())
