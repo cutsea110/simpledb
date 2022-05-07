@@ -46,8 +46,7 @@ impl remote_driver::Server for RemoteDriverImpl {
         let dbname = pry!(pry!(params.get()).get_dbname());
         info!("connect db: {}", dbname);
         let db = self.server.lock().unwrap().get_database(dbname);
-        let conn: remote_connection::Client =
-            capnp_rpc::new_client(RemoteConnectionImpl::new(dbname, db));
+        let conn: remote_connection::Client = capnp_rpc::new_client(RemoteConnectionImpl::new(db));
         results.get().set_conn(conn);
         trace!("connected");
 
@@ -68,18 +67,16 @@ impl remote_driver::Server for RemoteDriverImpl {
 }
 
 pub struct RemoteConnectionImpl {
-    dbname: String,
     db: Arc<Mutex<SimpleDB>>,
     current_tx: Arc<Mutex<Transaction>>,
 }
 
 impl RemoteConnectionImpl {
-    pub fn new(dbname: &str, db: Arc<Mutex<SimpleDB>>) -> Self {
+    pub fn new(db: Arc<Mutex<SimpleDB>>) -> Self {
         let tx = db.lock().unwrap().new_tx().expect("new transaction");
-        debug!("tx: {}", tx.tx_num());
+        trace!("tx: {}", tx.tx_num());
 
         Self {
-            dbname: dbname.to_string(),
             db,
             current_tx: Arc::new(Mutex::new(tx)),
         }
@@ -94,7 +91,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     ) -> Promise<(), capnp::Error> {
         trace!("create statement");
         let sql = pry!(pry!(params.get()).get_sql());
-        trace!("SQL: {}", sql);
+        info!("SQL: {}", sql);
         let planner = self.db.lock().unwrap().planner().expect("planner");
         let stmt: remote_statement::Client = capnp_rpc::new_client(RemoteStatementImpl::new(
             sql,
@@ -110,7 +107,15 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         _: remote_capnp::remote_connection::CloseParams,
         _: remote_capnp::remote_connection::CloseResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        trace!("close tx: {}", tx_num);
+        self.current_tx
+            .lock()
+            .unwrap()
+            .commit()
+            .expect("commit transaction");
+
+        Promise::ok(())
     }
     fn commit(
         &mut self,
@@ -124,8 +129,15 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
             .unwrap()
             .commit()
             .expect("commit transaction");
+        if let Ok(tx) = self.db.lock().unwrap().new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
 
-        Promise::ok(())
+            return Promise::ok(());
+        }
+
+        Promise::err(::capnp::Error::failed(
+            "failed to start new transaction.".to_string(),
+        ))
     }
     fn rollback(
         &mut self,
@@ -139,8 +151,15 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
             .unwrap()
             .rollback()
             .expect("rollback transaction");
+        if let Ok(tx) = self.db.lock().unwrap().new_tx() {
+            self.current_tx = Arc::new(Mutex::new(tx));
 
-        Promise::ok(())
+            return Promise::ok(());
+        }
+
+        Promise::err(::capnp::Error::failed(
+            "failed to start new transaction.".to_string(),
+        ))
     }
     fn get_table_schema(
         &mut self,
