@@ -48,7 +48,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let ver = ver_req.send().promise.await?;
         let major_ver = ver.get()?.get_ver()?.get_major_ver();
         let minor_ver = ver.get()?.get_ver()?.get_minor_ver();
-        println!("simpledb server version {}.{}", major_ver, minor_ver);
+        println!("simpledb server version {}.{}\n", major_ver, minor_ver);
 
         let mut conn_request = driver.connect_request();
         conn_request
@@ -68,6 +68,25 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let meta_reply = meta_request.send().promise.await?;
         let meta = meta_reply.get()?.get_metadata()?;
         let metadata = NetworkResultSetMetaData::from(meta);
+
+        for i in 0..metadata.get_column_count() {
+            let fldname = metadata
+                .get_column_name(i)
+                .expect("get column name")
+                .as_str();
+            let w = metadata
+                .get_column_display_size(i)
+                .expect("get column display size");
+            print!("{:width$} ", fldname, width = w);
+        }
+        println!();
+        for i in 0..metadata.get_column_count() {
+            let w = metadata
+                .get_column_display_size(i)
+                .expect("get column display size");
+            print!("{:-<width$}", "", width = w + 1);
+        }
+        println!();
 
         while result
             .next_request()
