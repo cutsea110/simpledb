@@ -130,6 +130,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
             .commit()
             .expect("commit transaction");
         if let Ok(tx) = self.db.lock().unwrap().new_tx() {
+            trace!("tx: {}", tx.tx_num());
             self.current_tx = Arc::new(Mutex::new(tx));
 
             return Promise::ok(());
@@ -152,6 +153,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
             .rollback()
             .expect("rollback transaction");
         if let Ok(tx) = self.db.lock().unwrap().new_tx() {
+            trace!("tx: {}", tx.tx_num());
             self.current_tx = Arc::new(Mutex::new(tx));
 
             return Promise::ok(());
