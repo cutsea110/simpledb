@@ -119,6 +119,31 @@ impl RemoteConnectionImpl {
     }
 }
 
+fn set_schema(sch: Arc<Schema>, schema: &mut remote_capnp::schema::Builder) {
+    let mut fields = schema.reborrow().init_fields(sch.fields().len() as u32);
+    for i in 0..sch.fields().len() {
+        let fldname = sch.fields()[i].as_bytes();
+        fields.set(i as u32, ::capnp::text::new_reader(fldname).unwrap());
+    }
+    let mut info = schema.reborrow().init_info();
+    let mut entries = info.reborrow().init_entries(sch.info().keys().len() as u32);
+    for (i, (k, fi)) in sch.info().into_iter().enumerate() {
+        let fldname = k.as_bytes();
+        entries
+            .reborrow()
+            .get(i as u32)
+            .set_key(::capnp::text::new_reader(fldname).unwrap())
+            .unwrap();
+        let mut val = entries.reborrow().get(i as u32).init_value();
+        val.reborrow().set_length(fi.length as i32);
+        let t = match fi.fld_type {
+            FieldType::INTEGER => remote_capnp::FieldType::Integer,
+            FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
+        };
+        val.reborrow().set_type(t);
+    }
+}
+
 impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     fn create_statement(
         &mut self,
@@ -189,28 +214,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
             .get_table_schema(tblname, Arc::clone(&self.conn.borrow().current_tx))
             .expect("table schema");
         let mut schema = results.get().init_sch();
-        let mut fields = schema.reborrow().init_fields(sch.fields().len() as u32);
-        for i in 0..sch.fields().len() {
-            let fldname = sch.fields()[i].as_bytes();
-            fields.set(i as u32, ::capnp::text::new_reader(fldname).unwrap());
-        }
-        let mut info = schema.reborrow().init_info();
-        let mut entries = info.reborrow().init_entries(sch.info().keys().len() as u32);
-        for (i, (k, fi)) in sch.info().into_iter().enumerate() {
-            let fldname = k.as_bytes();
-            entries
-                .reborrow()
-                .get(i as u32)
-                .set_key(::capnp::text::new_reader(fldname).unwrap())
-                .unwrap();
-            let mut val = entries.reborrow().get(i as u32).init_value();
-            val.reborrow().set_length(fi.length as i32);
-            let t = match fi.fld_type {
-                FieldType::INTEGER => remote_capnp::FieldType::Integer,
-                FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
-            };
-            val.reborrow().set_type(t);
-        }
+        set_schema(sch, &mut schema);
 
         Promise::ok(())
     }
@@ -337,34 +341,8 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         mut results: remote_capnp::remote_result_set::GetMetadataResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get metadata");
-        let meta = results.get().init_metadata();
-        let mut schema = meta.init_schema();
-        let mut fields = schema
-            .reborrow()
-            .init_fields(self.sch.fields().len() as u32);
-        for i in 0..self.sch.fields().len() {
-            let fldname = self.sch.fields()[i].as_bytes();
-            fields.set(i as u32, ::capnp::text::new_reader(fldname).unwrap());
-        }
-        let mut info = schema.reborrow().init_info();
-        let mut entries = info
-            .reborrow()
-            .init_entries(self.sch.info().keys().len() as u32);
-        for (i, (k, fi)) in self.sch.info().into_iter().enumerate() {
-            let fldname = k.as_bytes();
-            entries
-                .reborrow()
-                .get(i as u32)
-                .set_key(::capnp::text::new_reader(fldname).unwrap())
-                .unwrap();
-            let mut val = entries.reborrow().get(i as u32).init_value();
-            val.reborrow().set_length(fi.length as i32);
-            let t = match fi.fld_type {
-                FieldType::INTEGER => remote_capnp::FieldType::Integer,
-                FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
-            };
-            val.reborrow().set_type(t);
-        }
+        let mut schema = results.get().init_metadata().init_schema();
+        set_schema(Arc::clone(&self.sch), &mut schema);
 
         Promise::ok(())
     }
