@@ -57,9 +57,9 @@ interface RemoteConnection {
   commit            @2 ();
   rollback          @3 ();
 
-  getTableSchema    @4 () -> (sch :Schema);
-  getViewDefinition @5 () -> (vwdef :ViewDef);
-  getIndexInfo      @6 () -> (ii :Map(Text, IndexInfo));
+  getTableSchema    @4 (tblname :Text) -> (sch :Schema);
+  getViewDefinition @5 (viewname :Text) -> (vwdef :ViewDef);
+  getIndexInfo      @6 (tblname :Text) -> (ii :Map(Text, IndexInfo));
 }
 
 interface RemoteStatement {

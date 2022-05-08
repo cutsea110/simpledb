@@ -176,23 +176,58 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
     fn get_table_schema(
         &mut self,
-        _: remote_capnp::remote_connection::GetTableSchemaParams,
-        _: remote_capnp::remote_connection::GetTableSchemaResults,
+        params: remote_capnp::remote_connection::GetTableSchemaParams,
+        mut results: remote_capnp::remote_connection::GetTableSchemaResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let tblname = params.get().unwrap().get_tblname().expect("get table name");
+        let sch = self
+            .conn
+            .borrow()
+            .db
+            .lock()
+            .unwrap()
+            .get_table_schema(tblname, Arc::clone(&self.conn.borrow().current_tx))
+            .expect("table schema");
+        let mut schema = results.get().init_sch();
+        let mut fields = schema.reborrow().init_fields(sch.fields().len() as u32);
+        for i in 0..sch.fields().len() {
+            let fldname = sch.fields()[i].as_bytes();
+            fields.set(i as u32, ::capnp::text::new_reader(fldname).unwrap());
+        }
+        let mut info = schema.reborrow().init_info();
+        let mut entries = info.reborrow().init_entries(sch.info().keys().len() as u32);
+        for (i, (k, fi)) in sch.info().into_iter().enumerate() {
+            let fldname = k.as_bytes();
+            entries
+                .reborrow()
+                .get(i as u32)
+                .set_key(::capnp::text::new_reader(fldname).unwrap())
+                .unwrap();
+            let mut val = entries.reborrow().get(i as u32).init_value();
+            val.reborrow().set_length(fi.length as i32);
+            let t = match fi.fld_type {
+                FieldType::INTEGER => remote_capnp::FieldType::Integer,
+                FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
+            };
+            val.reborrow().set_type(t);
+        }
+
+        Promise::ok(())
     }
     fn get_view_definition(
         &mut self,
-        _: remote_capnp::remote_connection::GetViewDefinitionParams,
-        _: remote_capnp::remote_connection::GetViewDefinitionResults,
+        params: remote_capnp::remote_connection::GetViewDefinitionParams,
+        mut results: remote_capnp::remote_connection::GetViewDefinitionResults,
     ) -> Promise<(), capnp::Error> {
+        let viewname = params.get().unwrap().get_viewname().expect("get view name");
         panic!("TODO")
     }
     fn get_index_info(
         &mut self,
-        _: remote_capnp::remote_connection::GetIndexInfoParams,
-        _: remote_capnp::remote_connection::GetIndexInfoResults,
+        params: remote_capnp::remote_connection::GetIndexInfoParams,
+        mut results: remote_capnp::remote_connection::GetIndexInfoResults,
     ) -> Promise<(), capnp::Error> {
+        let tblname = params.get().unwrap().get_tblname().expect("get table name");
         panic!("TODO")
     }
 }
