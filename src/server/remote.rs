@@ -139,7 +139,6 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         let stmt: remote_statement::Client = capnp_rpc::new_client(RemoteStatementImpl::new(
             sql,
             planner,
-            Arc::clone(&self.conn.borrow().current_tx),
             Rc::clone(&self.conn),
         ));
         results.get().set_stmt(stmt);
@@ -204,12 +203,7 @@ pub struct RemoteStatementImpl {
     conn: Rc<RefCell<ConnectionInternal>>,
 }
 impl RemoteStatementImpl {
-    pub fn new(
-        sql: &str,
-        planner: Planner,
-        tx: Arc<Mutex<Transaction>>,
-        conn: Rc<RefCell<ConnectionInternal>>,
-    ) -> Self {
+    pub fn new(sql: &str, planner: Planner, conn: Rc<RefCell<ConnectionInternal>>) -> Self {
         Self {
             sql: sql.to_string(),
             planner,
