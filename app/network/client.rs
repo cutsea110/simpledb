@@ -55,6 +55,16 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             .get()
             .set_dbname(::capnp::text::new_reader("demo".as_bytes())?);
         let conn = conn_request.send().pipeline.get_conn();
+
+        let mut cmd_request = conn.create_statement_request();
+        cmd_request.get().set_sql(::capnp::text::new_reader(
+            "UPDATE student SET grad_year=2024 WHERE grad_year=2020".as_bytes(),
+        )?);
+        let stmt = cmd_request.send().pipeline.get_stmt();
+        let update_request = stmt.execute_update_request();
+        let affected = update_request.send().promise.await?.get()?.get_affected();
+        println!("Affected: {} rows", affected);
+
         let mut stmt_request = conn.create_statement_request();
         stmt_request.get().set_sql(::capnp::text::new_reader(
             "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id"
