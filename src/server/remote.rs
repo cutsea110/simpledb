@@ -250,9 +250,16 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
     fn execute_update(
         &mut self,
         _: remote_capnp::remote_statement::ExecuteUpdateParams,
-        _: remote_capnp::remote_statement::ExecuteUpdateResults,
+        mut results: remote_capnp::remote_statement::ExecuteUpdateResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        trace!("execute update: {}", self.sql);
+        let affected = self
+            .planner
+            .execute_update(&self.sql, Arc::clone(&self.current_tx))
+            .expect("execute update");
+        results.get().set_affected(affected);
+
+        Promise::ok(())
     }
     fn close(
         &mut self,
