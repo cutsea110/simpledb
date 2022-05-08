@@ -175,6 +175,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         _: remote_capnp::remote_connection::CloseParams,
         _: remote_capnp::remote_connection::CloseResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("close");
         self.conn.borrow_mut().close().expect("close");
 
         Promise::ok(())
@@ -184,6 +185,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         _: remote_capnp::remote_connection::CommitParams,
         _: remote_capnp::remote_connection::CommitResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("commit");
         self.conn.borrow_mut().commit().expect("commit");
         self.conn.borrow_mut().renew_tx().expect("start new tx");
 
@@ -194,6 +196,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         _: remote_capnp::remote_connection::RollbackParams,
         _: remote_capnp::remote_connection::RollbackResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("rollback");
         self.conn.borrow_mut().rollback().expect("rollback");
         self.conn.borrow_mut().renew_tx().expect("start new tx");
 
@@ -204,6 +207,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         params: remote_capnp::remote_connection::GetTableSchemaParams,
         mut results: remote_capnp::remote_connection::GetTableSchemaResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("get table schema");
         let tblname = params.get().unwrap().get_tblname().expect("get table name");
         let sch = self
             .conn
@@ -331,6 +335,7 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         _: remote_capnp::remote_result_set::CloseParams,
         _: remote_capnp::remote_result_set::CloseResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("close");
         self.conn.borrow_mut().close().expect("close");
 
         Promise::ok(())
@@ -351,6 +356,7 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         _: remote_result_set::GetRowParams,
         mut results: remote_result_set::GetRowResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("get row");
         let row = results.get().init_row();
         let mut map = row.init_map();
         let mut entries = map.reborrow().init_entries(self.sch.fields().len() as u32);
