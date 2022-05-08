@@ -225,7 +225,7 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
             .expect("create query plan");
         trace!("planned");
         let resultset: remote_result_set::Client =
-            capnp_rpc::new_client(RemoteResultSetImpl::new(plan));
+            capnp_rpc::new_client(RemoteResultSetImpl::new(plan, Rc::clone(&self.conn)));
         results.get().set_result(resultset);
 
         Promise::ok(())
@@ -265,12 +265,13 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
 pub struct RemoteResultSetImpl {
     scan: Arc<Mutex<dyn Scan>>,
     sch: Arc<Schema>,
+    conn: Rc<RefCell<ConnectionInternal>>,
 }
 impl RemoteResultSetImpl {
-    pub fn new(plan: Arc<dyn Plan>) -> Self {
+    pub fn new(plan: Arc<dyn Plan>, conn: Rc<RefCell<ConnectionInternal>>) -> Self {
         let scan = plan.open().expect("open plan");
         let sch = plan.schema();
-        Self { scan, sch }
+        Self { scan, sch, conn }
     }
 }
 
