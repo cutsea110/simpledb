@@ -145,22 +145,26 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     ) -> Promise<(), capnp::Error> {
         let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
         trace!("commit tx: {}", tx_num);
-        if let Ok(mut tx) = self.conn.borrow().current_tx.lock() {
-            tx.commit().expect("commit transaction");
-            info!("committed");
-            return Promise::ok(());
-        }
-        if let Ok(tx) = self.conn.borrow().db.lock() {
-            let new_tx = tx.new_tx().expect("new transaction");
-            trace!("tx: {}", new_tx.tx_num());
-            self.conn.borrow_mut().current_tx = Arc::new(Mutex::new(new_tx));
-            return Promise::ok(());
-        }
+        self.conn
+            .borrow()
+            .current_tx
+            .lock()
+            .unwrap()
+            .commit()
+            .expect("commit transaction");
+        debug!("committed");
+        let new_tx = self
+            .conn
+            .borrow()
+            .db
+            .lock()
+            .unwrap()
+            .new_tx()
+            .expect("new transaction");
+        trace!("start new tx: {}", new_tx.tx_num());
+        self.conn.borrow_mut().current_tx = Arc::new(Mutex::new(new_tx));
 
-        Promise::err(::capnp::Error::failed(format!(
-            "failed to commit tx: {}",
-            tx_num
-        )))
+        Promise::ok(())
     }
     fn rollback(
         &mut self,
@@ -169,22 +173,26 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     ) -> Promise<(), capnp::Error> {
         let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
         trace!("rollback tx: {}", tx_num);
-        if let Ok(mut tx) = self.conn.borrow().current_tx.lock() {
-            tx.rollback().expect("rollback transaction");
-            info!("rollbacked");
-            return Promise::ok(());
-        }
-        if let Ok(tx) = self.conn.borrow().db.lock() {
-            let new_tx = tx.new_tx().expect("new transaction");
-            trace!("tx: {}", new_tx.tx_num());
-            self.conn.borrow_mut().current_tx = Arc::new(Mutex::new(new_tx));
-            return Promise::ok(());
-        }
+        self.conn
+            .borrow()
+            .current_tx
+            .lock()
+            .unwrap()
+            .rollback()
+            .expect("rollback transaction");
+        debug!("rollbacked");
+        let new_tx = self
+            .conn
+            .borrow()
+            .db
+            .lock()
+            .unwrap()
+            .new_tx()
+            .expect("new transaction");
+        trace!("start new tx: {}", new_tx.tx_num());
+        self.conn.borrow_mut().current_tx = Arc::new(Mutex::new(new_tx));
 
-        Promise::err(::capnp::Error::failed(format!(
-            "failed to rollback tx: {}",
-            tx_num
-        )))
+        Promise::ok(())
     }
     fn get_table_schema(
         &mut self,
