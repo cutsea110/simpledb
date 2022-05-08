@@ -128,15 +128,17 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     ) -> Promise<(), capnp::Error> {
         let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
         trace!("close tx: {}", tx_num);
-        if let Ok(mut tx) = self.conn.borrow().current_tx.lock() {
-            tx.commit().expect("commit transaction");
-            return Promise::ok(());
-        }
+        self.conn
+            .borrow()
+            .current_tx
+            .lock()
+            .unwrap()
+            .commit()
+            .expect("commit transaction");
+        debug!("committed");
+        // TODO: close
 
-        Promise::err(::capnp::Error::failed(format!(
-            "failed to close tx: {}",
-            tx_num
-        )))
+        Promise::ok(())
     }
     fn commit(
         &mut self,
