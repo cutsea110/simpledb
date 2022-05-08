@@ -222,7 +222,6 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
 pub struct RemoteStatementImpl {
     sql: String,
     planner: Planner,
-    current_tx: Arc<Mutex<Transaction>>,
     conn: Rc<RefCell<ConnectionInternal>>,
 }
 impl RemoteStatementImpl {
@@ -235,7 +234,6 @@ impl RemoteStatementImpl {
         Self {
             sql: sql.to_string(),
             planner,
-            current_tx: tx,
             conn,
         }
     }
@@ -250,7 +248,7 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
         trace!("execute query: {}", self.sql);
         let plan = self
             .planner
-            .create_query_plan(&self.sql, Arc::clone(&self.current_tx))
+            .create_query_plan(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
             .expect("create query plan");
         trace!("planned");
         let resultset: remote_result_set::Client =
@@ -267,7 +265,7 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
         trace!("execute update: {}", self.sql);
         let affected = self
             .planner
-            .execute_update(&self.sql, Arc::clone(&self.current_tx))
+            .execute_update(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
             .expect("execute update");
         results.get().set_affected(affected);
 
