@@ -292,7 +292,9 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         _: remote_capnp::remote_result_set::CloseParams,
         _: remote_capnp::remote_result_set::CloseResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        self.conn.borrow_mut().close().expect("close");
+
+        Promise::ok(())
     }
     fn get_metadata(
         &mut self,
