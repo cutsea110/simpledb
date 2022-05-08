@@ -74,6 +74,51 @@ pub struct ConnectionInternal {
     db: Arc<Mutex<SimpleDB>>,
     current_tx: Arc<Mutex<Transaction>>,
 }
+impl ConnectionInternal {
+    pub fn close(&mut self) -> Promise<(), capnp::Error> {
+        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        trace!("close tx: {}", tx_num);
+        self.current_tx
+            .lock()
+            .unwrap()
+            .commit()
+            .expect("commit transaction");
+        debug!("committed");
+        // TODO: close
+
+        Promise::ok(())
+    }
+    pub fn commit(&mut self) -> Promise<(), capnp::Error> {
+        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        trace!("commit tx: {}", tx_num);
+        self.current_tx
+            .lock()
+            .unwrap()
+            .commit()
+            .expect("commit transaction");
+        debug!("committed");
+        let new_tx = self.db.lock().unwrap().new_tx().expect("new transaction");
+        trace!("start new tx: {}", new_tx.tx_num());
+        self.current_tx = Arc::new(Mutex::new(new_tx));
+
+        Promise::ok(())
+    }
+    pub fn rollback(&mut self) -> Promise<(), capnp::Error> {
+        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        trace!("rollback tx: {}", tx_num);
+        self.current_tx
+            .lock()
+            .unwrap()
+            .rollback()
+            .expect("rollback transaction");
+        debug!("rollback");
+        let new_tx = self.db.lock().unwrap().new_tx().expect("new transaction");
+        trace!("start new tx: {}", new_tx.tx_num());
+        self.current_tx = Arc::new(Mutex::new(new_tx));
+
+        Promise::ok(())
+    }
+}
 
 pub struct RemoteConnectionImpl {
     conn: Rc<RefCell<ConnectionInternal>>,
@@ -126,75 +171,21 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         _: remote_capnp::remote_connection::CloseParams,
         _: remote_capnp::remote_connection::CloseResults,
     ) -> Promise<(), capnp::Error> {
-        let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
-        trace!("close tx: {}", tx_num);
-        self.conn
-            .borrow()
-            .current_tx
-            .lock()
-            .unwrap()
-            .commit()
-            .expect("commit transaction");
-        debug!("committed");
-        // TODO: close
-
-        Promise::ok(())
+        self.conn.borrow_mut().close()
     }
     fn commit(
         &mut self,
         _: remote_capnp::remote_connection::CommitParams,
         _: remote_capnp::remote_connection::CommitResults,
     ) -> Promise<(), capnp::Error> {
-        let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
-        trace!("commit tx: {}", tx_num);
-        self.conn
-            .borrow()
-            .current_tx
-            .lock()
-            .unwrap()
-            .commit()
-            .expect("commit transaction");
-        debug!("committed");
-        let new_tx = self
-            .conn
-            .borrow()
-            .db
-            .lock()
-            .unwrap()
-            .new_tx()
-            .expect("new transaction");
-        trace!("start new tx: {}", new_tx.tx_num());
-        self.conn.borrow_mut().current_tx = Arc::new(Mutex::new(new_tx));
-
-        Promise::ok(())
+        self.conn.borrow_mut().commit()
     }
     fn rollback(
         &mut self,
         _: remote_capnp::remote_connection::RollbackParams,
         _: remote_capnp::remote_connection::RollbackResults,
     ) -> Promise<(), capnp::Error> {
-        let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
-        trace!("rollback tx: {}", tx_num);
-        self.conn
-            .borrow()
-            .current_tx
-            .lock()
-            .unwrap()
-            .rollback()
-            .expect("rollback transaction");
-        debug!("rollbacked");
-        let new_tx = self
-            .conn
-            .borrow()
-            .db
-            .lock()
-            .unwrap()
-            .new_tx()
-            .expect("new transaction");
-        trace!("start new tx: {}", new_tx.tx_num());
-        self.conn.borrow_mut().current_tx = Arc::new(Mutex::new(new_tx));
-
-        Promise::ok(())
+        self.conn.borrow_mut().rollback()
     }
     fn get_table_schema(
         &mut self,
@@ -276,17 +267,7 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
         _: remote_capnp::remote_statement::CloseParams,
         _: remote_capnp::remote_statement::CloseResults,
     ) -> Promise<(), capnp::Error> {
-        let tx_num = self.conn.borrow().current_tx.lock().unwrap().tx_num();
-        trace!("close tx: {}", tx_num);
-        if let Ok(mut tx) = self.conn.borrow().current_tx.lock() {
-            tx.commit().expect("commit transaction");
-            return Promise::ok(());
-        }
-
-        Promise::err(::capnp::Error::failed(format!(
-            "failed to close tx: {}",
-            tx_num
-        )))
+        self.conn.borrow_mut().close()
     }
     fn explain_plan(
         &mut self,
