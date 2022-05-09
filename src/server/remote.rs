@@ -123,19 +123,19 @@ impl RemoteConnectionImpl {
 fn set_schema(schema: Arc<Schema>, sch: &mut remote_capnp::schema::Builder) {
     let mut fields = sch.reborrow().init_fields(schema.fields().len() as u32);
     for i in 0..schema.fields().len() {
-        let fldname = schema.fields()[i].as_bytes();
-        fields.set(i as u32, ::capnp::text::new_reader(fldname).unwrap());
+        let fldname = schema.fields()[i].as_str();
+        fields.set(i as u32, fldname.into());
     }
     let mut info = sch.reborrow().init_info();
     let mut entries = info
         .reborrow()
         .init_entries(schema.info().keys().len() as u32);
     for (i, (k, fi)) in schema.info().into_iter().enumerate() {
-        let fldname = k.as_bytes();
+        let fldname = k.as_str();
         entries
             .reborrow()
             .get(i as u32)
-            .set_key(::capnp::text::new_reader(fldname).unwrap())
+            .set_key(fldname.into())
             .unwrap();
         let mut val = entries.reborrow().get(i as u32).init_value();
         val.reborrow().set_length(fi.length as i32);
