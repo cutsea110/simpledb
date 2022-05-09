@@ -96,4 +96,7 @@ impl Predicate {
     pub fn init_with_terms(&mut self, terms: Vec<Term>) {
         self.terms = terms;
     }
+    pub fn terms(&self) -> &Vec<Term> {
+        &self.terms
+    }
 }

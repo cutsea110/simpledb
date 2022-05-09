@@ -82,4 +82,11 @@ impl Term {
             _ => None,
         }
     }
+    // my own extends
+    pub fn lhs(&self) -> &Expression {
+        &self.lhs
+    }
+    pub fn rhs(&self) -> &Expression {
+        &self.rhs
+    }
 }
