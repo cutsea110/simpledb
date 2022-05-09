@@ -146,13 +146,35 @@ fn set_schema(schema: Arc<Schema>, sch: &mut remote_capnp::schema::Builder) {
         val.reborrow().set_type(t);
     }
 }
+fn set_constant(cnst: &Constant, c: &mut remote_capnp::remote_statement::constant::Builder) {
+    match cnst {
+        Constant::I32(v) => {
+            c.set_int32(*v);
+        }
+        Constant::String(s) => {
+            c.set_string(s.as_str().into());
+        }
+    }
+}
+fn set_expression(expr: &Expression, e: &mut remote_capnp::remote_statement::expression::Builder) {
+    match expr {
+        Expression::Fldname(f) => {
+            e.reborrow().set_fldname(f.as_str().into());
+        }
+        Expression::Val(c) => {
+            let mut v = e.reborrow().init_val();
+            set_constant(c, &mut v);
+        }
+    }
+}
 
-fn set_plan_repr(
-    planrepr: Arc<dyn PlanRepr>,
-    pr: &mut remote_capnp::remote_statement::plan_repr::Builder,
+fn set_operation(
+    operation: repr::planrepr::Operation,
+    ope: &mut remote_statement::plan_repr::operation::Builder,
 ) {
-    let op = pr.reborrow().init_operation();
-    match planrepr.operation() {
+    let op = ope.reborrow();
+
+    match operation {
         repr::planrepr::Operation::IndexJoinScan {
             idxname,
             idxfldname,
@@ -171,14 +193,8 @@ fn set_plan_repr(
             let mut op = op.init_index_select_scan();
             op.set_idxname(idxname.as_str().into());
             op.set_idxfldname(idxfldname.as_str().into());
-            match val {
-                Constant::I32(v) => {
-                    op.init_val().set_int32(v);
-                }
-                Constant::String(s) => {
-                    op.init_val().set_string(s.as_str().into());
-                }
-            }
+            let mut v = op.init_val();
+            set_constant(&val, &mut v);
         }
         repr::planrepr::Operation::GroupByScan { fields, aggfns } => {
             let mut op = op.init_group_by_scan();
@@ -190,14 +206,8 @@ fn set_plan_repr(
             for (i, (f, c)) in aggfns.into_iter().enumerate() {
                 let mut tpl = fns.reborrow().get(i as u32);
                 tpl.set_fst(f.as_str().into()).unwrap();
-                match c {
-                    Constant::I32(v) => {
-                        tpl.init_snd().set_int32(v);
-                    }
-                    Constant::String(s) => {
-                        tpl.init_snd().set_string(s.as_str().into());
-                    }
-                }
+                let mut v = tpl.init_snd();
+                set_constant(&c, &mut v);
             }
         }
         repr::planrepr::Operation::Materialize => {
@@ -231,38 +241,30 @@ fn set_plan_repr(
             for (i, term) in pred.terms().into_iter().enumerate() {
                 let mut t = ts.reborrow().get(i as u32);
                 let mut lhs = t.reborrow().init_lhs();
-                match term.lhs() {
-                    Expression::Fldname(f) => {
-                        lhs.set_fldname(f.as_str().into());
-                    }
-                    Expression::Val(c) => match c {
-                        Constant::I32(v) => lhs.init_val().set_int32(*v),
-                        Constant::String(s) => lhs.init_val().set_string(s.as_str().into()),
-                    },
-                }
+                set_expression(term.lhs(), &mut lhs);
                 let mut rhs = t.reborrow().init_rhs();
-                match term.rhs() {
-                    Expression::Fldname(f) => {
-                        rhs.set_fldname(f.as_str().into());
-                    }
-                    Expression::Val(c) => match c {
-                        Constant::I32(v) => rhs.init_val().set_int32(*v),
-                        Constant::String(s) => rhs.init_val().set_string(s.as_str().into()),
-                    },
-                }
+                set_expression(term.rhs(), &mut rhs);
             }
         }
         repr::planrepr::Operation::TableScan { tblname } => {
             op.init_table_scan().set_tblname(tblname.as_str().into());
         }
     }
+}
+
+fn set_plan_repr(
+    planrepr: Arc<dyn PlanRepr>,
+    pr: &mut remote_capnp::remote_statement::plan_repr::Builder,
+) {
+    let mut op = pr.reborrow().init_operation();
+    set_operation(planrepr.operation(), &mut op);
     pr.set_reads(planrepr.reads());
     pr.set_writes(planrepr.writes());
-    let mut children = pr
+    let mut subs = pr
         .reborrow()
         .init_sub_plan_reprs(planrepr.sub_plan_reprs().len() as u32);
     for (i, repr) in planrepr.sub_plan_reprs().into_iter().enumerate() {
-        let mut r = children.reborrow().get(i as u32);
+        let mut r = subs.reborrow().get(i as u32);
         set_plan_repr(repr, &mut r);
     }
 }
