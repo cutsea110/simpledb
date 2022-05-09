@@ -65,6 +65,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let vwdef = viewdef.reborrow().get_vwdef()?;
         println!("view name: {}", vwname);
         println!("view def:  {}", vwdef);
+        println!();
 
         let mut cmd_request = conn.create_statement_request();
         cmd_request.get().set_sql(::capnp::text::new_reader(
@@ -79,10 +80,9 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         // commit_request.send().promise.await?;
 
         let mut stmt_request = conn.create_statement_request();
-        stmt_request.get().set_sql(::capnp::text::new_reader(
-            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id"
-                .as_bytes(),
-        )?);
+        stmt_request.get().set_sql(
+            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id".into(),
+        );
         let stmt = stmt_request.send().pipeline.get_stmt();
         let query_request = stmt.execute_query_request();
         let result = query_request.send().pipeline.get_result();
