@@ -56,6 +56,16 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             .set_dbname(::capnp::text::new_reader("demo".as_bytes())?);
         let conn = conn_request.send().pipeline.get_conn();
 
+        // view definition
+        let mut view_request = conn.get_view_definition_request();
+        view_request.get().set_viewname("einstein".into());
+        let reply = view_request.send().promise.await?;
+        let viewdef = reply.get()?.get_vwdef()?;
+        let vwname = viewdef.reborrow().get_vwname()?;
+        let vwdef = viewdef.reborrow().get_vwdef()?;
+        println!("view name: {}", vwname);
+        println!("view def:  {}", vwdef);
+
         let mut cmd_request = conn.create_statement_request();
         cmd_request.get().set_sql(::capnp::text::new_reader(
             "UPDATE student SET grad_year=2020 WHERE grad_year=2024".as_bytes(),
