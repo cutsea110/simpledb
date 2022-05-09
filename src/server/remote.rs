@@ -119,15 +119,17 @@ impl RemoteConnectionImpl {
     }
 }
 
-fn set_schema(sch: Arc<Schema>, schema: &mut remote_capnp::schema::Builder) {
-    let mut fields = schema.reborrow().init_fields(sch.fields().len() as u32);
-    for i in 0..sch.fields().len() {
-        let fldname = sch.fields()[i].as_bytes();
+fn set_schema(schema: Arc<Schema>, sch: &mut remote_capnp::schema::Builder) {
+    let mut fields = sch.reborrow().init_fields(schema.fields().len() as u32);
+    for i in 0..schema.fields().len() {
+        let fldname = schema.fields()[i].as_bytes();
         fields.set(i as u32, ::capnp::text::new_reader(fldname).unwrap());
     }
-    let mut info = schema.reborrow().init_info();
-    let mut entries = info.reborrow().init_entries(sch.info().keys().len() as u32);
-    for (i, (k, fi)) in sch.info().into_iter().enumerate() {
+    let mut info = sch.reborrow().init_info();
+    let mut entries = info
+        .reborrow()
+        .init_entries(schema.info().keys().len() as u32);
+    for (i, (k, fi)) in schema.info().into_iter().enumerate() {
         let fldname = k.as_bytes();
         entries
             .reborrow()
@@ -209,7 +211,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     ) -> Promise<(), capnp::Error> {
         trace!("get table schema");
         let tblname = params.get().unwrap().get_tblname().expect("get table name");
-        let sch = self
+        let schema = self
             .conn
             .borrow()
             .db
@@ -217,8 +219,8 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
             .unwrap()
             .get_table_schema(tblname, Arc::clone(&self.conn.borrow().current_tx))
             .expect("table schema");
-        let mut schema = results.get().init_sch();
-        set_schema(sch, &mut schema);
+        let mut sch = results.get().init_sch();
+        set_schema(schema, &mut sch);
 
         Promise::ok(())
     }
@@ -227,8 +229,21 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         params: remote_capnp::remote_connection::GetViewDefinitionParams,
         mut results: remote_capnp::remote_connection::GetViewDefinitionResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("get view definition");
         let viewname = params.get().unwrap().get_viewname().expect("get view name");
-        panic!("TODO")
+        let (_, def) = self
+            .conn
+            .borrow()
+            .db
+            .lock()
+            .unwrap()
+            .get_view_definitoin(viewname, Arc::clone(&self.conn.borrow().current_tx))
+            .expect("get view definition");
+        let mut viewdef = results.get().init_vwdef();
+        viewdef.set_vwname(viewname.into());
+        viewdef.set_vwdef(def.as_str().into());
+
+        Promise::ok(())
     }
     fn get_index_info(
         &mut self,
@@ -236,7 +251,27 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_capnp::remote_connection::GetIndexInfoResults,
     ) -> Promise<(), capnp::Error> {
         let tblname = params.get().unwrap().get_tblname().expect("get table name");
-        panic!("TODO")
+        let indexinfo = self
+            .conn
+            .borrow()
+            .db
+            .lock()
+            .unwrap()
+            .get_index_info(tblname, Arc::clone(&self.conn.borrow().current_tx))
+            .expect("get index info");
+        let mut idxinf = results.get().init_ii();
+        let mut entries = idxinf
+            .reborrow()
+            .init_entries(indexinfo.keys().len() as u32);
+        for (i, (_, ii)) in indexinfo.into_iter().enumerate() {
+            let idxname = ii.index_name();
+            let fldname = ii.field_name();
+            let mut val = entries.reborrow().get(i as u32).init_value();
+            val.reborrow().set_idxname(idxname.into());
+            val.reborrow().set_fldname(fldname.into());
+        }
+
+        Promise::ok(())
     }
 }
 
@@ -361,11 +396,10 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
         let mut map = row.init_map();
         let mut entries = map.reborrow().init_entries(self.sch.fields().len() as u32);
         for (i, (k, fi)) in self.sch.info().into_iter().enumerate() {
-            let fldname = k.as_bytes();
             entries
                 .reborrow()
                 .get(i as u32)
-                .set_key(::capnp::text::new_reader(fldname).unwrap())
+                .set_key(k.as_str().into())
                 .unwrap();
             let mut val = entries.reborrow().get(i as u32).init_value();
             match fi.fld_type {
@@ -376,8 +410,7 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
                 }
                 FieldType::VARCHAR => {
                     if let Ok(s) = self.scan.lock().unwrap().get_string(k) {
-                        val.reborrow()
-                            .set_string(::capnp::text::new_reader(s.as_bytes()).unwrap());
+                        val.reborrow().set_string(s.as_str().into());
                     }
                 }
             }
@@ -415,9 +448,7 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
             .unwrap()
             .get_string(fldname)
             .expect("get string");
-        results
-            .get()
-            .set_val(::capnp::text::new_reader(val.as_bytes()).unwrap()); // TODO
+        results.get().set_val(val.as_str().into());
 
         Promise::ok(())
     }
