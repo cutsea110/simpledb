@@ -250,6 +250,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         params: remote_capnp::remote_connection::GetIndexInfoParams,
         mut results: remote_capnp::remote_connection::GetIndexInfoResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("get index info");
         let tblname = params.get().unwrap().get_tblname().expect("get table name");
         let indexinfo = self
             .conn
@@ -259,10 +260,8 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
             .unwrap()
             .get_index_info(tblname, Arc::clone(&self.conn.borrow().current_tx))
             .expect("get index info");
-        let mut idxinf = results.get().init_ii();
-        let mut entries = idxinf
-            .reborrow()
-            .init_entries(indexinfo.keys().len() as u32);
+        let mut ii = results.get().init_ii();
+        let mut entries = ii.reborrow().init_entries(indexinfo.keys().len() as u32);
         for (i, (_, ii)) in indexinfo.into_iter().enumerate() {
             let idxname = ii.index_name();
             let fldname = ii.field_name();
@@ -327,6 +326,7 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
         _: remote_capnp::remote_statement::CloseParams,
         _: remote_capnp::remote_statement::CloseResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("close");
         self.conn.borrow_mut().close().expect("close");
 
         Promise::ok(())
