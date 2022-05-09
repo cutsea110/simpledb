@@ -459,6 +459,7 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
         _: remote_capnp::remote_statement::ExplainPlanParams,
         mut results: remote_capnp::remote_statement::ExplainPlanResults,
     ) -> Promise<(), capnp::Error> {
+        trace!("explain plan");
         let planrepr = self
             .planner
             .create_query_plan(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
