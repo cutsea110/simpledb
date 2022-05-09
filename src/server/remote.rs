@@ -63,8 +63,9 @@ impl remote_driver::Server for RemoteDriverImpl {
         mut results: remote_driver::GetVersionResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get version");
-        results.get().init_ver().set_major_ver(self.major_ver);
-        results.get().init_ver().set_minor_ver(self.minor_ver);
+        let mut ver = results.get().init_ver();
+        ver.set_major_ver(self.major_ver);
+        ver.set_minor_ver(self.minor_ver);
         info!("version: {}.{}", self.major_ver, self.minor_ver);
 
         Promise::ok(())
@@ -333,7 +334,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_capnp::remote_connection::GetTableSchemaResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get table schema");
-        let tblname = params.get().unwrap().get_tblname().expect("get table name");
+        let tblname = pry!(pry!(params.get()).get_tblname());
         let schema = self
             .conn
             .borrow()
@@ -353,7 +354,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_capnp::remote_connection::GetViewDefinitionResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get view definition");
-        let viewname = params.get().unwrap().get_viewname().expect("get view name");
+        let viewname = pry!(pry!(params.get()).get_viewname());
         let (_, def) = self
             .conn
             .borrow()
@@ -374,7 +375,7 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_capnp::remote_connection::GetIndexInfoResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get index info");
-        let tblname = params.get().unwrap().get_tblname().expect("get table name");
+        let tblname = pry!(pry!(params.get()).get_tblname());
         let indexinfo = self
             .conn
             .borrow()
