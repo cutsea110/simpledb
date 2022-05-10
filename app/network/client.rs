@@ -61,9 +61,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let mut conn_request = driver.connect_request();
-        conn_request
-            .get()
-            .set_dbname(::capnp::text::new_reader("demo".as_bytes())?);
+        conn_request.get().set_dbname("demo".into());
         let conn = conn_request.send().pipeline.get_conn();
 
         // table schema
