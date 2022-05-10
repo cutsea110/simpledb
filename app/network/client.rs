@@ -10,7 +10,8 @@ use simpledb::{
         network::{metadata::NetworkResultSetMetaData, resultset::Value},
         resultsetmetadataadapter::{self, ResultSetMetaDataAdapter},
     },
-    remote_capnp::{remote_driver, remote_result_set},
+    record::schema::FieldType,
+    remote_capnp::{self, remote_driver, remote_result_set},
 };
 
 extern crate capnp_rpc;
@@ -55,6 +56,43 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             .get()
             .set_dbname(::capnp::text::new_reader("demo".as_bytes())?);
         let conn = conn_request.send().pipeline.get_conn();
+
+        // table schema
+        let mut req = conn.get_table_schema_request();
+        req.get().set_tblname("student".into());
+        let reply = req.send().promise.await?;
+        let tblsch = reply.get()?.get_sch()?;
+        let fields = tblsch.get_fields()?;
+        let info = tblsch.get_info()?;
+        let entries = info.get_entries()?;
+        let mut map = HashMap::new();
+        for i in 0..entries.len() {
+            let entry = entries.get(i as u32);
+            let fldname = entry.get_key()?;
+            let val = entry.get_value()?;
+            match val.get_type()? {
+                remote_capnp::FieldType::Integer => {
+                    map.insert(fldname.to_string(), (FieldType::INTEGER, 0));
+                }
+                remote_capnp::FieldType::Varchar => {
+                    map.insert(fldname.to_string(), (FieldType::VARCHAR, val.get_length()));
+                }
+            }
+        }
+        for i in 0..fields.len() {
+            let fldname = fields.get(i as u32)?;
+            if let Some((t, n)) = map.get(fldname) {
+                match t {
+                    FieldType::INTEGER => {
+                        println!("{:10} {:10}", fldname, "INT32");
+                    }
+                    FieldType::VARCHAR => {
+                        println!("{:10} {:10}", fldname, format!("VARCHAR({})", n));
+                    }
+                }
+            }
+        }
+        println!();
 
         // view definition
         let mut view_request = conn.get_view_definition_request();
