@@ -11,7 +11,7 @@ use simpledb::{
         resultsetmetadataadapter::{self, ResultSetMetaDataAdapter},
     },
     record::schema::FieldType,
-    remote_capnp::{self, remote_driver, remote_result_set},
+    remote_capnp::{self, remote_connection, remote_driver, remote_result_set},
 };
 
 extern crate capnp_rpc;
@@ -37,6 +37,17 @@ async fn get_server_version(
     Ok((ver.get_major_ver(), ver.get_minor_ver()))
 }
 
+async fn connect(
+    driver: &remote_driver::Client,
+    dbname: &str,
+) -> Result<remote_connection::Client, Box<dyn std::error::Error>> {
+    let mut request = driver.connect_request();
+    request.get().set_dbname(dbname.into());
+    let conn = request.send().pipeline.get_conn();
+
+    Ok(conn)
+}
+
 async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let stream = tokio::net::TcpStream::connect(&addr).await?;
     stream.set_nodelay(true)?;
@@ -59,9 +70,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             println!("simpledb server version {}.{}\n", major_ver, minor_ver);
         }
 
-        let mut conn_request = driver.connect_request();
-        conn_request.get().set_dbname("demo".into());
-        let conn = conn_request.send().pipeline.get_conn();
+        let conn = connect(&driver, "demo").await?;
 
         // table schema
         let mut req = conn.get_table_schema_request();
