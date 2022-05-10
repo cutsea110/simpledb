@@ -127,9 +127,9 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         println!();
 
         let mut cmd_request = conn.create_statement_request();
-        cmd_request.get().set_sql(::capnp::text::new_reader(
-            "UPDATE student SET grad_year=2020 WHERE grad_year=2024".as_bytes(),
-        )?);
+        cmd_request
+            .get()
+            .set_sql("UPDATE student SET grad_year=2020 WHERE grad_year=2024".into());
         let stmt = cmd_request.send().pipeline.get_stmt();
         let update_request = stmt.execute_update_request();
         let affected = update_request.send().promise.await?.get()?.get_affected();
