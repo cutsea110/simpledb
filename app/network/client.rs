@@ -31,11 +31,10 @@ async fn get_server_version(
     driver: &remote_driver::Client,
 ) -> Result<(i32, i32), Box<dyn std::error::Error>> {
     let request = driver.get_version_request();
-    let ver = request.send().promise.await?;
-    let major_ver = ver.get()?.get_ver()?.get_major_ver();
-    let minor_ver = ver.get()?.get_ver()?.get_minor_ver();
+    let reply = request.send().promise.await?;
+    let ver = reply.get()?.get_ver()?;
 
-    Ok((major_ver, minor_ver))
+    Ok((ver.get_major_ver(), ver.get_minor_ver()))
 }
 
 async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
