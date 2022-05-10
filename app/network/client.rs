@@ -93,6 +93,20 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         println!();
+        // index info
+        let mut req = conn.get_index_info_request();
+        req.get().set_tblname("student".into());
+        let reply = req.send().promise.await?;
+        let ii = reply.get()?.get_ii()?;
+        let entries = ii.get_entries()?;
+        for i in 0..entries.len() {
+            let entry = entries.get(i as u32);
+            let val = entry.get_value()?;
+            let fldname = val.get_fldname()?;
+            let idxname = val.get_idxname()?;
+            println!("{:20} {:10}", idxname, fldname)
+        }
+        println!();
 
         // view definition
         let mut view_request = conn.get_view_definition_request();
