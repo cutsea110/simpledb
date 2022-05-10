@@ -48,6 +48,21 @@ async fn connect(
     Ok(conn)
 }
 
+async fn get_view_definition(
+    conn: &remote_connection::Client,
+    tblname: &str,
+) -> Result<(String, String), Box<dyn std::error::Error>> {
+    let mut request = conn.get_view_definition_request();
+    request.get().set_viewname(tblname.into());
+    let reply = request.send().promise.await?;
+    let viewdef = reply.get()?.get_vwdef()?;
+
+    Ok((
+        viewdef.reborrow().get_vwname()?.to_string(),
+        viewdef.reborrow().get_vwdef()?.to_string(),
+    ))
+}
+
 async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let stream = tokio::net::TcpStream::connect(&addr).await?;
     stream.set_nodelay(true)?;
@@ -124,12 +139,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         println!();
 
         // view definition
-        let mut view_request = conn.get_view_definition_request();
-        view_request.get().set_viewname("einstein".into());
-        let reply = view_request.send().promise.await?;
-        let viewdef = reply.get()?.get_vwdef()?;
-        let vwname = viewdef.reborrow().get_vwname()?;
-        let vwdef = viewdef.reborrow().get_vwdef()?;
+        let (vwname, vwdef) = get_view_definition(&conn, "einstein").await?;
         println!("view name: {}", vwname);
         println!("view def:  {}", vwdef);
         println!();
