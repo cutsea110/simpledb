@@ -63,6 +63,18 @@ async fn get_view_definition(
     ))
 }
 
+async fn execute_command(
+    conn: &remote_connection::Client,
+    cmd: &str,
+) -> Result<i32, Box<dyn std::error::Error>> {
+    let mut request = conn.create_statement_request();
+    request.get().set_sql(cmd.into());
+    let stmt = request.send().pipeline.get_stmt();
+    let reply = stmt.execute_update_request().send().promise.await?;
+
+    Ok(reply.get()?.get_affected())
+}
+
 async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let stream = tokio::net::TcpStream::connect(&addr).await?;
     stream.set_nodelay(true)?;
@@ -144,13 +156,11 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         println!("view def:  {}", vwdef);
         println!();
 
-        let mut cmd_request = conn.create_statement_request();
-        cmd_request
-            .get()
-            .set_sql("UPDATE student SET grad_year=2020 WHERE grad_year=2024".into());
-        let stmt = cmd_request.send().pipeline.get_stmt();
-        let update_request = stmt.execute_update_request();
-        let affected = update_request.send().promise.await?.get()?.get_affected();
+        let affected = execute_command(
+            &conn,
+            "UPDATE student SET grad_year=2020 WHERE grad_year=2024",
+        )
+        .await?;
         println!("Affected: {} rows", affected);
 
         // let commit_request = conn.commit_request();
