@@ -27,6 +27,17 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::task::LocalSet::new().run_until(try_main(addr)).await
 }
 
+async fn get_server_version(
+    driver: &remote_driver::Client,
+) -> Result<(i32, i32), Box<dyn std::error::Error>> {
+    let request = driver.get_version_request();
+    let ver = request.send().promise.await?;
+    let major_ver = ver.get()?.get_ver()?.get_major_ver();
+    let minor_ver = ver.get()?.get_ver()?.get_minor_ver();
+
+    Ok((major_ver, minor_ver))
+}
+
 async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let stream = tokio::net::TcpStream::connect(&addr).await?;
     stream.set_nodelay(true)?;
@@ -45,11 +56,9 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
 
     // Query sample
     {
-        let ver_req = driver.get_version_request();
-        let ver = ver_req.send().promise.await?;
-        let major_ver = ver.get()?.get_ver()?.get_major_ver();
-        let minor_ver = ver.get()?.get_ver()?.get_minor_ver();
-        println!("simpledb server version {}.{}\n", major_ver, minor_ver);
+        if let Ok((major_ver, minor_ver)) = get_server_version(&driver).await {
+            println!("simpledb server version {}.{}\n", major_ver, minor_ver);
+        }
 
         let mut conn_request = driver.connect_request();
         conn_request
