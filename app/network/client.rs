@@ -122,26 +122,82 @@ async fn get_index_info(
     Ok(result)
 }
 
+struct NetworkResultSet {
+    pub client: remote_result_set::Client,
+}
+impl NetworkResultSet {
+    pub fn new(client: remote_result_set::Client) -> Self {
+        Self { client }
+    }
+
+    pub async fn get_metadata(
+        &self,
+    ) -> Result<NetworkResultSetMetaData, Box<dyn std::error::Error>> {
+        let meta_request = self.client.get_metadata_request();
+        let meta_reply = meta_request.send().promise.await?;
+        let meta = meta_reply.get()?.get_metadata()?;
+
+        Ok(NetworkResultSetMetaData::from(meta))
+    }
+    pub async fn next(&mut self) -> Result<bool, Box<dyn std::error::Error>> {
+        let exists = self
+            .client
+            .next_request()
+            .send()
+            .promise
+            .await?
+            .get()?
+            .get_exists();
+
+        Ok(exists)
+    }
+    pub async fn get_row<'a, 'b>(
+        &'a self,
+        metadata: &'b NetworkResultSetMetaData,
+    ) -> Result<HashMap<&'a str, Value>, Box<dyn std::error::Error>>
+    where
+        'b: 'a,
+    {
+        let mut result = HashMap::new();
+
+        let row_request = self.client.get_row_request();
+        let row_reply = row_request.send().promise.await?;
+        let row = row_reply.get()?.get_row()?;
+        let entry = to_hashmap(row);
+
+        for i in 0..metadata.get_column_count() {
+            let fldname = metadata
+                .get_column_name(i)
+                .expect("get column name")
+                .as_str();
+            match metadata.get_column_type(i).expect("get column type") {
+                resultsetmetadataadapter::DataType::Int32 => {
+                    if let Some(Value::Int32(v)) = entry.get(fldname) {
+                        result.insert(fldname, Value::Int32(*v));
+                    }
+                }
+                resultsetmetadataadapter::DataType::Varchar => {
+                    if let Some(Value::String(s)) = entry.get(fldname) {
+                        result.insert(fldname, Value::String(s.clone()));
+                    }
+                }
+            }
+        }
+
+        Ok(result)
+    }
+}
+
 async fn execute_query(
     conn: &remote_connection::Client,
     sql: &str,
-) -> Result<remote_result_set::Client, Box<dyn std::error::Error>> {
+) -> Result<NetworkResultSet, Box<dyn std::error::Error>> {
     let mut request = conn.create_statement_request();
     request.get().set_sql(sql.into());
     let stmt = request.send().pipeline.get_stmt();
     let client = stmt.execute_query_request().send().pipeline.get_result();
 
-    Ok(client)
-}
-
-async fn get_metadata(
-    client: &remote_result_set::Client,
-) -> Result<NetworkResultSetMetaData, Box<dyn std::error::Error>> {
-    let meta_request = client.get_metadata_request();
-    let meta_reply = meta_request.send().promise.await?;
-    let meta = meta_reply.get()?.get_metadata()?;
-
-    Ok(NetworkResultSetMetaData::from(meta))
+    Ok(NetworkResultSet::new(client))
 }
 
 async fn execute_command(
@@ -221,13 +277,13 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         // let commit_request = conn.commit_request();
         // commit_request.send().promise.await?;
 
-        let result_set_client = execute_query(
+        let mut result_set = execute_query(
             &conn,
             "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
         )
         .await?;
 
-        let metadata = get_metadata(&result_set_client).await?;
+        let metadata = result_set.get_metadata().await?;
 
         for i in 0..metadata.get_column_count() {
             let fldname = metadata
@@ -248,19 +304,8 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         }
         println!();
 
-        while result_set_client
-            .next_request()
-            .send()
-            .promise
-            .await?
-            .get()?
-            .get_exists()
-        {
-            let row_request = result_set_client.get_row_request();
-            let row_reply = row_request.send().promise.await?;
-            let row = row_reply.get()?.get_row()?;
-            let entry = to_hashmap(row);
-
+        while result_set.next().await? {
+            let entry = result_set.get_row(&metadata).await?;
             for i in 0..metadata.get_column_count() {
                 let fldname = metadata
                     .get_column_name(i)
