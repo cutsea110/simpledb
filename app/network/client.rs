@@ -100,6 +100,28 @@ async fn get_view_definition(
     ))
 }
 
+async fn get_index_info(
+    conn: &remote_connection::Client,
+    tblname: &str,
+) -> Result<HashMap<String, rdbc::network::metadata::IndexInfo>, Box<dyn std::error::Error>> {
+    let mut result = HashMap::new();
+
+    let mut request = conn.get_index_info_request();
+    request.get().set_tblname(tblname.into());
+    let reply = request.send().promise.await?;
+    let ii = reply.get()?.get_ii()?;
+    let entries = ii.get_entries()?;
+    for i in 0..entries.len() {
+        let val = entries.get(i as u32).get_value()?;
+        let fldname = val.get_fldname()?;
+        let idxname = val.get_idxname()?;
+        let info = rdbc::network::metadata::IndexInfo::new(fldname, idxname);
+        result.insert(fldname.to_string(), info);
+    }
+
+    Ok(result)
+}
+
 async fn execute_command(
     conn: &remote_connection::Client,
     cmd: &str,
@@ -155,17 +177,9 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         println!();
 
         // index info
-        let mut req = conn.get_index_info_request();
-        req.get().set_tblname("student".into());
-        let reply = req.send().promise.await?;
-        let ii = reply.get()?.get_ii()?;
-        let entries = ii.get_entries()?;
-        for i in 0..entries.len() {
-            let entry = entries.get(i as u32);
-            let val = entry.get_value()?;
-            let fldname = val.get_fldname()?;
-            let idxname = val.get_idxname()?;
-            println!("{:20} {:10}", idxname, fldname)
+        let index_info = get_index_info(&conn, "student").await?;
+        for (_, ii) in index_info.into_iter() {
+            println!("{:20} {:10}", ii.index_name(), ii.field_name());
         }
         println!();
 

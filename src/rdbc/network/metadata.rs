@@ -127,6 +127,25 @@ impl From<FieldType> for record::schema::FieldType {
     }
 }
 
+pub struct IndexInfo {
+    fldname: String,
+    idxname: String,
+}
+impl IndexInfo {
+    pub fn new(fldname: &str, idxname: &str) -> Self {
+        Self {
+            fldname: fldname.to_string(),
+            idxname: idxname.to_string(),
+        }
+    }
+    pub fn field_name(&self) -> &str {
+        &self.fldname
+    }
+    pub fn index_name(&self) -> &str {
+        &self.idxname
+    }
+}
+
 pub struct NetworkResultSetMetaData {
     sch: Schema,
 }
