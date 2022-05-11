@@ -122,6 +122,28 @@ async fn get_index_info(
     Ok(result)
 }
 
+async fn execute_query(
+    conn: &remote_connection::Client,
+    sql: &str,
+) -> Result<remote_result_set::Client, Box<dyn std::error::Error>> {
+    let mut request = conn.create_statement_request();
+    request.get().set_sql(sql.into());
+    let stmt = request.send().pipeline.get_stmt();
+    let client = stmt.execute_query_request().send().pipeline.get_result();
+
+    Ok(client)
+}
+
+async fn get_metadata(
+    client: &remote_result_set::Client,
+) -> Result<NetworkResultSetMetaData, Box<dyn std::error::Error>> {
+    let meta_request = client.get_metadata_request();
+    let meta_reply = meta_request.send().promise.await?;
+    let meta = meta_reply.get()?.get_metadata()?;
+
+    Ok(NetworkResultSetMetaData::from(meta))
+}
+
 async fn execute_command(
     conn: &remote_connection::Client,
     cmd: &str,
@@ -199,18 +221,13 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         // let commit_request = conn.commit_request();
         // commit_request.send().promise.await?;
 
-        let mut stmt_request = conn.create_statement_request();
-        stmt_request.get().set_sql(
-            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id".into(),
-        );
-        let stmt = stmt_request.send().pipeline.get_stmt();
-        let query_request = stmt.execute_query_request();
-        let result = query_request.send().pipeline.get_result();
+        let result_set_client = execute_query(
+            &conn,
+            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
+        )
+        .await?;
 
-        let meta_request = result.get_metadata_request();
-        let meta_reply = meta_request.send().promise.await?;
-        let meta = meta_reply.get()?.get_metadata()?;
-        let metadata = NetworkResultSetMetaData::from(meta);
+        let metadata = get_metadata(&result_set_client).await?;
 
         for i in 0..metadata.get_column_count() {
             let fldname = metadata
@@ -231,7 +248,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         }
         println!();
 
-        while result
+        while result_set_client
             .next_request()
             .send()
             .promise
@@ -239,7 +256,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             .get()?
             .get_exists()
         {
-            let row_request = result.get_row_request();
+            let row_request = result_set_client.get_row_request();
             let row_reply = row_request.send().promise.await?;
             let row = row_reply.get()?.get_row()?;
             let entry = to_hashmap(row);
