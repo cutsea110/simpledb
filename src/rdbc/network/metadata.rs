@@ -8,16 +8,34 @@ use crate::{
     record,
 };
 
-struct Schema {
+pub struct Schema {
     fields: Vec<String>,
     info: HashMap<String, FieldInfo>,
 }
 impl Schema {
+    pub fn new() -> Self {
+        Self {
+            fields: vec![],
+            info: HashMap::new(),
+        }
+    }
     pub fn field_type(&self, fldname: &str) -> FieldType {
         self.info.get(fldname).unwrap().fld_type
     }
     pub fn length(&self, fldname: &str) -> usize {
         self.info.get(fldname).unwrap().length
+    }
+    pub fn add_field(&mut self, fldname: &str) {
+        self.fields.push(fldname.to_string());
+    }
+    pub fn add_info(&mut self, fldname: &str, info: FieldInfo) {
+        self.info.insert(fldname.to_string(), info);
+    }
+    pub fn fields(&self) -> &Vec<String> {
+        &self.fields
+    }
+    pub fn info(&self) -> &HashMap<String, FieldInfo> {
+        &self.info
     }
 }
 
@@ -52,9 +70,23 @@ impl From<Schema> for record::schema::Schema {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-struct FieldInfo {
+pub struct FieldInfo {
     fld_type: FieldType,
     length: usize,
+}
+impl FieldInfo {
+    pub fn new_int32() -> Self {
+        Self {
+            fld_type: FieldType::INTEGER,
+            length: 0,
+        }
+    }
+    pub fn new_string(length: usize) -> Self {
+        Self {
+            fld_type: FieldType::VARCHAR,
+            length,
+        }
+    }
 }
 impl<'a> From<remote_capnp::field_info::Reader<'a>> for FieldInfo {
     fn from(fi: remote_capnp::field_info::Reader<'a>) -> Self {
@@ -74,7 +106,7 @@ impl From<FieldInfo> for record::schema::FieldInfo {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-enum FieldType {
+pub enum FieldType {
     INTEGER,
     VARCHAR,
 }

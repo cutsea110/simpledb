@@ -7,10 +7,10 @@ use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use futures::{AsyncReadExt, FutureExt};
 use simpledb::{
     rdbc::{
+        self,
         network::{metadata::NetworkResultSetMetaData, resultset::Value},
         resultsetmetadataadapter::{self, ResultSetMetaDataAdapter},
     },
-    record::schema::FieldType,
     remote_capnp::{self, remote_connection, remote_driver, remote_result_set},
 };
 
@@ -46,6 +46,43 @@ async fn connect(
     let conn = request.send().pipeline.get_conn();
 
     Ok(conn)
+}
+
+async fn get_table_schema(
+    conn: &remote_connection::Client,
+    tblname: &str,
+) -> Result<rdbc::network::metadata::Schema, Box<dyn std::error::Error>> {
+    let mut schema = rdbc::network::metadata::Schema::new();
+
+    let mut request = conn.get_table_schema_request();
+    request.get().set_tblname(tblname.into());
+    let reply = request.send().promise.await?;
+    let sch = reply.get()?.get_sch()?;
+    let fields = sch.get_fields()?;
+    for i in 0..fields.len() {
+        let fldname = fields.get(i as u32)?;
+        schema.add_field(fldname);
+    }
+
+    let entries = sch.get_info()?.get_entries()?;
+    for i in 0..entries.len() {
+        let entry = entries.get(i as u32);
+        let fldname = entry.get_key()?;
+        let val = entry.get_value()?;
+        match val.get_type()? {
+            remote_capnp::FieldType::Integer => {
+                let info = rdbc::network::metadata::FieldInfo::new_int32();
+                schema.add_info(fldname, info);
+            }
+            remote_capnp::FieldType::Varchar => {
+                let info =
+                    rdbc::network::metadata::FieldInfo::new_string(val.get_length() as usize);
+                schema.add_info(fldname, info);
+            }
+        }
+    }
+
+    Ok(schema)
 }
 
 async fn get_view_definition(
@@ -100,41 +137,23 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let conn = connect(&driver, "demo").await?;
 
         // table schema
-        let mut req = conn.get_table_schema_request();
-        req.get().set_tblname("student".into());
-        let reply = req.send().promise.await?;
-        let tblsch = reply.get()?.get_sch()?;
-        let fields = tblsch.get_fields()?;
-        let info = tblsch.get_info()?;
-        let entries = info.get_entries()?;
-        let mut map = HashMap::new();
-        for i in 0..entries.len() {
-            let entry = entries.get(i as u32);
-            let fldname = entry.get_key()?;
-            let val = entry.get_value()?;
-            match val.get_type()? {
-                remote_capnp::FieldType::Integer => {
-                    map.insert(fldname.to_string(), (FieldType::INTEGER, 0));
+        let schema = get_table_schema(&conn, "student").await?;
+        for fldname in schema.fields() {
+            match schema.field_type(fldname.as_str()) {
+                rdbc::network::metadata::FieldType::INTEGER => {
+                    println!("{:10} {:10}", fldname, "INT32");
                 }
-                remote_capnp::FieldType::Varchar => {
-                    map.insert(fldname.to_string(), (FieldType::VARCHAR, val.get_length()));
-                }
-            }
-        }
-        for i in 0..fields.len() {
-            let fldname = fields.get(i as u32)?;
-            if let Some((t, n)) = map.get(fldname) {
-                match t {
-                    FieldType::INTEGER => {
-                        println!("{:10} {:10}", fldname, "INT32");
-                    }
-                    FieldType::VARCHAR => {
-                        println!("{:10} {:10}", fldname, format!("VARCHAR({})", n));
-                    }
+                rdbc::network::metadata::FieldType::VARCHAR => {
+                    println!(
+                        "{:10} {:10}",
+                        fldname,
+                        format!("VARCHAR({})", schema.length(fldname))
+                    );
                 }
             }
         }
         println!();
+
         // index info
         let mut req = conn.get_index_info_request();
         req.get().set_tblname("student".into());
