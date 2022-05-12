@@ -123,7 +123,7 @@ async fn get_index_info(
 }
 
 struct NetworkResultSet {
-    pub client: remote_result_set::Client,
+    client: remote_result_set::Client,
 }
 impl NetworkResultSet {
     pub fn new(client: remote_result_set::Client) -> Self {
