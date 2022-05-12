@@ -151,20 +151,15 @@ impl NetworkResultSet {
 
         Ok(exists)
     }
-    pub async fn get_row<'a, 'b>(
+    pub async fn get_row<'a, 'b: 'a>(
         &'a self,
         metadata: &'b NetworkResultSetMetaData,
-    ) -> Result<HashMap<&'a str, Value>, Box<dyn std::error::Error>>
-    where
-        'b: 'a,
-    {
+    ) -> Result<HashMap<&'a str, Value>, Box<dyn std::error::Error>> {
+        let request = self.client.get_row_request();
+        let reply = request.send().promise.await?;
+        let entry = to_hashmap(reply.get()?.get_row()?);
+
         let mut result = HashMap::new();
-
-        let row_request = self.client.get_row_request();
-        let row_reply = row_request.send().promise.await?;
-        let row = row_reply.get()?.get_row()?;
-        let entry = to_hashmap(row);
-
         for i in 0..metadata.get_column_count() {
             let fldname = metadata
                 .get_column_name(i)
@@ -182,7 +177,6 @@ impl NetworkResultSet {
                 }
             }
         }
-
         Ok(result)
     }
 }
