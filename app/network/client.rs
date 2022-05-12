@@ -181,6 +181,17 @@ impl NetworkResultSet {
     }
 }
 
+async fn create_statement(
+    conn: &remote_connection::Client,
+    sql: &str,
+) -> Result<remote_statement::Client, Box<dyn std::error::Error>> {
+    let mut request = conn.create_statement_request();
+    request.get().set_sql(sql.into());
+    let stmt = request.send().pipeline.get_stmt();
+
+    Ok(stmt)
+}
+
 async fn explain_plan(
     conn: &remote_connection::Client,
     sql: &str,
@@ -189,27 +200,20 @@ async fn explain_plan(
 }
 
 async fn execute_query(
-    conn: &remote_connection::Client,
-    sql: &str,
+    stmt: &remote_statement::Client,
 ) -> Result<NetworkResultSet, Box<dyn std::error::Error>> {
-    let mut request = conn.create_statement_request();
-    request.get().set_sql(sql.into());
-    let stmt = request.send().pipeline.get_stmt();
     let client = stmt.execute_query_request().send().pipeline.get_result();
 
     Ok(NetworkResultSet::new(client))
 }
 
 async fn execute_command(
-    conn: &remote_connection::Client,
-    cmd: &str,
+    stmt: &remote_statement::Client,
 ) -> Result<i32, Box<dyn std::error::Error>> {
-    let mut request = conn.create_statement_request();
-    request.get().set_sql(cmd.into());
-    let stmt = request.send().pipeline.get_stmt();
     let reply = stmt.execute_update_request().send().promise.await?;
+    let affected = reply.get()?.get_affected();
 
-    Ok(reply.get()?.get_affected())
+    Ok(affected)
 }
 
 async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
@@ -267,11 +271,13 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         println!("view def:  {}", vwdef);
         println!();
 
-        let affected = execute_command(
+        let stmt = create_statement(
             &conn,
             "UPDATE student SET grad_year=2020 WHERE grad_year=2024",
         )
         .await?;
+
+        let affected = execute_command(&stmt).await?;
         println!("Affected: {} rows", affected);
 
         // let commit_request = conn.commit_request();
@@ -283,11 +289,13 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         )
         .await?;
 
-        let mut result_set = execute_query(
+        let stmt = create_statement(
             &conn,
             "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
         )
         .await?;
+
+        let mut result_set = execute_query(&stmt).await?;
 
         let metadata = result_set.get_metadata().await?;
 
