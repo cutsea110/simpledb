@@ -314,17 +314,10 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
                 let w = metadata
                     .get_column_display_size(i)
                     .expect("get column display size");
-                match metadata.get_column_type(i).expect("get column type") {
-                    resultsetmetadataadapter::DataType::Int32 => {
-                        if let Some(Value::Int32(v)) = entry.get(fldname) {
-                            print!("{:width$} ", v, width = w);
-                        }
-                    }
-                    resultsetmetadataadapter::DataType::Varchar => {
-                        if let Some(Value::String(s)) = entry.get(fldname) {
-                            print!("{:width$} ", s, width = w);
-                        }
-                    }
+                match entry.get(fldname) {
+                    Some(Value::Int32(v)) => print!("{:width$} ", v, width = w),
+                    Some(Value::String(s)) => print!("{:width$} ", s, width = w),
+                    None => panic!("field missing"),
                 }
             }
             println!();
