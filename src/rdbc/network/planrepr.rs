@@ -248,7 +248,7 @@ impl From<Operation> for repr::planrepr::Operation {
 
 #[derive(Clone)]
 pub struct NetworkPlanRepr {
-    operation: Operation,
+    operation: repr::planrepr::Operation,
     reads: i32,
     writes: i32,
     sub_plan_reprs: Vec<Arc<dyn PlanRepr>>,
@@ -268,7 +268,7 @@ impl<'a> From<remote_statement::plan_repr::Reader<'a>> for NetworkPlanRepr {
             subs.push(v);
         }
         Self {
-            operation: Operation::from(repr.get_operation()),
+            operation: Operation::from(repr.get_operation()).into(),
             reads: repr.get_reads(),
             writes: repr.get_writes(),
             sub_plan_reprs: subs,
@@ -278,7 +278,7 @@ impl<'a> From<remote_statement::plan_repr::Reader<'a>> for NetworkPlanRepr {
 
 impl PlanRepr for NetworkPlanRepr {
     fn operation(&self) -> repr::planrepr::Operation {
-        self.operation.clone().into()
+        self.operation.clone()
     }
     fn reads(&self) -> i32 {
         self.reads
