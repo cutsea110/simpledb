@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     net::{SocketAddr, ToSocketAddrs},
+    sync::Arc,
 };
 
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
@@ -8,10 +9,13 @@ use futures::{AsyncReadExt, FutureExt};
 use simpledb::{
     rdbc::{
         self,
-        network::{metadata::NetworkResultSetMetaData, resultset::Value},
+        network::{
+            metadata::NetworkResultSetMetaData, planrepr::NetworkPlanRepr, resultset::Value,
+        },
         resultsetmetadataadapter::ResultSetMetaDataAdapter,
     },
     remote_capnp::{self, remote_connection, remote_driver, remote_result_set, remote_statement},
+    repr::planrepr::PlanRepr,
 };
 
 extern crate capnp_rpc;
@@ -193,9 +197,16 @@ async fn create_statement(
 }
 
 async fn explain_plan(
-    conn: &remote_connection::Client,
-    sql: &str,
-) -> Result<NetworkResultSet, Box<dyn std::error::Error>> {
+    stmt: &remote_statement::Client,
+) -> Result<NetworkPlanRepr, Box<dyn std::error::Error>> {
+    let request = stmt.explain_plan_request();
+    let reply = request.send().promise.await?;
+    let planrepr = reply.get()?.get_planrepr()?;
+
+    Ok(NetworkPlanRepr::from(planrepr))
+}
+
+fn print_repr(pr: Arc<dyn PlanRepr>) {
     panic!("TODO")
 }
 
@@ -276,25 +287,25 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             "UPDATE student SET grad_year=2020 WHERE grad_year=2024",
         )
         .await?;
-
         let affected = execute_command(&stmt).await?;
         println!("Affected: {} rows", affected);
 
         // let commit_request = conn.commit_request();
         // commit_request.send().promise.await?;
 
-        let mut plan = explain_plan(
+        let stmt = create_statement(
             &conn,
             "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
         )
         .await?;
+        let mut plan = explain_plan(&stmt).await?.repr();
+        print_repr(plan);
 
         let stmt = create_statement(
             &conn,
             "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
         )
         .await?;
-
         let mut result_set = execute_query(&stmt).await?;
 
         let metadata = result_set.get_metadata().await?;
