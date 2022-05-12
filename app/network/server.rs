@@ -4,7 +4,7 @@ extern crate simpledb;
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use env_logger::Env;
 use futures::{AsyncReadExt, FutureExt};
-use log::trace;
+use log::info;
 use std::{
     collections::HashMap,
     error::Error,
@@ -57,7 +57,7 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn Error>> {
-    trace!("start server");
+    info!("start server");
     let srv = ServerImpl::new();
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -65,9 +65,9 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn Error>> {
     let driver_client: remote_driver::Client = capnp_rpc::new_client(driver_impl);
 
     loop {
-        trace!("listening...");
+        info!("listening...");
         let (stream, _) = listener.accept().await?;
-        trace!("accepted");
+        info!("accepted");
         stream.set_nodelay(true)?;
         let (reader, writer) = tokio_util::compat::TokioAsyncReadCompatExt::compat(stream).split();
         let rpc_network = Box::new(twoparty::VatNetwork::new(
