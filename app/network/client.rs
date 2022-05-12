@@ -11,7 +11,7 @@ use simpledb::{
         network::{metadata::NetworkResultSetMetaData, resultset::Value},
         resultsetmetadataadapter::ResultSetMetaDataAdapter,
     },
-    remote_capnp::{self, remote_connection, remote_driver, remote_result_set},
+    remote_capnp::{self, remote_connection, remote_driver, remote_result_set, remote_statement},
 };
 
 extern crate capnp_rpc;
@@ -181,6 +181,13 @@ impl NetworkResultSet {
     }
 }
 
+async fn explain_plan(
+    conn: &remote_connection::Client,
+    sql: &str,
+) -> Result<NetworkResultSet, Box<dyn std::error::Error>> {
+    panic!("TODO")
+}
+
 async fn execute_query(
     conn: &remote_connection::Client,
     sql: &str,
@@ -269,6 +276,12 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
 
         // let commit_request = conn.commit_request();
         // commit_request.send().promise.await?;
+
+        let mut plan = explain_plan(
+            &conn,
+            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
+        )
+        .await?;
 
         let mut result_set = execute_query(
             &conn,
