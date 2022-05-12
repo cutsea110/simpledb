@@ -9,7 +9,7 @@ use simpledb::{
     rdbc::{
         self,
         network::{metadata::NetworkResultSetMetaData, resultset::Value},
-        resultsetmetadataadapter::{self, ResultSetMetaDataAdapter},
+        resultsetmetadataadapter::ResultSetMetaDataAdapter,
     },
     remote_capnp::{self, remote_connection, remote_driver, remote_result_set},
 };
@@ -170,16 +170,15 @@ impl NetworkResultSet {
                 .get_column_name(i)
                 .expect("get column name")
                 .as_str();
-            match metadata.get_column_type(i).expect("get column type") {
-                resultsetmetadataadapter::DataType::Int32 => {
-                    if let Some(Value::Int32(v)) = entry.get(fldname) {
-                        result.insert(fldname, Value::Int32(*v));
-                    }
+            match entry.get(fldname) {
+                Some(Value::Int32(v)) => {
+                    result.insert(fldname, Value::Int32(*v));
                 }
-                resultsetmetadataadapter::DataType::Varchar => {
-                    if let Some(Value::String(s)) = entry.get(fldname) {
-                        result.insert(fldname, Value::String(s.clone()));
-                    }
+                Some(Value::String(s)) => {
+                    result.insert(fldname, Value::String(s.clone()));
+                }
+                None => {
+                    panic!("field missing");
                 }
             }
         }
