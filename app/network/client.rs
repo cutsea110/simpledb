@@ -401,11 +401,6 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         print_explain_plan(plan);
         println!();
 
-        let stmt = create_statement(
-            &conn,
-            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
-        )
-        .await?;
         let mut result_set = execute_query(&stmt).await?;
 
         let metadata = result_set.get_metadata().await?;
