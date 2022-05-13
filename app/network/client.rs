@@ -1,22 +1,35 @@
-use std::{
-    cell::RefCell,
-    net::{SocketAddr, ToSocketAddrs},
-    rc::Rc,
-    sync::Arc,
-};
-
+use anyhow::Result;
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use futures::{AsyncReadExt, FutureExt};
 use itertools::Itertools;
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    io::{stdout, Write},
+    net::{SocketAddr, ToSocketAddrs},
+    process,
+    rc::Rc,
+    sync::Arc,
+    time::Instant,
+};
+
 use simpledb::{
     rdbc::{
         connectionadapter::ConnectionAdapter,
         driveradapter::DriverAdapter,
-        network::{driver::NetworkDriver, planrepr::NetworkPlanRepr, resultset::Value},
+        network::{
+            connection::NetworkConnection,
+            driver::NetworkDriver,
+            metadata::{IndexInfo, NetworkResultSetMetaData},
+            planrepr::NetworkPlanRepr,
+            resultset::NetworkResultSet,
+            statement::NetworkStatement,
+        },
         resultsetadapter::ResultSetAdapter,
-        resultsetmetadataadapter::ResultSetMetaDataAdapter,
+        resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
         statementadapter::StatementAdapter,
     },
+    record::schema::{FieldType, Schema},
     remote_capnp::remote_driver,
     repr::planrepr::{Operation, PlanRepr},
 };
@@ -148,108 +161,248 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     let driver: remote_driver::Client = rpc_system.bootstrap(rpc_twoparty_capnp::Side::Server);
     tokio::task::spawn_local(Box::pin(rpc_system.map(|_| ())));
 
-    // Query sample
-    {
-        let driver = NetworkDriver::new(driver).await;
+    let driver = NetworkDriver::new(driver).await;
+    if let Ok((major_ver, minor_ver)) = driver.get_server_version().await {
+        println!("simpledb server version {}.{}\n", major_ver, minor_ver);
+    }
+    let mut conn = driver.connect("demo").unwrap_or_else(|_| {
+        println!("couldn't connect database.");
+        process::exit(1);
+    });
 
-        if let Ok((major_ver, minor_ver)) = driver.get_server_version().await {
-            println!("simpledb server version {}.{}\n", major_ver, minor_ver);
-        }
-
-        let mut conn = driver.connect("demo")?;
-
-        // table schema
-        let schema = conn.get_table_schema("student").await?;
-        for fldname in schema.fields() {
-            match schema.field_type(fldname.as_str()) {
-                simpledb::record::schema::FieldType::INTEGER => {
-                    println!("{:10} {:10}", fldname, "INT32");
-                }
-                simpledb::record::schema::FieldType::VARCHAR => {
-                    println!(
-                        "{:10} {:10}",
-                        fldname,
-                        format!("VARCHAR({})", schema.length(fldname))
-                    );
-                }
-            }
-        }
-        println!();
-
-        // index info
-        let index_info = conn.get_index_info("student").await?;
-        for (_, ii) in index_info.into_iter() {
-            println!("{:20} {:10}", ii.index_name(), ii.field_name());
-        }
-        println!();
-
-        // view definition
-        let (vwname, vwdef) = conn.get_view_definition("einstein").await?;
-        println!("view name: {}", vwname);
-        println!("view def:  {}", vwdef);
-        println!();
-
-        let mut stmt =
-            conn.create_statement("UPDATE student SET grad_year=2024 WHERE grad_year=2020")?;
-
-        let affected = stmt.execute_update()?.affected().await?;
-        println!("Affected: {} rows", affected);
-
-        // conn.commit().await?;
-
-        let mut stmt = conn.create_statement(
-            "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
-        )?;
-        let plan = stmt.explain_plan().await?;
-        print_explain_plan(plan);
-        println!();
-
-        let result_set = stmt.execute_query()?;
-
-        let mut metadata = result_set.get_meta_data()?;
-        metadata.load_schema().await?;
-
-        for i in 0..metadata.get_column_count() {
-            let fldname = metadata
-                .get_column_name(i)
-                .expect("get column name")
-                .as_str();
-            let w = metadata
-                .get_column_display_size(i)
-                .expect("get column display size");
-            print!("{:width$} ", fldname, width = w);
-        }
-        println!();
-        for i in 0..metadata.get_column_count() {
-            let w = metadata
-                .get_column_display_size(i)
-                .expect("get column display size");
-            print!("{:-<width$}", "", width = w + 1);
-        }
-        println!();
-
-        while result_set.next().has_next().await? {
-            let entry = result_set.get_row(&metadata).await?;
-            for i in 0..metadata.get_column_count() {
-                let fldname = metadata
-                    .get_column_name(i)
-                    .expect("get column name")
-                    .as_str();
-                let w = metadata
-                    .get_column_display_size(i)
-                    .expect("get column display size");
-                match entry.get(fldname) {
-                    Some(Value::Int32(v)) => print!("{:width$} ", v, width = w),
-                    Some(Value::String(s)) => print!("{:width$} ", s, width = w),
-                    None => panic!("field missing"),
-                }
-            }
-            println!();
-        }
-
-        // rollback
-        conn.rollback().await?;
+    while let Ok(qry) = read_query() {
+        exec(&mut conn, &qry.trim()).await;
     }
 
     Ok(())
+}
+
+fn read_query() -> Result<String> {
+    print!("SQL> ");
+    stdout().flush().expect("require input");
+
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    Ok(input)
+}
+
+async fn print_record(
+    results: &mut NetworkResultSet,
+    meta: &NetworkResultSetMetaData,
+) -> Result<()> {
+    for i in 0..meta.get_column_count() {
+        let fldname = meta.get_column_name(i).expect("get column name");
+        let w = meta
+            .get_column_display_size(i)
+            .expect("get column display size");
+        match meta.get_column_type(i).expect("get column type") {
+            DataType::Int32 => {
+                print!(
+                    "{:width$} ",
+                    results.get_i32(fldname)?.get_value().await?,
+                    width = w
+                );
+            }
+            DataType::Varchar => {
+                print!(
+                    "{:width$} ",
+                    results.get_string(fldname)?.get_value().await?,
+                    width = w
+                );
+            }
+        }
+    }
+    println!();
+
+    Ok(())
+}
+
+async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
+    // resultset metadata
+    let mut meta = results.get_meta_data()?;
+    meta.load_schema().await.expect("load schema");
+    // print header
+    for i in 0..meta.get_column_count() {
+        let name = meta.get_column_name(i).expect("get column name");
+        let w = meta
+            .get_column_display_size(i)
+            .expect("get column display size");
+        print!("{:width$} ", name, width = w);
+    }
+    println!();
+    // separater
+    for i in 0..meta.get_column_count() {
+        let w = meta
+            .get_column_display_size(i)
+            .expect("get column display size");
+        print!("{:-<width$}", "", width = w + 1);
+    }
+    println!();
+    // scan record
+    let mut c = 0;
+    while results.next().has_next().await? {
+        c += 1;
+        print_record(&mut results, &meta).await?;
+    }
+
+    // FIXME: This close occurs error.
+    // results.close()?.response().await?;
+
+    Ok(c)
+}
+
+async fn exec_query(stmt: &mut NetworkStatement) {
+    let start = Instant::now();
+    match stmt.execute_query() {
+        Err(_) => println!("invalid query"),
+        Ok(result) => {
+            let cnt = print_result_set(result).await.expect("print result set");
+            let end = start.elapsed();
+            println!(
+                "Rows {} ({}.{:03}s)",
+                cnt,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
+        }
+    }
+}
+
+async fn exec_update_cmd(stmt: &mut NetworkStatement) {
+    let start = Instant::now();
+    match stmt.execute_update().unwrap().affected().await {
+        Err(_) => println!("invalid command"),
+        Ok(affected) => {
+            let end = start.elapsed();
+            println!(
+                "Affected {} ({}.{:03}s)",
+                affected,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
+        }
+    }
+}
+
+fn print_help_meta_cmd() {
+    println!(":h, :help                       Show this help");
+    println!(":q, :quit, :exit                Quit the program");
+    println!(":t, :table   <table_name>       Show table schema");
+    println!(":v, :view    <view_name>        Show view definition");
+    println!(":e, :explain <sql>              Explain plan");
+}
+
+fn print_table_schema(tblname: &str, schema: Arc<Schema>, idx_info: HashMap<String, IndexInfo>) {
+    println!(
+        " * table: {} has {} fields.\n",
+        tblname,
+        schema.fields().len()
+    );
+
+    println!(" #   name             type");
+    println!("--------------------------------------");
+    for (i, fldname) in schema.fields().iter().enumerate() {
+        let fldtyp = match schema.field_type(fldname) {
+            FieldType::INTEGER => "int32".to_string(),
+            FieldType::VARCHAR => format!("varchar({})", schema.length(fldname)),
+        };
+        println!("{:>4} {:16} {:16}", i + 1, fldname, fldtyp);
+    }
+    println!();
+
+    if !idx_info.is_empty() {
+        println!(" * indexes on {}\n", tblname);
+
+        println!(" #   name             field");
+        println!("--------------------------------------");
+        for (i, (_, ii)) in idx_info.iter().enumerate() {
+            println!("{:>4} {:16} {:16}", i + 1, ii.index_name(), ii.field_name());
+        }
+        println!();
+    }
+}
+
+fn print_view_definition(viewname: &str, viewdef: &str) {
+    println!("view name: {}", viewname);
+    println!("view def:\n > {}", viewdef);
+    println!();
+}
+
+async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
+    let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
+    let cmd = tokens[0].to_ascii_lowercase();
+    let args = &tokens[1..];
+    match cmd.as_str() {
+        ":h" | ":help" => {
+            print_help_meta_cmd();
+        }
+        ":q" | ":quit" | ":exit" => {
+            conn.close().unwrap().response().await.expect("close");
+            println!("disconnected");
+            process::exit(0);
+        }
+        ":t" | ":table" => {
+            if args.is_empty() {
+                println!("table name is required.");
+                return;
+            }
+            let tblname = args[0];
+            if let Ok(sch) = conn.get_table_schema(tblname).await {
+                let idx_info = conn.get_index_info(tblname).await.unwrap_or_default();
+                print_table_schema(tblname, sch, idx_info);
+            }
+            return;
+        }
+        ":v" | ":view" => {
+            if args.is_empty() {
+                println!("view name is required.");
+                return;
+            }
+            let viewname = args[0];
+            if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname).await {
+                print_view_definition(&viewname, &viewdef);
+            }
+            return;
+        }
+        ":e" | ":explain" => {
+            if args.is_empty() {
+                println!("SQL is required.");
+                return;
+            }
+            let sql = qry[tokens[0].len()..].trim();
+            let mut stmt = conn.create_statement(sql).expect("create statement");
+            let words: Vec<&str> = sql.split_whitespace().collect();
+            if !words.is_empty() {
+                let cmd = words[0].trim().to_ascii_lowercase();
+                if &cmd == "select" {
+                    if let Ok(plan_repr) = stmt.explain_plan().await {
+                        print_explain_plan(plan_repr);
+                        return;
+                    }
+                }
+            }
+            println!("expect query(not command).");
+        }
+        cmd => {
+            println!("Unknown command: {}", cmd);
+        }
+    }
+}
+
+async fn exec(conn: &mut NetworkConnection, qry: &str) {
+    if qry.starts_with(":") {
+        exec_meta_cmd(conn, qry).await;
+        return;
+    }
+
+    let mut stmt = conn.create_statement(&qry).expect("create statement");
+    let words: Vec<&str> = qry.split_whitespace().collect();
+    if !words.is_empty() {
+        let cmd = words[0].trim().to_ascii_lowercase();
+        if &cmd == "select" {
+            exec_query(&mut stmt).await;
+        } else {
+            exec_update_cmd(&mut stmt).await;
+        }
+    }
 }

@@ -138,13 +138,14 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
             if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
                 print_view_definition(&viewname, &viewdef);
             }
+            return;
         }
         ":e" | ":explain" => {
             if args.is_empty() {
                 println!("SQL is required.");
                 return;
             }
-            let sql = &qry[tokens[0].len()..].trim();
+            let sql = qry[tokens[0].len()..].trim();
             let mut stmt = conn.create_statement(sql).expect("create statement");
             let words: Vec<&str> = sql.split_whitespace().collect();
             if !words.is_empty() {
