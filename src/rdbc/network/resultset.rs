@@ -107,15 +107,6 @@ impl NetworkResultSet {
 
         Ok(result)
     }
-    /*
-        pub async fn get_meta(&self) -> Result<NetworkResultSetMetaData, Box<dyn std::error::Error>> {
-            let request = self.resultset.get_metadata_request();
-            let reply = request.send().promise.await?;
-            let meta = reply.get()?.get_metadata()?;
-
-            Ok(NetworkResultSetMetaData::from(meta))
-        }
-    */
 }
 
 impl ResultSetAdapter for NetworkResultSet {
