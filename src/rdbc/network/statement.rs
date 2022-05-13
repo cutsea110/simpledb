@@ -7,11 +7,17 @@ use crate::{
 };
 
 pub struct AffectedImpl {
-    affected: affected::Client,
+    client: affected::Client,
 }
 impl AffectedImpl {
-    pub fn new(affected: affected::Client) -> Self {
-        Self { affected }
+    pub fn new(client: affected::Client) -> Self {
+        Self { client }
+    }
+    pub async fn affected(&self) -> Result<i32> {
+        let request = self.client.read_request();
+        let reply = request.send().promise.await?;
+
+        Ok(reply.get()?.get_affected())
     }
 }
 
