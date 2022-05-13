@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use std::cmp::max;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use crate::rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
 use crate::record;

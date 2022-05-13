@@ -1,4 +1,4 @@
-use capnp::{capability::Promise, traits::FromStructReader};
+use capnp::capability::Promise;
 use capnp_rpc::pry;
 use log::{debug, info, trace};
 use std::{
