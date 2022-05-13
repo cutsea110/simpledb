@@ -17,7 +17,7 @@ use simpledb::{
         resultsetmetadataadapter::ResultSetMetaDataAdapter,
         statementadapter::StatementAdapter,
     },
-    remote_capnp,
+    remote_capnp::remote_driver,
     repr::planrepr::{Operation, PlanRepr},
 };
 
@@ -145,8 +145,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         Default::default(),
     ));
     let mut rpc_system = RpcSystem::new(rpc_network, None);
-    let driver: remote_capnp::remote_driver::Client =
-        rpc_system.bootstrap(rpc_twoparty_capnp::Side::Server);
+    let driver: remote_driver::Client = rpc_system.bootstrap(rpc_twoparty_capnp::Side::Server);
     tokio::task::spawn_local(Box::pin(rpc_system.map(|_| ())));
 
     // Query sample
