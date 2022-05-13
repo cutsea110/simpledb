@@ -34,6 +34,7 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     type Next = bool;
     type Int32Value = i32;
     type StringValue = String;
+    type Res = ();
 
     fn next(&self) -> Self::Next {
         self.s.lock().unwrap().next()
@@ -59,7 +60,7 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     fn get_meta_data(&self) -> Result<Self::Meta> {
         Ok(EmbeddedMetaData::new(Arc::clone(&self.sch)))
     }
-    fn close(&mut self) -> Result<()> {
+    fn close(&mut self) -> Result<Self::Res> {
         match self.s.lock().unwrap().close() {
             Ok(_) => self.conn.close(),
             Err(_) => Err(From::from(ResultSetError::CloseFailed)),

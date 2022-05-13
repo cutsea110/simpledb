@@ -36,10 +36,11 @@ pub trait ResultSetAdapter {
     type Next;
     type Int32Value;
     type StringValue;
+    type Res;
 
     fn next(&self) -> Self::Next;
     fn get_i32(&mut self, fldname: &str) -> Result<Self::Int32Value>;
     fn get_string(&mut self, fldname: &str) -> Result<Self::StringValue>;
     fn get_meta_data(&self) -> Result<Self::Meta>;
-    fn close(&mut self) -> Result<()>;
+    fn close(&mut self) -> Result<Self::Res>;
 }

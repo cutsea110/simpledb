@@ -5,7 +5,7 @@ use super::{metadata::IndexInfo, statement::NetworkStatement};
 use crate::{
     rdbc::connectionadapter::ConnectionAdapter,
     record::schema::{FieldType, Schema},
-    remote_capnp::{self, remote_connection},
+    remote_capnp::{self, remote_connection, void_box},
 };
 
 pub struct NetworkConnection {
@@ -89,8 +89,24 @@ impl NetworkConnection {
     }
 }
 
+pub struct ResponseImpl {
+    client: void_box::Client,
+}
+impl ResponseImpl {
+    pub fn new(client: void_box::Client) -> Self {
+        Self { client }
+    }
+    pub async fn response(&self) -> Result<()> {
+        let request = self.client.read_request();
+        request.send().promise.await?.get()?.get_void();
+
+        Ok(())
+    }
+}
+
 impl<'a> ConnectionAdapter<'a> for NetworkConnection {
     type Stmt = NetworkStatement;
+    type Res = ResponseImpl;
 
     fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt> {
         let mut request = self.conn.create_statement_request();
@@ -99,7 +115,10 @@ impl<'a> ConnectionAdapter<'a> for NetworkConnection {
 
         Ok(Self::Stmt::new(stmt))
     }
-    fn close(&mut self) -> Result<()> {
-        panic!("TODO")
+    fn close(&mut self) -> Result<Self::Res> {
+        let request = self.conn.close_request();
+        let res = request.send().pipeline.get_res();
+
+        Ok(ResponseImpl::new(res))
     }
 }

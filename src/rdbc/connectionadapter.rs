@@ -37,7 +37,8 @@ impl fmt::Display for ConnectionError {
 
 pub trait ConnectionAdapter<'a> {
     type Stmt: StatementAdapter<'a>;
+    type Res;
 
     fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt>;
-    fn close(&mut self) -> Result<()>;
+    fn close(&mut self) -> Result<Self::Res>;
 }

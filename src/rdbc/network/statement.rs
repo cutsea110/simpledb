@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use super::{planrepr::NetworkPlanRepr, resultset::NetworkResultSet};
+use super::{connection::ResponseImpl, planrepr::NetworkPlanRepr, resultset::NetworkResultSet};
 use crate::{
     rdbc::statementadapter::StatementAdapter,
     remote_capnp::{affected, remote_statement},
@@ -41,6 +41,7 @@ impl NetworkStatement {
 impl<'a> StatementAdapter<'a> for NetworkStatement {
     type Set = NetworkResultSet;
     type Aeffected = AffectedImpl;
+    type Res = ResponseImpl;
 
     fn execute_query(&'a mut self) -> Result<Self::Set> {
         let resultset = self
@@ -58,7 +59,10 @@ impl<'a> StatementAdapter<'a> for NetworkStatement {
 
         Ok(AffectedImpl::new(affected))
     }
-    fn close(&mut self) -> Result<()> {
-        panic!("TODO")
+    fn close(&mut self) -> Result<Self::Res> {
+        let request = self.stmt.close_request();
+        let res = request.send().pipeline.get_res();
+
+        Ok(ResponseImpl::new(res))
     }
 }

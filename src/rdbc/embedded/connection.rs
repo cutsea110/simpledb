@@ -68,6 +68,7 @@ impl EmbeddedConnection {
 
 impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
     type Stmt = EmbeddedStatement<'a>;
+    type Res = ();
 
     fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt> {
         self.db
@@ -75,7 +76,7 @@ impl<'a> ConnectionAdapter<'a> for EmbeddedConnection {
             .and_then(|planner| Ok(EmbeddedStatement::new(self, planner, sql)))
             .or_else(|_| Err(From::from(ConnectionError::CreateStatementFailed)))
     }
-    fn close(&mut self) -> Result<()> {
+    fn close(&mut self) -> Result<Self::Res> {
         self.commit()
             .or_else(|_| Err(From::from(ConnectionError::CloseFailed)))
     }

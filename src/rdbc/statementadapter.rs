@@ -22,8 +22,9 @@ impl fmt::Display for StatementError {
 pub trait StatementAdapter<'a> {
     type Set: ResultSetAdapter;
     type Aeffected;
+    type Res;
 
     fn execute_query(&'a mut self) -> Result<Self::Set>;
     fn execute_update(&mut self) -> Result<Self::Aeffected>;
-    fn close(&mut self) -> Result<()>;
+    fn close(&mut self) -> Result<Self::Res>;
 }

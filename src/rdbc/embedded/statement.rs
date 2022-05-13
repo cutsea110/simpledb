@@ -39,6 +39,7 @@ impl<'a> EmbeddedStatement<'a> {
 impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
     type Set = EmbeddedResultSet<'a>;
     type Aeffected = i32;
+    type Res = ();
 
     fn execute_query(&'a mut self) -> Result<Self::Set> {
         let tx = self.conn.get_transaction();
@@ -60,7 +61,7 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
                 .and_then(|_| Err(From::from(StatementError::RuntimeError))),
         }
     }
-    fn close(&mut self) -> Result<()> {
+    fn close(&mut self) -> Result<Self::Res> {
         self.conn.close()
     }
 }
