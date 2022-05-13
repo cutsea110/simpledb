@@ -9,7 +9,7 @@ use crate::{
     },
     remote_capnp,
 };
-use remote_capnp::{next, remote_result_set};
+use remote_capnp::{int32_box, next, remote_result_set, string_box};
 
 pub struct NextImpl {
     client: next::Client,
@@ -21,6 +21,32 @@ impl NextImpl {
     pub async fn has_next(&self) -> Result<bool> {
         let reply = self.client.read_request().send().promise.await?;
         Ok(reply.get()?.get_exists())
+    }
+}
+
+pub struct Int32ValueImpl {
+    client: int32_box::Client,
+}
+impl Int32ValueImpl {
+    pub fn new(client: int32_box::Client) -> Self {
+        Self { client }
+    }
+    pub async fn get_value(&self) -> Result<i32> {
+        let reply = self.client.read_request().send().promise.await?;
+        Ok(reply.get()?.get_val())
+    }
+}
+
+pub struct StringValueImpl {
+    client: string_box::Client,
+}
+impl StringValueImpl {
+    pub fn new(client: string_box::Client) -> Self {
+        Self { client }
+    }
+    pub async fn get_value(&self) -> Result<String> {
+        let reply = self.client.read_request().send().promise.await?;
+        Ok(reply.get()?.get_val()?.to_string())
     }
 }
 
@@ -93,17 +119,25 @@ fn to_hashmap(row: remote_result_set::row::Reader) -> HashMap<&str, Value> {
 impl ResultSetAdapter for NetworkResultSet {
     type Meta = NetworkResultSetMetaData;
     type Next = NextImpl;
+    type Int32Value = Int32ValueImpl;
+    type StringValue = StringValueImpl;
 
     fn next(&self) -> Self::Next {
         let exists = self.resultset.next_request().send().pipeline.get_exists();
 
         Self::Next::new(exists)
     }
-    fn get_i32(&mut self, fldname: &str) -> Result<i32> {
-        panic!("TODO")
+    fn get_i32(&mut self, fldname: &str) -> Result<Self::Int32Value> {
+        let mut request = self.resultset.get_int32_request();
+        request.get().set_fldname(fldname.into());
+        let val = request.send().pipeline.get_val();
+        Ok(Self::Int32Value::new(val))
     }
-    fn get_string(&mut self, fldname: &str) -> Result<String> {
-        panic!("TODO")
+    fn get_string(&mut self, fldname: &str) -> Result<Self::StringValue> {
+        let mut request = self.resultset.get_string_request();
+        request.get().set_fldname(fldname.into());
+        let val = request.send().pipeline.get_val();
+        Ok(Self::StringValue::new(val))
     }
     fn get_meta_data(&self) -> Result<Self::Meta> {
         panic!("TODO")

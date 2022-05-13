@@ -32,11 +32,13 @@ impl<'a> EmbeddedResultSet<'a> {
 impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     type Meta = EmbeddedMetaData;
     type Next = bool;
+    type Int32Value = i32;
+    type StringValue = String;
 
     fn next(&self) -> Self::Next {
         self.s.lock().unwrap().next()
     }
-    fn get_i32(&mut self, fldname: &str) -> Result<i32> {
+    fn get_i32(&mut self, fldname: &str) -> Result<Self::Int32Value> {
         self.s.lock().unwrap().get_i32(fldname).or_else(|_| {
             self.conn.rollback().and_then(|_| {
                 Err(From::from(ResultSetError::UnknownField(
@@ -45,7 +47,7 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
             })
         })
     }
-    fn get_string(&mut self, fldname: &str) -> Result<String> {
+    fn get_string(&mut self, fldname: &str) -> Result<Self::StringValue> {
         self.s.lock().unwrap().get_string(fldname).or_else(|_| {
             self.conn.rollback().and_then(|_| {
                 Err(From::from(ResultSetError::UnknownField(

@@ -152,13 +152,20 @@ interface Next {
   read @0 () -> (exists :Bool);
 }
 
+interface Int32Box {
+  read @0 () -> (val :Int32);
+}
+interface StringBox {
+  read @0 () -> (val :Text);
+}
+
 interface RemoteResultSet {
   next          @0 () -> (exists :Next);
   close         @1 ();
   getMetadata   @2 () -> (metadata :MetaData);
   getRow        @3 () -> (row :Row);
-  getInt32      @4 (fldname :Text) -> (val :Int32);
-  getString     @5 (fldname :Text) -> (val :Text);
+  getInt32      @4 (fldname :Text) -> (val :Int32Box);
+  getString     @5 (fldname :Text) -> (val :StringBox);
 
   struct MetaData {
     schema @0 :Schema;

@@ -438,6 +438,46 @@ impl next::Server for NextImpl {
     }
 }
 
+pub struct Int32BoxImpl {
+    val: i32,
+}
+impl Int32BoxImpl {
+    pub fn new(val: i32) -> Self {
+        Self { val }
+    }
+}
+impl remote_capnp::int32_box::Server for Int32BoxImpl {
+    fn read(
+        &mut self,
+        _: remote_capnp::int32_box::ReadParams,
+        mut results: remote_capnp::int32_box::ReadResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_val(self.val);
+        Promise::ok(())
+    }
+}
+
+pub struct StringBoxImpl {
+    val: String,
+}
+impl StringBoxImpl {
+    pub fn new(val: String) -> Self {
+        Self {
+            val: val.to_string(),
+        }
+    }
+}
+impl remote_capnp::string_box::Server for StringBoxImpl {
+    fn read(
+        &mut self,
+        _: remote_capnp::string_box::ReadParams,
+        mut results: remote_capnp::string_box::ReadResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_val(self.val.as_str().into());
+        Promise::ok(())
+    }
+}
+
 pub struct RemoteStatementImpl {
     sql: String,
     planner: Planner,
@@ -607,6 +647,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
             .unwrap()
             .get_i32(fldname)
             .expect("get int32");
+        let val: remote_capnp::int32_box::Client = capnp_rpc::new_client(Int32BoxImpl::new(val));
         results.get().set_val(val);
 
         Promise::ok(())
@@ -624,7 +665,8 @@ impl remote_result_set::Server for RemoteResultSetImpl {
             .unwrap()
             .get_string(fldname)
             .expect("get string");
-        results.get().set_val(val.as_str().into());
+        let val: remote_capnp::string_box::Client = capnp_rpc::new_client(StringBoxImpl::new(val));
+        results.get().set_val(val);
 
         Promise::ok(())
     }
