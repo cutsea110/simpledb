@@ -15,11 +15,15 @@ impl NetworkConnection {
     pub fn new(conn: remote_connection::Client) -> Self {
         Self { conn }
     }
-    pub fn commit(&mut self) -> Result<()> {
-        panic!("TODO")
+    pub async fn commit(&mut self) -> Result<()> {
+        self.conn.commit_request().send().promise.await?;
+
+        Ok(())
     }
-    pub fn rollback(&mut self) -> Result<()> {
-        panic!("TODO")
+    pub async fn rollback(&mut self) -> Result<()> {
+        self.conn.rollback_request().send().promise.await?;
+
+        Ok(())
     }
     pub async fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
         let mut schema = Schema::new();

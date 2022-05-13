@@ -196,8 +196,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         let affected = stmt.execute_update()?.affected().await?;
         println!("Affected: {} rows", affected);
 
-        // let commit_request = conn.commit_request();
-        // commit_request.send().promise.await?;
+        // conn.commit().await?;
 
         let mut stmt = conn.create_statement(
             "SELECT sid, sname, dname, grad_year FROM student, dept WHERE did = major_id",
@@ -248,8 +247,8 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
             println!();
         }
 
-        // let rollback_request = conn.rollback_request();
-        // rollback_request.send().promise.await?;
+        // rollback
+        conn.rollback().await?;
     }
 
     Ok(())
