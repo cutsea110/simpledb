@@ -245,9 +245,8 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
         print_record(&mut results, &meta).await?;
     }
 
-    // FIXME: This close occurs error.
     // unpin!
-    results.close()?.response().await?;
+    results.close()?.response().await.expect("close");
 
     Ok(c)
 }

@@ -273,6 +273,18 @@ fn set_plan_repr(
     }
 }
 
+pub struct VoidImpl;
+impl remote_capnp::void_box::Server for VoidImpl {
+    fn read(
+        &mut self,
+        _: remote_capnp::void_box::ReadParams,
+        mut results: remote_capnp::void_box::ReadResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_void(());
+        Promise::ok(())
+    }
+}
+
 impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     fn create_statement(
         &mut self,
@@ -302,10 +314,12 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     fn close(
         &mut self,
         _: remote_capnp::remote_connection::CloseParams,
-        _: remote_capnp::remote_connection::CloseResults,
+        mut results: remote_capnp::remote_connection::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
+        let client: remote_capnp::void_box::Client = capnp_rpc::new_client(VoidImpl);
+        results.get().set_res(client);
 
         Promise::ok(())
     }
@@ -530,10 +544,12 @@ impl remote_statement::Server for RemoteStatementImpl {
     fn close(
         &mut self,
         _: remote_statement::CloseParams,
-        _: remote_statement::CloseResults,
+        mut results: remote_statement::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
+        let client: remote_capnp::void_box::Client = capnp_rpc::new_client(VoidImpl);
+        results.get().set_res(client);
 
         Promise::ok(())
     }
@@ -585,10 +601,12 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     fn close(
         &mut self,
         _: remote_result_set::CloseParams,
-        _: remote_result_set::CloseResults,
+        mut results: remote_result_set::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
+        let client: remote_capnp::void_box::Client = capnp_rpc::new_client(VoidImpl);
+        results.get().set_res(client);
 
         Promise::ok(())
     }
