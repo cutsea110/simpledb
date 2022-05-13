@@ -13,7 +13,8 @@ use crate::{
     query::{constant::Constant, expression::Expression, scan::Scan},
     record::schema::{FieldType, Schema},
     remote_capnp::{
-        self, affected, next, remote_connection, remote_driver, remote_result_set, remote_statement,
+        self, affected, next, remote_connection, remote_driver, remote_meta_data,
+        remote_result_set, remote_statement,
     },
     repr,
     repr::planrepr::PlanRepr,
@@ -597,8 +598,9 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         mut results: remote_result_set::GetMetadataResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get metadata");
-        let mut schema = results.get().init_metadata().init_schema();
-        set_schema(Arc::clone(&self.sch), &mut schema);
+        let client: remote_meta_data::Client =
+            capnp_rpc::new_client(RemoteMetaDataImpl::new(Arc::clone(&self.sch)));
+        results.get().set_metadata(client);
 
         Promise::ok(())
     }
@@ -667,6 +669,28 @@ impl remote_result_set::Server for RemoteResultSetImpl {
             .expect("get string");
         let val: remote_capnp::string_box::Client = capnp_rpc::new_client(StringBoxImpl::new(val));
         results.get().set_val(val);
+
+        Promise::ok(())
+    }
+}
+
+pub struct RemoteMetaDataImpl {
+    sch: Arc<Schema>,
+}
+impl RemoteMetaDataImpl {
+    pub fn new(sch: Arc<Schema>) -> Self {
+        Self { sch }
+    }
+}
+impl remote_meta_data::Server for RemoteMetaDataImpl {
+    fn get_schema(
+        &mut self,
+        _: remote_meta_data::GetSchemaParams,
+        mut results: remote_meta_data::GetSchemaResults,
+    ) -> Promise<(), capnp::Error> {
+        trace!("get schema");
+        let mut schema = results.get().init_sch();
+        set_schema(Arc::clone(&self.sch), &mut schema);
 
         Promise::ok(())
     }

@@ -1,10 +1,12 @@
 use itertools::Itertools;
+use log::{debug, trace};
 use std::cmp::max;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
 use crate::record;
-use crate::remote_capnp::{self, remote_result_set};
+use crate::remote_capnp::{self, remote_meta_data};
 
 pub struct Schema {
     fields: Vec<String>,
@@ -145,13 +147,25 @@ impl IndexInfo {
 }
 
 pub struct NetworkResultSetMetaData {
-    sch: Schema,
+    client: remote_meta_data::Client,
+    sch: Arc<Schema>, // TODO なくす
 }
+impl NetworkResultSetMetaData {
+    pub fn new(client: remote_meta_data::Client) -> Self {
+        Self {
+            client,
+            sch: Arc::new(Schema::new()),
+        }
+    }
+    // This interface is not smart. Any idea?
+    pub async fn load_schema(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        trace!("load schema");
+        let request = self.client.get_schema_request();
+        let sch = request.send().promise.await?;
+        self.sch = Arc::new(Schema::from(sch.get()?.get_sch()?));
+        debug!("loaded");
 
-impl<'a> From<remote_result_set::meta_data::Reader<'a>> for NetworkResultSetMetaData {
-    fn from(meta: remote_result_set::meta_data::Reader) -> Self {
-        let sch = Schema::from(meta.get_schema().unwrap());
-        Self { sch }
+        Ok(())
     }
 }
 

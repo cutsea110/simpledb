@@ -107,13 +107,15 @@ impl NetworkResultSet {
 
         Ok(result)
     }
-    pub async fn get_meta(&self) -> Result<NetworkResultSetMetaData, Box<dyn std::error::Error>> {
-        let request = self.resultset.get_metadata_request();
-        let reply = request.send().promise.await?;
-        let meta = reply.get()?.get_metadata()?;
+    /*
+        pub async fn get_meta(&self) -> Result<NetworkResultSetMetaData, Box<dyn std::error::Error>> {
+            let request = self.resultset.get_metadata_request();
+            let reply = request.send().promise.await?;
+            let meta = reply.get()?.get_metadata()?;
 
-        Ok(NetworkResultSetMetaData::from(meta))
-    }
+            Ok(NetworkResultSetMetaData::from(meta))
+        }
+    */
 }
 
 impl ResultSetAdapter for NetworkResultSet {
@@ -143,7 +145,10 @@ impl ResultSetAdapter for NetworkResultSet {
         Ok(Self::StringValue::new(val))
     }
     fn get_meta_data(&self) -> Result<Self::Meta> {
-        panic!("TODO")
+        let request = self.resultset.get_metadata_request();
+        let meta = request.send().pipeline.get_metadata();
+
+        Ok(Self::Meta::new(meta))
     }
     fn close(&mut self) -> Result<Self::Res> {
         let request = self.resultset.close_request();

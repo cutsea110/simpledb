@@ -207,7 +207,8 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
 
         let result_set = stmt.execute_query()?;
 
-        let metadata = result_set.get_meta().await?;
+        let mut metadata = result_set.get_meta_data()?;
+        metadata.load_schema().await?;
 
         for i in 0..metadata.get_column_count() {
             let fldname = metadata
