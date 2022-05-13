@@ -139,9 +139,13 @@ interface RemoteStatement {
   }
 
   executeQuery  @0 () -> (result :RemoteResultSet);
-  executeUpdate @1 () -> (affected :Int32);
+  executeUpdate @1 () -> (affected :Affected);
   close         @2 ();
   explainPlan   @3 () -> (planrepr :PlanRepr);
+}
+
+interface Affected {
+  read @0 () -> (affected :Int32);
 }
 
 interface RemoteResultSet {

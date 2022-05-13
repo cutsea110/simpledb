@@ -22,7 +22,7 @@ impl fmt::Display for DriverError {
 pub trait DriverAdapter<'a> {
     type Con: ConnectionAdapter<'a>;
 
-    fn connect(&self, url: &str) -> Result<Self::Con>;
+    fn connect(&self, dbname: &str) -> Result<Self::Con>;
     fn get_major_version(&self) -> i32;
     fn get_minor_version(&self) -> i32;
 }

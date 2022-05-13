@@ -1,4 +1,4 @@
-use capnp::capability::Promise;
+use capnp::{capability::Promise, traits::FromStructReader};
 use capnp_rpc::pry;
 use log::{debug, info, trace};
 use std::{
@@ -12,7 +12,9 @@ use crate::{
     plan::{plan::Plan, planner::Planner},
     query::{constant::Constant, expression::Expression, scan::Scan},
     record::schema::{FieldType, Schema},
-    remote_capnp::{self, remote_connection, remote_driver, remote_result_set, remote_statement},
+    remote_capnp::{
+        self, affected, remote_connection, remote_driver, remote_result_set, remote_statement,
+    },
     repr,
     repr::planrepr::PlanRepr,
     tx::transaction::Transaction,
@@ -398,6 +400,25 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
 }
 
+pub struct AffectedImpl {
+    affected: i32,
+}
+impl AffectedImpl {
+    pub fn new(affected: i32) -> Self {
+        Self { affected }
+    }
+}
+impl affected::Server for AffectedImpl {
+    fn read(
+        &mut self,
+        _: affected::ReadParams,
+        mut results: affected::ReadResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_affected(self.affected);
+        Promise::ok(())
+    }
+}
+
 pub struct RemoteStatementImpl {
     sql: String,
     planner: Planner,
@@ -413,11 +434,11 @@ impl RemoteStatementImpl {
     }
 }
 
-impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
+impl remote_statement::Server for RemoteStatementImpl {
     fn execute_query(
         &mut self,
-        _: remote_capnp::remote_statement::ExecuteQueryParams,
-        mut results: remote_capnp::remote_statement::ExecuteQueryResults,
+        _: remote_statement::ExecuteQueryParams,
+        mut results: remote_statement::ExecuteQueryResults,
     ) -> Promise<(), capnp::Error> {
         trace!("execute query: {}", self.sql);
         let plan = self
@@ -433,22 +454,23 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
     }
     fn execute_update(
         &mut self,
-        _: remote_capnp::remote_statement::ExecuteUpdateParams,
-        mut results: remote_capnp::remote_statement::ExecuteUpdateResults,
+        _: remote_statement::ExecuteUpdateParams,
+        mut results: remote_statement::ExecuteUpdateResults,
     ) -> Promise<(), capnp::Error> {
         trace!("execute update: {}", self.sql);
         let affected = self
             .planner
             .execute_update(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
             .expect("execute update");
+        let affected: affected::Client = capnp_rpc::new_client(AffectedImpl::new(affected));
         results.get().set_affected(affected);
 
         Promise::ok(())
     }
     fn close(
         &mut self,
-        _: remote_capnp::remote_statement::CloseParams,
-        _: remote_capnp::remote_statement::CloseResults,
+        _: remote_statement::CloseParams,
+        _: remote_statement::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
@@ -457,8 +479,8 @@ impl remote_capnp::remote_statement::Server for RemoteStatementImpl {
     }
     fn explain_plan(
         &mut self,
-        _: remote_capnp::remote_statement::ExplainPlanParams,
-        mut results: remote_capnp::remote_statement::ExplainPlanResults,
+        _: remote_statement::ExplainPlanParams,
+        mut results: remote_statement::ExplainPlanResults,
     ) -> Promise<(), capnp::Error> {
         trace!("explain plan");
         let planrepr = self
@@ -487,11 +509,11 @@ impl RemoteResultSetImpl {
     }
 }
 
-impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
+impl remote_result_set::Server for RemoteResultSetImpl {
     fn next(
         &mut self,
-        _: remote_capnp::remote_result_set::NextParams,
-        mut results: remote_capnp::remote_result_set::NextResults,
+        _: remote_result_set::NextParams,
+        mut results: remote_result_set::NextResults,
     ) -> Promise<(), capnp::Error> {
         let has_next = self.scan.lock().unwrap().next();
         trace!("next: {}", has_next);
@@ -501,8 +523,8 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
     }
     fn close(
         &mut self,
-        _: remote_capnp::remote_result_set::CloseParams,
-        _: remote_capnp::remote_result_set::CloseResults,
+        _: remote_result_set::CloseParams,
+        _: remote_result_set::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
@@ -511,8 +533,8 @@ impl remote_capnp::remote_result_set::Server for RemoteResultSetImpl {
     }
     fn get_metadata(
         &mut self,
-        _: remote_capnp::remote_result_set::GetMetadataParams,
-        mut results: remote_capnp::remote_result_set::GetMetadataResults,
+        _: remote_result_set::GetMetadataParams,
+        mut results: remote_result_set::GetMetadataResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get metadata");
         let mut schema = results.get().init_metadata().init_schema();

@@ -10,10 +10,12 @@ pub enum Value {
     String(String),
 }
 
-pub struct NetworkResultSet {}
+pub struct NetworkResultSet {
+    resultset: remote_result_set::Client,
+}
 impl NetworkResultSet {
-    pub fn new(client: remote_result_set::Client) -> Self {
-        Self {}
+    pub fn new(resultset: remote_result_set::Client) -> Self {
+        Self { resultset }
     }
 }
 

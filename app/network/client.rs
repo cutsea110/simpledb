@@ -321,7 +321,9 @@ async fn execute_command(
     stmt: &remote_statement::Client,
 ) -> Result<i32, Box<dyn std::error::Error>> {
     let reply = stmt.execute_update_request().send().promise.await?;
-    let affected = reply.get()?.get_affected();
+    let affected = reply.get()?.get_affected()?;
+    let read = affected.read_request();
+    let affected = read.send().promise.await?.get()?.get_affected();
 
     Ok(affected)
 }

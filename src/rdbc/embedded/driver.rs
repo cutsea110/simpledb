@@ -17,8 +17,8 @@ impl EmbeddedDriver {
 impl DriverAdapter<'_> for EmbeddedDriver {
     type Con = EmbeddedConnection;
 
-    fn connect(&self, url: &str) -> Result<Self::Con> {
-        if let Ok(db) = SimpleDB::new(url) {
+    fn connect(&self, dbname: &str) -> Result<Self::Con> {
+        if let Ok(db) = SimpleDB::new(dbname) {
             return Ok(EmbeddedConnection::new(db));
         }
 

@@ -38,6 +38,7 @@ impl<'a> EmbeddedStatement<'a> {
 
 impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
     type Set = EmbeddedResultSet<'a>;
+    type Aeffected = i32;
 
     fn execute_query(&'a mut self) -> Result<Self::Set> {
         let tx = self.conn.get_transaction();
@@ -49,7 +50,7 @@ impl<'a> StatementAdapter<'a> for EmbeddedStatement<'a> {
                 .and_then(|_| Err(From::from(StatementError::RuntimeError))),
         }
     }
-    fn execute_update(&mut self) -> Result<i32> {
+    fn execute_update(&mut self) -> Result<Self::Aeffected> {
         let tx = self.conn.get_transaction();
         match self.planner.execute_update(&self.sql, tx) {
             Ok(affected) => self.conn.commit().and_then(|_| Ok(affected)),
