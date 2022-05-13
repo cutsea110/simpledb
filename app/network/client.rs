@@ -191,7 +191,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         println!();
 
         let mut stmt =
-            conn.create_statement("UPDATE student SET grad_year=2020 WHERE grad_year=2024")?;
+            conn.create_statement("UPDATE student SET grad_year=2024 WHERE grad_year=2020")?;
 
         let affected = stmt.execute_update()?.affected().await?;
         println!("Affected: {} rows", affected);
