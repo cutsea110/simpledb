@@ -31,8 +31,9 @@ impl<'a> EmbeddedResultSet<'a> {
 
 impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     type Meta = EmbeddedMetaData;
+    type Next = bool;
 
-    fn next(&self) -> bool {
+    fn next(&self) -> Self::Next {
         self.s.lock().unwrap().next()
     }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {

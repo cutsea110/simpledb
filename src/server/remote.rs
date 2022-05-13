@@ -13,7 +13,7 @@ use crate::{
     query::{constant::Constant, expression::Expression, scan::Scan},
     record::schema::{FieldType, Schema},
     remote_capnp::{
-        self, affected, remote_connection, remote_driver, remote_result_set, remote_statement,
+        self, affected, next, remote_connection, remote_driver, remote_result_set, remote_statement,
     },
     repr,
     repr::planrepr::PlanRepr,
@@ -419,6 +419,25 @@ impl affected::Server for AffectedImpl {
     }
 }
 
+pub struct NextImpl {
+    exists: bool,
+}
+impl NextImpl {
+    pub fn new(exists: bool) -> Self {
+        Self { exists }
+    }
+}
+impl next::Server for NextImpl {
+    fn read(
+        &mut self,
+        _: remote_capnp::next::ReadParams,
+        mut results: remote_capnp::next::ReadResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_exists(self.exists);
+        Promise::ok(())
+    }
+}
+
 pub struct RemoteStatementImpl {
     sql: String,
     planner: Planner,
@@ -517,7 +536,8 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> Promise<(), capnp::Error> {
         let has_next = self.scan.lock().unwrap().next();
         trace!("next: {}", has_next);
-        results.get().set_exists(has_next);
+        let next: remote_capnp::next::Client = capnp_rpc::new_client(NextImpl::new(has_next));
+        results.get().set_exists(next);
 
         Promise::ok(())
     }

@@ -148,8 +148,12 @@ interface Affected {
   read @0 () -> (affected :Int32);
 }
 
+interface Next {
+  read @0 () -> (exists :Bool);
+}
+
 interface RemoteResultSet {
-  next          @0 () -> (exists :Bool);
+  next          @0 () -> (exists :Next);
   close         @1 ();
   getMetadata   @2 () -> (metadata :MetaData);
   getRow        @3 () -> (row :Row);

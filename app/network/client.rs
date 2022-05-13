@@ -12,7 +12,7 @@ use simpledb::{
     rdbc::{
         connectionadapter::ConnectionAdapter,
         driveradapter::DriverAdapter,
-        network::{driver::NetworkDriver, planrepr::NetworkPlanRepr},
+        network::{driver::NetworkDriver, planrepr::NetworkPlanRepr, resultset::Value},
         resultsetadapter::ResultSetAdapter,
         resultsetmetadataadapter::ResultSetMetaDataAdapter,
         statementadapter::StatementAdapter,
@@ -206,9 +206,9 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         print_explain_plan(plan);
         println!();
 
-        let mut result_set = stmt.execute_query()?;
+        let result_set = stmt.execute_query()?;
 
-        let metadata = result_set.get_meta_data()?;
+        let metadata = result_set.get_meta().await?;
 
         for i in 0..metadata.get_column_count() {
             let fldname = metadata
@@ -229,29 +229,27 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
         }
         println!();
 
-        /*
-                while result_set.next().await? {
-                    let entry = result_set.get_row(&metadata).await?;
-                    for i in 0..metadata.get_column_count() {
-                        let fldname = metadata
-                            .get_column_name(i)
-                            .expect("get column name")
-                            .as_str();
-                        let w = metadata
-                            .get_column_display_size(i)
-                            .expect("get column display size");
-                        match entry.get(fldname) {
-                            Some(Value::Int32(v)) => print!("{:width$} ", v, width = w),
-                            Some(Value::String(s)) => print!("{:width$} ", s, width = w),
-                            None => panic!("field missing"),
-                        }
-                    }
-                    println!();
+        while result_set.next().has_next().await? {
+            let entry = result_set.get_row(&metadata).await?;
+            for i in 0..metadata.get_column_count() {
+                let fldname = metadata
+                    .get_column_name(i)
+                    .expect("get column name")
+                    .as_str();
+                let w = metadata
+                    .get_column_display_size(i)
+                    .expect("get column display size");
+                match entry.get(fldname) {
+                    Some(Value::Int32(v)) => print!("{:width$} ", v, width = w),
+                    Some(Value::String(s)) => print!("{:width$} ", s, width = w),
+                    None => panic!("field missing"),
                 }
+            }
+            println!();
+        }
 
-                let rollback_request = conn.rollback_request();
-                rollback_request.send().promise.await?;
-        */
+        // let rollback_request = conn.rollback_request();
+        // rollback_request.send().promise.await?;
     }
 
     Ok(())
