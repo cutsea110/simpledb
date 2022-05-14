@@ -83,8 +83,8 @@ impl ConnectionInternal {
     pub fn close(&mut self) -> anyhow::Result<()> {
         let tx_num = self.current_tx.lock().unwrap().tx_num();
         trace!("close tx: {}", tx_num);
-        self.current_tx.lock().unwrap().commit()
-        // TODO: close
+        self.current_tx.lock().unwrap().commit()?;
+        self.renew_tx()
     }
     pub fn commit(&mut self) -> anyhow::Result<()> {
         let tx_num = self.current_tx.lock().unwrap().tx_num();
@@ -533,6 +533,7 @@ impl remote_statement::Server for RemoteStatementImpl {
             .planner
             .execute_update(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
             .expect("execute update");
+        self.conn.borrow_mut().close().expect("close");
         let affected: affected::Client = capnp_rpc::new_client(AffectedImpl::new(affected));
         results.get().set_affected(affected);
 
