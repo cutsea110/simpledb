@@ -37,9 +37,9 @@ name = "esql"
 path = "app/esql/main.rs"
 
 [[bin]]
-name = "server"
+name = "simpledb-server"
 path = "app/network/server.rs"
 
 [[bin]]
-name = "client"
+name = "sql"
 path = "app/network/client.rs"

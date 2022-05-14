@@ -29,6 +29,8 @@ pub mod tableschema;
 pub mod updatecmd;
 pub mod viewdef;
 
+const VERSION: &str = "0.1.0";
+
 #[derive(Debug, StructOpt)]
 #[structopt(setting(clap::AppSettings::ColoredHelp))]
 struct Opt {
@@ -38,14 +40,18 @@ struct Opt {
     #[structopt(short = "p", long = "port", default_value("1099"))]
     port: u16,
 
-    #[structopt(short = "d", long = "name")]
+    #[structopt(short = "d", long = "name", default_value("demo"))]
     dbname: String,
+
+    #[structopt(short = "V", long = "version")]
+    version: bool,
 }
 
 #[derive(Debug, Clone)]
 struct Config {
     pub addr: SocketAddr,
     pub dbname: String,
+    pub version: bool,
 }
 impl Config {
     pub fn new(opt: Opt) -> Self {
@@ -58,6 +64,7 @@ impl Config {
         Self {
             addr,
             dbname: opt.dbname,
+            version: opt.version,
         }
     }
 }
@@ -70,6 +77,11 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug!("Opt: {:?}", opt);
     let cfg = Config::new(opt);
     debug!("Config: {:?}", cfg);
+
+    if cfg.version {
+        println!("rSQL version {}", VERSION);
+        process::exit(0);
+    }
 
     tokio::task::LocalSet::new().run_until(try_main(cfg)).await
 }
