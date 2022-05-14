@@ -54,7 +54,7 @@ fn parse_args() -> Args {
 
     let mut opts = Options::new();
     opts.optopt("d", "dbname", "set database name", "DBNAME");
-    opts.optopt("l", "log", "set log level", "LOGG");
+    opts.optopt("l", "log", "set log level", "LOG");
     opts.optflag("h", "help", "print this help menu");
     opts.optflag("v", "version", "print version");
 
