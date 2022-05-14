@@ -11,7 +11,7 @@ use std::{
     net::{SocketAddr, ToSocketAddrs},
     sync::{Arc, Mutex},
 };
-use structopt::StructOpt;
+use structopt::{clap, StructOpt};
 
 use simpledb::{
     remote_capnp::remote_driver,
@@ -21,6 +21,7 @@ use simpledb::{
 const DB_DIR: &str = "data";
 
 #[derive(Debug, StructOpt)]
+#[structopt(setting(clap::AppSettings::ColoredHelp))]
 struct Opt {
     #[structopt(short = "h", long = "host", default_value("127.0.0.1"))]
     host: String,

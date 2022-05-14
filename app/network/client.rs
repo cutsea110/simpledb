@@ -12,7 +12,7 @@ use std::{
     net::{SocketAddr, ToSocketAddrs},
     process,
 };
-use structopt::StructOpt;
+use structopt::{clap, StructOpt};
 
 use simpledb::{
     rdbc::{
@@ -30,6 +30,7 @@ pub mod updatecmd;
 pub mod viewdef;
 
 #[derive(Debug, StructOpt)]
+#[structopt(setting(clap::AppSettings::ColoredHelp))]
 struct Opt {
     #[structopt(short = "h", long = "host", default_value("127.0.0.1"))]
     host: String,
