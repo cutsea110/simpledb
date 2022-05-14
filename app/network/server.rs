@@ -90,7 +90,7 @@ async fn try_main(cfg: Config) -> Result<(), Box<dyn Error>> {
     let driver_client: remote_driver::Client = capnp_rpc::new_client(driver_impl);
 
     loop {
-        info!("listening...");
+        info!("listening...{}", &cfg.addr);
         let (stream, _) = listener.accept().await?;
         info!("accepted");
         stream.set_nodelay(true)?;
