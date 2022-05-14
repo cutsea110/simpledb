@@ -1,13 +1,12 @@
 use anyhow::Result;
 use env_logger::{self, Env};
-use getopts::Options;
 use itertools::Itertools;
 use std::{
-    env,
     io::{stdout, Write},
     path::Path,
     process,
 };
+use structopt::{clap, StructOpt};
 
 use simpledb::rdbc::{
     connectionadapter::ConnectionAdapter,
@@ -30,47 +29,30 @@ pub mod viewdef;
 const DB_DIR: &str = "data";
 const VERSION: &str = "0.1.0";
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-struct Args {
+#[derive(Debug, StructOpt)]
+#[structopt(setting(clap::AppSettings::ColoredHelp))]
+struct Opt {
+    #[structopt(short = "d", long = "name", default_value("demo"))]
     dbname: String,
+
+    #[structopt(short = "V", long = "version")]
+    version: bool,
 }
 
-fn print_usage(program: &str, opts: &Options) {
-    let brief = format!("Usage: {} [options]", program);
-    print!("{}", opts.usage(&brief));
-    stdout().flush().expect("display usage");
-    process::exit(0);
+#[derive(Debug, Clone)]
+struct Config {
+    dbname: String,
+    dbpath: String,
+    version: bool,
 }
 
-fn print_version(program: &str, _opts: &Options) {
-    let brief = format!("{} {}", program, VERSION);
-    println!("{}", &brief);
-    process::exit(0);
-}
-
-fn parse_args() -> Args {
-    let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
-
-    let mut opts = Options::new();
-    opts.optopt("d", "dbname", "set database name", "DBNAME");
-    opts.optopt("l", "log", "set log level", "LOG");
-    opts.optflag("h", "help", "print this help menu");
-    opts.optflag("v", "version", "print version");
-
-    let matches = opts
-        .parse(&args[1..])
-        .unwrap_or_else(|f| panic!("{}", f.to_string()));
-    if matches.opt_present("h") {
-        print_usage(&program, &opts);
-    }
-
-    if matches.opt_present("v") {
-        print_version(&program, &opts);
-    }
-
-    Args {
-        dbname: matches.opt_str("d").expect("require dbname"),
+impl Config {
+    pub fn new(opt: Opt) -> Self {
+        Self {
+            dbname: opt.dbname.clone(),
+            dbpath: format!("{}/{}", DB_DIR, &opt.dbname),
+            version: opt.version,
+        }
     }
 }
 
@@ -186,15 +168,20 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
 
-    let args = parse_args();
-    let dbpath = format!("{}/{}", DB_DIR, args.dbname);
+    let opt = Opt::from_args();
+    let cfg = Config::new(opt);
 
-    if !Path::new(&dbpath).exists() {
-        confirm_new_db(&args.dbname);
+    if cfg.version {
+        println!("eSQL version {}", VERSION);
+        process::exit(0);
+    }
+
+    if !Path::new(&cfg.dbpath).exists() {
+        confirm_new_db(&cfg.dbname);
     }
 
     let drvr = EmbeddedDriver::new();
-    let mut conn = drvr.connect(&dbpath).unwrap_or_else(|_| {
+    let mut conn = drvr.connect(&cfg.dbpath).unwrap_or_else(|_| {
         println!("couldn't connect database.");
         process::exit(1);
     });
