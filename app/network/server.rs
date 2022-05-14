@@ -4,13 +4,14 @@ extern crate simpledb;
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use env_logger::Env;
 use futures::{AsyncReadExt, FutureExt};
-use log::info;
+use log::{debug, info};
 use std::{
     collections::HashMap,
     error::Error,
     net::{SocketAddr, ToSocketAddrs},
     sync::{Arc, Mutex},
 };
+use structopt::StructOpt;
 
 use simpledb::{
     remote_capnp::remote_driver,
@@ -18,6 +19,32 @@ use simpledb::{
 };
 
 const DB_DIR: &str = "data";
+
+#[derive(Debug, StructOpt)]
+struct Opt {
+    #[structopt(short = "h", long = "host", default_value("127.0.0.1"))]
+    host: String,
+
+    #[structopt(short = "p", long = "port", default_value("1099"))]
+    port: u16,
+}
+
+#[derive(Debug, Clone)]
+struct Config {
+    pub addr: SocketAddr,
+}
+
+impl Config {
+    pub fn new(opt: Opt) -> Self {
+        let addr = format!("{}:{}", opt.host, opt.port)
+            .to_socket_addrs()
+            .unwrap()
+            .next()
+            .expect("could not parse address");
+
+        Self { addr }
+    }
+}
 
 pub struct ServerImpl {
     dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
@@ -46,21 +73,19 @@ impl simpledb::server::remote::Server for ServerImpl {
 pub async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
 
-    // TODO: from argument
-    // rdbc:simpledb://127.0.0.1:1099/dbname
-    let addr = "127.0.0.1:1099"
-        .to_socket_addrs()?
-        .next()
-        .expect("could not parse address");
+    let opt = Opt::from_args();
+    debug!("Opt: {:?}", opt);
+    let cfg = Config::new(opt);
+    debug!("Cofngi: {:?}", cfg);
 
-    tokio::task::LocalSet::new().run_until(try_main(addr)).await
+    tokio::task::LocalSet::new().run_until(try_main(cfg)).await
 }
 
-async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn Error>> {
+async fn try_main(cfg: Config) -> Result<(), Box<dyn Error>> {
     info!("start server");
     let srv = ServerImpl::new();
 
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    let listener = tokio::net::TcpListener::bind(&cfg.addr).await?;
     let driver_impl = RemoteDriverImpl::new(Arc::new(Mutex::new(srv)));
     let driver_client: remote_driver::Client = capnp_rpc::new_client(driver_impl);
 

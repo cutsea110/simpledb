@@ -67,8 +67,8 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let opt = Opt::from_args();
     debug!("Opt: {:?}", opt);
-
     let cfg = Config::new(opt);
+    debug!("Config: {:?}", cfg);
 
     tokio::task::LocalSet::new().run_until(try_main(cfg)).await
 }
