@@ -96,15 +96,15 @@ async fn try_main<'a>(cfg: Config) -> Result<(), Box<dyn std::error::Error>> {
         process::exit(1);
     });
 
-    while let Ok(qry) = read_query() {
+    while let Ok(qry) = read_query(&cfg) {
         exec(&mut conn, &qry.trim()).await;
     }
 
     Ok(())
 }
 
-fn read_query() -> Result<String> {
-    print!("SQL> ");
+fn read_query(cfg: &Config) -> Result<String> {
+    print!("{}({})> ", &cfg.addr, &cfg.dbname);
     stdout().flush().expect("require input");
 
     let mut input = String::new();
