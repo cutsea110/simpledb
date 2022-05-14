@@ -1,7 +1,12 @@
+extern crate capnp_rpc;
+extern crate simpledb;
+
 use anyhow::Result;
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
+use env_logger::Env;
 use futures::{AsyncReadExt, FutureExt};
 use itertools::Itertools;
+use log::debug;
 use std::{
     io::{stdout, Write},
     net::{SocketAddr, ToSocketAddrs},
@@ -18,9 +23,6 @@ use simpledb::{
     remote_capnp::remote_driver,
 };
 
-extern crate capnp_rpc;
-extern crate simpledb;
-
 pub mod execquery;
 pub mod explainplan;
 pub mod tableschema;
@@ -29,25 +31,50 @@ pub mod viewdef;
 
 #[derive(Debug, StructOpt)]
 struct Opt {
-    #[structopt(short, long)]
-    url: String,
+    #[structopt(short = "h", long = "host", default_value("127.0.0.1"))]
+    host: String,
 
-    #[structopt(short, long)]
-    version: bool,
+    #[structopt(short = "p", long = "port", default_value("1099"))]
+    port: u16,
+
+    #[structopt(short = "d", long = "name")]
+    dbname: String,
+}
+
+#[derive(Debug, Clone)]
+struct Config {
+    pub addr: SocketAddr,
+    pub dbname: String,
+}
+impl Config {
+    pub fn new(opt: Opt) -> Self {
+        let addr = format!("{}:{}", opt.host, opt.port)
+            .to_socket_addrs()
+            .unwrap()
+            .next()
+            .expect("could not parse address");
+
+        Self {
+            addr,
+            dbname: opt.dbname,
+        }
+    }
 }
 
 #[tokio::main(flavor = "current_thread")]
 pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "127.0.0.1:1099"
-        .to_socket_addrs()?
-        .next()
-        .expect("could not parse address");
+    env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
 
-    tokio::task::LocalSet::new().run_until(try_main(addr)).await
+    let opt = Opt::from_args();
+    debug!("Opt: {:?}", opt);
+
+    let cfg = Config::new(opt);
+
+    tokio::task::LocalSet::new().run_until(try_main(cfg)).await
 }
 
-async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
-    let stream = tokio::net::TcpStream::connect(&addr).await?;
+async fn try_main<'a>(cfg: Config) -> Result<(), Box<dyn std::error::Error>> {
+    let stream = tokio::net::TcpStream::connect(&cfg.addr).await?;
     stream.set_nodelay(true)?;
     let (reader, writer) = tokio_util::compat::TokioAsyncReadCompatExt::compat(stream).split();
     let rpc_network = Box::new(twoparty::VatNetwork::new(
@@ -64,7 +91,7 @@ async fn try_main(addr: SocketAddr) -> Result<(), Box<dyn std::error::Error>> {
     if let Ok((major_ver, minor_ver)) = driver.get_server_version().await {
         println!("simpledb server version {}.{}\n", major_ver, minor_ver);
     }
-    let mut conn = driver.connect("demo").unwrap_or_else(|_| {
+    let mut conn = driver.connect(&cfg.dbname).unwrap_or_else(|_| {
         println!("couldn't connect database.");
         process::exit(1);
     });
