@@ -13,8 +13,8 @@ use crate::{
     query::{constant::Constant, expression::Expression, scan::Scan},
     record::schema::{FieldType, Schema},
     remote_capnp::{
-        self, affected, next, remote_connection, remote_driver, remote_meta_data,
-        remote_result_set, remote_statement,
+        self, affected, int32_box, next, remote_connection, remote_driver, remote_meta_data,
+        remote_result_set, remote_statement, schema, string_box, void_box,
     },
     repr,
     repr::planrepr::PlanRepr,
@@ -124,7 +124,7 @@ impl RemoteConnectionImpl {
     }
 }
 
-fn set_schema(schema: Arc<Schema>, sch: &mut remote_capnp::schema::Builder) {
+fn set_schema(schema: Arc<Schema>, sch: &mut schema::Builder) {
     let mut fields = sch.reborrow().init_fields(schema.fields().len() as u32);
     for i in 0..schema.fields().len() {
         let fldname = schema.fields()[i].as_str();
@@ -150,7 +150,7 @@ fn set_schema(schema: Arc<Schema>, sch: &mut remote_capnp::schema::Builder) {
         val.reborrow().set_type(t);
     }
 }
-fn set_constant(cnst: &Constant, c: &mut remote_capnp::remote_statement::constant::Builder) {
+fn set_constant(cnst: &Constant, c: &mut remote_statement::constant::Builder) {
     match cnst {
         Constant::I32(v) => {
             c.set_int32(*v);
@@ -160,7 +160,7 @@ fn set_constant(cnst: &Constant, c: &mut remote_capnp::remote_statement::constan
         }
     }
 }
-fn set_expression(expr: &Expression, e: &mut remote_capnp::remote_statement::expression::Builder) {
+fn set_expression(expr: &Expression, e: &mut remote_statement::expression::Builder) {
     match expr {
         Expression::Fldname(f) => {
             e.reborrow().set_fldname(f.as_str().into());
@@ -256,10 +256,7 @@ fn set_operation(
     }
 }
 
-fn set_plan_repr(
-    planrepr: Arc<dyn PlanRepr>,
-    pr: &mut remote_capnp::remote_statement::plan_repr::Builder,
-) {
+fn set_plan_repr(planrepr: Arc<dyn PlanRepr>, pr: &mut remote_statement::plan_repr::Builder) {
     let mut op = pr.reborrow().init_operation();
     set_operation(planrepr.operation(), &mut op);
     pr.set_reads(planrepr.reads());
@@ -274,18 +271,18 @@ fn set_plan_repr(
 }
 
 pub struct VoidImpl;
-impl remote_capnp::void_box::Server for VoidImpl {
+impl void_box::Server for VoidImpl {
     fn read(
         &mut self,
-        _: remote_capnp::void_box::ReadParams,
-        mut results: remote_capnp::void_box::ReadResults,
+        _: void_box::ReadParams,
+        mut results: void_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
         results.get().set_void(());
         Promise::ok(())
     }
 }
 
-impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
+impl remote_connection::Server for RemoteConnectionImpl {
     fn create_statement(
         &mut self,
         params: remote_connection::CreateStatementParams,
@@ -313,20 +310,20 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
     fn close(
         &mut self,
-        _: remote_capnp::remote_connection::CloseParams,
-        mut results: remote_capnp::remote_connection::CloseResults,
+        _: remote_connection::CloseParams,
+        mut results: remote_connection::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
-        let client: remote_capnp::void_box::Client = capnp_rpc::new_client(VoidImpl);
+        let client: void_box::Client = capnp_rpc::new_client(VoidImpl);
         results.get().set_res(client);
 
         Promise::ok(())
     }
     fn commit(
         &mut self,
-        _: remote_capnp::remote_connection::CommitParams,
-        _: remote_capnp::remote_connection::CommitResults,
+        _: remote_connection::CommitParams,
+        _: remote_connection::CommitResults,
     ) -> Promise<(), capnp::Error> {
         trace!("commit");
         self.conn.borrow_mut().commit().expect("commit");
@@ -336,8 +333,8 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
     fn rollback(
         &mut self,
-        _: remote_capnp::remote_connection::RollbackParams,
-        _: remote_capnp::remote_connection::RollbackResults,
+        _: remote_connection::RollbackParams,
+        _: remote_connection::RollbackResults,
     ) -> Promise<(), capnp::Error> {
         trace!("rollback");
         self.conn.borrow_mut().rollback().expect("rollback");
@@ -347,8 +344,8 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
     fn get_table_schema(
         &mut self,
-        params: remote_capnp::remote_connection::GetTableSchemaParams,
-        mut results: remote_capnp::remote_connection::GetTableSchemaResults,
+        params: remote_connection::GetTableSchemaParams,
+        mut results: remote_connection::GetTableSchemaResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get table schema");
         let tblname = pry!(pry!(params.get()).get_tblname());
@@ -367,8 +364,8 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
     fn get_view_definition(
         &mut self,
-        params: remote_capnp::remote_connection::GetViewDefinitionParams,
-        mut results: remote_capnp::remote_connection::GetViewDefinitionResults,
+        params: remote_connection::GetViewDefinitionParams,
+        mut results: remote_connection::GetViewDefinitionResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get view definition");
         let viewname = pry!(pry!(params.get()).get_viewname());
@@ -388,8 +385,8 @@ impl remote_capnp::remote_connection::Server for RemoteConnectionImpl {
     }
     fn get_index_info(
         &mut self,
-        params: remote_capnp::remote_connection::GetIndexInfoParams,
-        mut results: remote_capnp::remote_connection::GetIndexInfoResults,
+        params: remote_connection::GetIndexInfoParams,
+        mut results: remote_connection::GetIndexInfoResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get index info");
         let tblname = pry!(pry!(params.get()).get_tblname());
@@ -445,8 +442,8 @@ impl NextImpl {
 impl next::Server for NextImpl {
     fn read(
         &mut self,
-        _: remote_capnp::next::ReadParams,
-        mut results: remote_capnp::next::ReadResults,
+        _: next::ReadParams,
+        mut results: next::ReadResults,
     ) -> Promise<(), capnp::Error> {
         results.get().set_exists(self.exists);
         Promise::ok(())
@@ -461,11 +458,11 @@ impl Int32BoxImpl {
         Self { val }
     }
 }
-impl remote_capnp::int32_box::Server for Int32BoxImpl {
+impl int32_box::Server for Int32BoxImpl {
     fn read(
         &mut self,
-        _: remote_capnp::int32_box::ReadParams,
-        mut results: remote_capnp::int32_box::ReadResults,
+        _: int32_box::ReadParams,
+        mut results: int32_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
         results.get().set_val(self.val);
         Promise::ok(())
@@ -482,11 +479,11 @@ impl StringBoxImpl {
         }
     }
 }
-impl remote_capnp::string_box::Server for StringBoxImpl {
+impl string_box::Server for StringBoxImpl {
     fn read(
         &mut self,
-        _: remote_capnp::string_box::ReadParams,
-        mut results: remote_capnp::string_box::ReadResults,
+        _: string_box::ReadParams,
+        mut results: string_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
         results.get().set_val(self.val.as_str().into());
         Promise::ok(())
@@ -548,7 +545,7 @@ impl remote_statement::Server for RemoteStatementImpl {
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
-        let client: remote_capnp::void_box::Client = capnp_rpc::new_client(VoidImpl);
+        let client: void_box::Client = capnp_rpc::new_client(VoidImpl);
         results.get().set_res(client);
 
         Promise::ok(())
@@ -593,7 +590,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> Promise<(), capnp::Error> {
         let has_next = self.scan.lock().unwrap().next();
         trace!("next: {}", has_next);
-        let next: remote_capnp::next::Client = capnp_rpc::new_client(NextImpl::new(has_next));
+        let next: next::Client = capnp_rpc::new_client(NextImpl::new(has_next));
         results.get().set_exists(next);
 
         Promise::ok(())
@@ -605,7 +602,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> Promise<(), capnp::Error> {
         trace!("close");
         self.conn.borrow_mut().close().expect("close");
-        let client: remote_capnp::void_box::Client = capnp_rpc::new_client(VoidImpl);
+        let client: void_box::Client = capnp_rpc::new_client(VoidImpl);
         results.get().set_res(client);
 
         Promise::ok(())
@@ -667,7 +664,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
             .unwrap()
             .get_i32(fldname)
             .expect("get int32");
-        let val: remote_capnp::int32_box::Client = capnp_rpc::new_client(Int32BoxImpl::new(val));
+        let val: int32_box::Client = capnp_rpc::new_client(Int32BoxImpl::new(val));
         results.get().set_val(val);
 
         Promise::ok(())
@@ -685,7 +682,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
             .unwrap()
             .get_string(fldname)
             .expect("get string");
-        let val: remote_capnp::string_box::Client = capnp_rpc::new_client(StringBoxImpl::new(val));
+        let val: string_box::Client = capnp_rpc::new_client(StringBoxImpl::new(val));
         results.get().set_val(val);
 
         Promise::ok(())
