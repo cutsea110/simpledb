@@ -34,7 +34,7 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "esql"
-path = "app/esql/main.rs"
+path = "app/embedded/main.rs"
 
 [[bin]]
 name = "simpledb-server"
