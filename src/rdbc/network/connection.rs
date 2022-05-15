@@ -15,15 +15,23 @@ impl NetworkConnection {
     pub fn new(conn: remote_connection::Client) -> Self {
         Self { conn }
     }
-    pub async fn commit(&mut self) -> Result<()> {
-        self.conn.commit_request().send().promise.await?;
+    pub async fn commit(&mut self) -> Result<i32> {
+        let request = self.conn.commit_request();
+        let reply = request.send().pipeline.get_tx();
+        let request = reply.read_request();
+        let reply = request.send().promise.await?;
+        let tx_num = reply.get()?.get_tx_num();
 
-        Ok(())
+        Ok(tx_num)
     }
-    pub async fn rollback(&mut self) -> Result<()> {
-        self.conn.rollback_request().send().promise.await?;
+    pub async fn rollback(&mut self) -> Result<i32> {
+        let request = self.conn.rollback_request();
+        let reply = request.send().pipeline.get_tx();
+        let request = reply.read_request();
+        let reply = request.send().promise.await?;
+        let tx_num = reply.get()?.get_tx_num();
 
-        Ok(())
+        Ok(tx_num)
     }
     pub async fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
         let mut schema = Schema::new();
