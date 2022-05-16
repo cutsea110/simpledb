@@ -171,9 +171,9 @@ interface RemoteResultSet {
   next          @0 () -> (exists :Next);
   close         @1 () -> (res :VoidBox);
   getMetadata   @2 () -> (metadata :RemoteMetaData);
-  getRow        @3 () -> (row :Row);
-  getInt32      @4 (fldname :Text) -> (val :Int32Box);
-  getString     @5 (fldname :Text) -> (val :StringBox);
+  getInt32      @3 (fldname :Text) -> (val :Int32Box);
+  getString     @4 (fldname :Text) -> (val :StringBox);
+  getRow        @5 () -> (row :Row);
 
   struct Row {
     map @0 :Map(Text, Value);
