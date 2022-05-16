@@ -13,7 +13,7 @@ use crate::{
     query::{constant::Constant, expression::Expression, scan::Scan},
     record::schema::{FieldType, Schema},
     remote_capnp::{
-        self, affected, int32_box, next, remote_connection, remote_driver, remote_meta_data,
+        self, affected, bool_box, int32_box, remote_connection, remote_driver, remote_meta_data,
         remote_result_set, remote_statement, schema, string_box, tx_box, void_box,
     },
     repr,
@@ -467,13 +467,13 @@ impl NextImpl {
         Self { exists }
     }
 }
-impl next::Server for NextImpl {
+impl bool_box::Server for NextImpl {
     fn read(
         &mut self,
-        _: next::ReadParams,
-        mut results: next::ReadResults,
+        _: bool_box::ReadParams,
+        mut results: bool_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
-        results.get().set_exists(self.exists);
+        results.get().set_val(self.exists);
         Promise::ok(())
     }
 }
@@ -619,8 +619,8 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> Promise<(), capnp::Error> {
         let has_next = self.scan.lock().unwrap().next();
         trace!("next: {}", has_next);
-        let next: next::Client = capnp_rpc::new_client(NextImpl::new(has_next));
-        results.get().set_exists(next);
+        let next: bool_box::Client = capnp_rpc::new_client(NextImpl::new(has_next));
+        results.get().set_val(next);
 
         Promise::ok(())
     }

@@ -156,8 +156,8 @@ interface Affected {
   read @0 () -> (affected :Int32);
 }
 
-interface Next {
-  read @0 () -> (exists :Bool);
+interface BoolBox {
+  read @0 () -> (val :Bool);
 }
 
 interface Int32Box {
@@ -168,7 +168,7 @@ interface StringBox {
 }
 
 interface RemoteResultSet {
-  next          @0 () -> (exists :Next);
+  next          @0 () -> (val :BoolBox);
   close         @1 () -> (res :VoidBox);
   getMetadata   @2 () -> (metadata :RemoteMetaData);
   getInt32      @3 (fldname :Text) -> (val :Int32Box);

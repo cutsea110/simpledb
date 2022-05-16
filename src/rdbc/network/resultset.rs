@@ -9,18 +9,18 @@ use crate::{
     },
     remote_capnp,
 };
-use remote_capnp::{int32_box, next, remote_result_set, string_box};
+use remote_capnp::{bool_box, int32_box, remote_result_set, string_box};
 
 pub struct NextImpl {
-    client: next::Client,
+    client: bool_box::Client,
 }
 impl NextImpl {
-    pub fn new(client: next::Client) -> Self {
+    pub fn new(client: bool_box::Client) -> Self {
         Self { client }
     }
     pub async fn has_next(&self) -> Result<bool> {
         let reply = self.client.read_request().send().promise.await?;
-        Ok(reply.get()?.get_exists())
+        Ok(reply.get()?.get_val())
     }
 }
 
@@ -117,7 +117,7 @@ impl ResultSetAdapter for NetworkResultSet {
     type Res = ResponseImpl;
 
     fn next(&self) -> Self::Next {
-        let exists = self.resultset.next_request().send().pipeline.get_exists();
+        let exists = self.resultset.next_request().send().pipeline.get_val();
 
         Self::Next::new(exists)
     }
