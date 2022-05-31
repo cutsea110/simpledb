@@ -1,15 +1,13 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
+use std::collections::HashMap;
 
 use super::{connection::ResponseImpl, metadata::NetworkResultSetMetaData};
 use crate::{
     rdbc::{
         resultsetadapter::ResultSetAdapter, resultsetmetadataadapter::ResultSetMetaDataAdapter,
     },
-    remote_capnp,
+    remote_capnp::{bool_box, int32_box, remote_result_set, string_box},
 };
-use remote_capnp::{bool_box, int32_box, remote_result_set, string_box};
 
 pub struct NextImpl {
     client: bool_box::Client,

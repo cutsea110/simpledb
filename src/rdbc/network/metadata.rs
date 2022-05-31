@@ -4,9 +4,11 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter};
-use crate::record;
-use crate::remote_capnp::{self, remote_meta_data};
+use crate::{
+    rdbc::resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
+    record,
+    remote_capnp::{self, remote_meta_data},
+};
 
 pub struct Schema {
     fields: Vec<String>,
