@@ -20,10 +20,24 @@ sudo apt install capnproto
 cargo build
 ```
 
-## Run
+## How to run on embedded version
 
 How to connect and run sql for a database named dbname on embedded version is like below.
 
 ``` shell
 cargo run -- -d <dbname>
+```
+
+## How to run on server/client version
+
+How to run server.
+
+``` shell
+cargo run --bin simpledb-server
+```
+
+How to run client.
+
+``` shell
+cargo run --bin sql -- -d <dbname>
 ```
