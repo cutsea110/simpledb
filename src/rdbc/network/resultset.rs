@@ -68,11 +68,15 @@ impl NetworkResultSet {
         metadata: &'b NetworkResultSetMetaData,
     ) -> Result<HashMap<&'a str, Value>, Box<dyn std::error::Error>> {
         fn to_hashmap(row: remote_result_set::row::Reader) -> HashMap<&str, Value> {
-            let entries = row.get_map().unwrap().get_entries().unwrap(); // TODO
+            let entries = row
+                .get_map()
+                .expect("get row map")
+                .get_entries()
+                .expect("get entries");
             let mut result = HashMap::new();
             for kv in entries.into_iter() {
-                let key = kv.get_key().unwrap(); // TODO
-                let val = match kv.get_value().unwrap().which().unwrap() {
+                let key = kv.get_key().expect("get key");
+                let val = match kv.get_value().unwrap().which().expect("match value type") {
                     remote_result_set::value::Int32(v) => Value::Int32(v),
                     remote_result_set::value::String(s) => Value::String(s.unwrap().to_string()),
                 };
