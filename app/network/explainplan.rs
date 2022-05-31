@@ -45,6 +45,7 @@ pub fn print_explain_plan(epr: NetworkPlanRepr) {
     );
     println!("{:-<width$}", "", width = 102);
     print_pr(pr, row_num, 0);
+    println!();
 }
 
 fn format_operation(op: Operation) -> String {
