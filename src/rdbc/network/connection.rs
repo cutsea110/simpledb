@@ -17,19 +17,15 @@ impl NetworkConnection {
     }
     pub async fn commit(&mut self) -> Result<i32> {
         let request = self.conn.commit_request();
-        let reply = request.send().pipeline.get_tx();
-        let request = reply.read_request();
         let reply = request.send().promise.await?;
-        let tx_num = reply.get()?.get_tx_num();
+        let tx_num = reply.get()?.get_tx();
 
         Ok(tx_num)
     }
     pub async fn rollback(&mut self) -> Result<i32> {
         let request = self.conn.rollback_request();
-        let reply = request.send().pipeline.get_tx();
-        let request = reply.read_request();
         let reply = request.send().promise.await?;
-        let tx_num = reply.get()?.get_tx_num();
+        let tx_num = reply.get()?.get_tx();
 
         Ok(tx_num)
     }

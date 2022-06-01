@@ -14,7 +14,7 @@ use crate::{
     record::schema::{FieldType, Schema},
     remote_capnp::{
         self, affected, bool_box, int32_box, remote_connection, remote_driver, remote_meta_data,
-        remote_result_set, remote_statement, schema, string_box, tx_box, void_box,
+        remote_result_set, remote_statement, schema, string_box, void_box,
     },
     repr,
     repr::planrepr::PlanRepr,
@@ -282,25 +282,6 @@ impl void_box::Server for VoidImpl {
     }
 }
 
-pub struct TxImpl {
-    tx_num: i32,
-}
-impl TxImpl {
-    pub fn new(tx_num: i32) -> Self {
-        Self { tx_num }
-    }
-}
-impl tx_box::Server for TxImpl {
-    fn read(
-        &mut self,
-        _: tx_box::ReadParams,
-        mut results: tx_box::ReadResults,
-    ) -> Promise<(), capnp::Error> {
-        results.get().set_tx_num(self.tx_num);
-        Promise::ok(())
-    }
-}
-
 impl remote_connection::Server for RemoteConnectionImpl {
     fn create_statement(
         &mut self,
@@ -350,8 +331,7 @@ impl remote_connection::Server for RemoteConnectionImpl {
         self.conn.borrow_mut().commit().expect("commit");
         self.conn.borrow_mut().renew_tx().expect("start new tx");
 
-        let client: remote_capnp::tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
-        results.get().set_tx(client);
+        results.get().set_tx(tx_num);
 
         Promise::ok(())
     }
@@ -365,8 +345,7 @@ impl remote_connection::Server for RemoteConnectionImpl {
         self.conn.borrow_mut().rollback().expect("rollback");
         self.conn.borrow_mut().renew_tx().expect("start new tx");
 
-        let client: remote_capnp::tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
-        results.get().set_tx(client);
+        results.get().set_tx(tx_num);
 
         Promise::ok(())
     }

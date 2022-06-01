@@ -55,15 +55,11 @@ interface VoidBox {
   read @0 () -> (void :Void);
 }
 
-interface TxBox {
-  read @0 () -> (txNum :Int32);
-}
-
 interface RemoteConnection {
   createStatement   @0 (sql :Text) -> (stmt :RemoteStatement);
   close             @1 () -> (res :VoidBox);
-  commit            @2 () -> (tx :TxBox);
-  rollback          @3 () -> (tx :TxBox);
+  commit            @2 () -> (tx :Int32);
+  rollback          @3 () -> (tx :Int32);
 
   getTableSchema    @4 (tblname :Text) -> (sch :Schema);
   getViewDefinition @5 (viewname :Text) -> (vwdef :ViewDef);
