@@ -51,18 +51,25 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
     }
     println!();
     // scan record
-    let mut c = 0;
     // TODO: give limit(80) from caller
+    const LIMIT_ROWS: u32 = 80;
+    let mut total_count = 0;
+    loop {
+        let rows = results.get_rows(LIMIT_ROWS, &meta).await.expect("get rows");
+        let c = rows.len();
+        for row in rows {
+            print_record(row, &meta);
+        }
+        total_count += c as i32;
 
-    for row in results.get_rows(80, &meta).await.expect("get rows") {
-        print_record(row, &meta);
-        c += 1;
+        if total_count < LIMIT_ROWS as i32 {
+            break;
+        }
     }
-
     // unpin!
     results.close()?.response().await.expect("close");
 
-    Ok(c)
+    Ok(total_count)
 }
 
 fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMetaData) {
