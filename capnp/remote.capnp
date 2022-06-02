@@ -164,12 +164,13 @@ interface StringBox {
 }
 
 interface RemoteResultSet {
-  next          @0 () -> (val :BoolBox);
-  close         @1 () -> (res :VoidBox);
-  getMetadata   @2 () -> (metadata :RemoteMetaData);
-  getInt32      @3 (fldname :Text) -> (val :Int32Box);
-  getString     @4 (fldname :Text) -> (val :StringBox);
-  getRow        @5 () -> (row :Row);
+  next        @0 () -> (val :BoolBox);
+  close       @1 () -> (res :VoidBox);
+  getMetadata @2 () -> (metadata :RemoteMetaData);
+  getInt32    @3 (fldname :Text) -> (val :Int32Box);
+  getString   @4 (fldname :Text) -> (val :StringBox);
+  getRow      @5 () -> (row :Row);
+  getRows     @6 (limit :UInt32) -> (rows :List(Row));
 
   struct Row {
     map @0 :Map(Text, Value);

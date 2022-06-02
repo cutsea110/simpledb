@@ -659,6 +659,13 @@ impl remote_result_set::Server for RemoteResultSetImpl {
 
         Promise::ok(())
     }
+    fn get_rows(
+        &mut self,
+        _: remote_result_set::GetRowsParams,
+        _: remote_result_set::GetRowsResults,
+    ) -> Promise<(), capnp::Error> {
+        panic!("TODO")
+    }
     fn get_int32(
         &mut self,
         params: remote_result_set::GetInt32Params,
