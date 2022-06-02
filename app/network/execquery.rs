@@ -7,7 +7,7 @@ use simpledb::rdbc::{
         statement::NetworkStatement,
     },
     resultsetadapter::ResultSetAdapter,
-    resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
+    resultsetmetadataadapter::ResultSetMetaDataAdapter,
     statementadapter::StatementAdapter,
 };
 
@@ -67,25 +67,21 @@ async fn print_record(
     results: &mut NetworkResultSet,
     meta: &NetworkResultSetMetaData,
 ) -> Result<()> {
+    let row = results.get_row(&meta).await.expect("get row");
     for i in 0..meta.get_column_count() {
         let fldname = meta.get_column_name(i).expect("get column name");
         let w = meta
             .get_column_display_size(i)
             .expect("get column display size");
-        match meta.get_column_type(i).expect("get column type") {
-            DataType::Int32 => {
-                print!(
-                    "{:width$} ",
-                    results.get_i32(fldname)?.get_value().await?,
-                    width = w
-                );
+        match row.get(fldname.as_str()) {
+            Some(simpledb::rdbc::network::resultset::Value::Int32(v)) => {
+                print!("{:width$} ", v.clone(), width = w);
             }
-            DataType::Varchar => {
-                print!(
-                    "{:width$} ",
-                    results.get_string(fldname)?.get_value().await?,
-                    width = w
-                );
+            Some(simpledb::rdbc::network::resultset::Value::String(s)) => {
+                print!("{:width$} ", s, width = w);
+            }
+            None => {
+                panic!("shouldn't be here!")
             }
         }
     }
