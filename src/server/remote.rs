@@ -699,7 +699,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                 break;
             }
         }
-        // set real length
+        // set real length, because we can't know real length and this cause errors in following process.
         trace!("get_rows count: {}", c);
         results.get().set_count(c);
 
