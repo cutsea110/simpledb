@@ -1,9 +1,9 @@
 use anyhow::Result;
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 
 use simpledb::rdbc::{
     network::{
-        metadata::NetworkResultSetMetaData, resultset::NetworkResultSet,
+        metadata::NetworkResultSetMetaData, resultset, resultset::NetworkResultSet,
         statement::NetworkStatement,
     },
     resultsetadapter::ResultSetAdapter,
@@ -54,7 +54,8 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
     let mut c = 0;
     while results.next().has_next().await? {
         c += 1;
-        print_record(&mut results, &meta).await?;
+        let row = results.get_row(&meta).await.expect("get row");
+        print_record(row, &meta);
     }
 
     // unpin!
@@ -63,21 +64,17 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
     Ok(c)
 }
 
-async fn print_record(
-    results: &mut NetworkResultSet,
-    meta: &NetworkResultSetMetaData,
-) -> Result<()> {
-    let row = results.get_row(&meta).await.expect("get row");
+fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMetaData) {
     for i in 0..meta.get_column_count() {
         let fldname = meta.get_column_name(i).expect("get column name");
         let w = meta
             .get_column_display_size(i)
             .expect("get column display size");
         match row.get(fldname.as_str()) {
-            Some(simpledb::rdbc::network::resultset::Value::Int32(v)) => {
+            Some(resultset::Value::Int32(v)) => {
                 print!("{:width$} ", v.clone(), width = w);
             }
-            Some(simpledb::rdbc::network::resultset::Value::String(s)) => {
+            Some(resultset::Value::String(s)) => {
                 print!("{:width$} ", s, width = w);
             }
             None => {
@@ -86,6 +83,4 @@ async fn print_record(
         }
     }
     println!();
-
-    Ok(())
 }
