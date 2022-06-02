@@ -661,10 +661,43 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     }
     fn get_rows(
         &mut self,
-        _: remote_result_set::GetRowsParams,
-        _: remote_result_set::GetRowsResults,
+        params: remote_result_set::GetRowsParams,
+        mut results: remote_result_set::GetRowsResults,
     ) -> Promise<(), capnp::Error> {
-        panic!("TODO")
+        let limit = pry!(params.get()).get_limit();
+        let mut rows = results.get().init_rows(limit);
+
+        for i in 0..limit {
+            let has_next = self.scan.lock().unwrap().next();
+            if has_next {
+                let mut map = rows.reborrow().get(i).init_map();
+                let mut entries = map.reborrow().init_entries(self.sch.fields().len() as u32);
+                for (i, (k, fi)) in self.sch.info().into_iter().enumerate() {
+                    entries
+                        .reborrow()
+                        .get(i as u32)
+                        .set_key(k.as_str().into())
+                        .unwrap();
+                    let mut val = entries.reborrow().get(i as u32).init_value();
+                    match fi.fld_type {
+                        FieldType::INTEGER => {
+                            if let Ok(v) = self.scan.lock().unwrap().get_i32(k) {
+                                val.reborrow().set_int32(v);
+                            }
+                        }
+                        FieldType::VARCHAR => {
+                            if let Ok(s) = self.scan.lock().unwrap().get_string(k) {
+                                val.reborrow().set_string(s.as_str().into());
+                            }
+                        }
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+
+        Promise::ok(())
     }
     fn get_int32(
         &mut self,
