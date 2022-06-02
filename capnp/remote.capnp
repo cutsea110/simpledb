@@ -170,7 +170,7 @@ interface RemoteResultSet {
   getInt32    @3 (fldname :Text) -> (val :Int32Box);
   getString   @4 (fldname :Text) -> (val :StringBox);
   getRow      @5 () -> (row :Row);
-  getRows     @6 (limit :UInt32) -> (rows :List(Row));
+  getRows     @6 (limit :UInt32) -> (count :UInt32, rows :List(Row));
 
   struct Row {
     map @0 :Map(Text, Value);

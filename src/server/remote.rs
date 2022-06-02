@@ -632,7 +632,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         _: remote_result_set::GetRowParams,
         mut results: remote_result_set::GetRowResults,
     ) -> Promise<(), capnp::Error> {
-        trace!("get row");
+        trace!("get_row");
         let row = results.get().init_row();
         let mut map = row.init_map();
         let mut entries = map.reborrow().init_entries(self.sch.fields().len() as u32);
@@ -665,7 +665,9 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         mut results: remote_result_set::GetRowsResults,
     ) -> Promise<(), capnp::Error> {
         let limit = pry!(params.get()).get_limit();
+        trace!("get_rows with limit: {}", limit);
         let mut rows = results.get().init_rows(limit);
+        let mut c = 0;
 
         for i in 0..limit {
             let has_next = self.scan.lock().unwrap().next();
@@ -692,10 +694,14 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                         }
                     }
                 }
+                c += 1;
             } else {
                 break;
             }
         }
+        // set real length
+        trace!("get_rows count: {}", c);
+        results.get().set_count(c);
 
         Promise::ok(())
     }

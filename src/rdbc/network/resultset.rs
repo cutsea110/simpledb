@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::trace;
 use std::collections::HashMap;
 
 use super::{connection::ResponseImpl, metadata::NetworkResultSetMetaData};
@@ -65,28 +66,10 @@ impl NetworkResultSet {
         &'a self,
         metadata: &'b NetworkResultSetMetaData,
     ) -> Result<HashMap<&'a str, Value>, Box<dyn std::error::Error>> {
-        fn to_hashmap(row: remote_result_set::row::Reader) -> HashMap<&str, Value> {
-            let entries = row
-                .get_map()
-                .expect("get row map")
-                .get_entries()
-                .expect("get entries");
-            let mut result = HashMap::new();
-            for kv in entries.into_iter() {
-                let key = kv.get_key().expect("get key");
-                let val = match kv.get_value().unwrap().which().expect("match value type") {
-                    remote_result_set::value::Int32(v) => Value::Int32(v),
-                    remote_result_set::value::String(s) => Value::String(s.unwrap().to_string()),
-                };
-                result.insert(key, val);
-            }
-
-            result
-        }
-
+        trace!("get_row");
         let request = self.resultset.get_row_request();
         let reply = request.send().promise.await?;
-        let entry = to_hashmap(reply.get()?.get_row()?);
+        let entry = Self::to_hashmap(reply.get()?.get_row()?);
 
         let mut result = HashMap::new();
         for i in 0..metadata.get_column_count() {
@@ -102,12 +85,73 @@ impl NetworkResultSet {
                     result.insert(fldname, Value::String(s.clone()));
                 }
                 None => {
-                    panic!("field missing");
+                    panic!("field missing: {}", fldname);
                 }
             }
         }
 
         Ok(result)
+    }
+    pub async fn get_rows<'a, 'b: 'a>(
+        &'a self,
+        limit: u32,
+        metadata: &'b NetworkResultSetMetaData,
+    ) -> Result<Vec<HashMap<&'a str, Value>>, Box<dyn std::error::Error>> {
+        trace!("get_rows limit: {}", limit);
+        let mut request = self.resultset.get_rows_request();
+        request.get().set_limit(limit);
+        let reply = request.send().promise.await?;
+        let rows = reply.get()?.get_rows()?;
+        let count = reply.get()?.get_count();
+
+        let mut results = vec![];
+        trace!("get_rows has {} rows", rows.len());
+
+        for i in 0..count {
+            let row = rows.get(i as u32);
+            let entry = Self::to_hashmap(row);
+            let mut result = HashMap::new();
+            for i in 0..metadata.get_column_count() {
+                let fldname = metadata
+                    .get_column_name(i)
+                    .expect("get column name")
+                    .as_str();
+                match entry.get(fldname) {
+                    Some(Value::Int32(v)) => {
+                        result.insert(fldname, Value::Int32(*v));
+                    }
+                    Some(Value::String(s)) => {
+                        result.insert(fldname, Value::String(s.clone()));
+                    }
+                    None => {
+                        panic!("field missing: {} at index {}", fldname, i);
+                    }
+                }
+            }
+
+            results.push(result);
+        }
+
+        Ok(results)
+    }
+
+    fn to_hashmap(row: remote_result_set::row::Reader) -> HashMap<&str, Value> {
+        let entries = row
+            .get_map()
+            .expect("get row map")
+            .get_entries()
+            .expect("get entries");
+        let mut result = HashMap::new();
+        for kv in entries.into_iter() {
+            let key = kv.get_key().expect("get key");
+            let val = match kv.get_value().unwrap().which().expect("match value type") {
+                remote_result_set::value::Int32(v) => Value::Int32(v),
+                remote_result_set::value::String(s) => Value::String(s.unwrap().to_string()),
+            };
+            result.insert(key, val);
+        }
+
+        result
     }
 }
 

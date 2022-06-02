@@ -52,10 +52,11 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
     println!();
     // scan record
     let mut c = 0;
-    while results.next().has_next().await? {
-        c += 1;
-        let row = results.get_row(&meta).await.expect("get row");
+    // TODO: give limit(80) from caller
+
+    for row in results.get_rows(80, &meta).await.expect("get rows") {
         print_record(row, &meta);
+        c += 1;
     }
 
     // unpin!
