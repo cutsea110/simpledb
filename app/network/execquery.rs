@@ -12,7 +12,7 @@ use simpledb::rdbc::{
 };
 
 // TODO: give limit(80) from caller
-const LIMIT_ROWS_NUM: u32 = 80;
+const MAX_ROWS: u32 = 80;
 
 pub async fn exec_query(stmt: &mut NetworkStatement) {
     let start = Instant::now();
@@ -56,17 +56,14 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
     // scan record
     let mut total_count = 0;
     loop {
-        let rows = results
-            .get_rows(LIMIT_ROWS_NUM, &meta)
-            .await
-            .expect("get rows");
+        let rows = results.get_rows(MAX_ROWS, &meta).await.expect("get rows");
         let c = rows.len();
         for row in rows {
             print_record(row, &meta);
         }
         total_count += c as i32;
 
-        if total_count < LIMIT_ROWS_NUM as i32 {
+        if total_count < MAX_ROWS as i32 {
             break;
         }
     }
