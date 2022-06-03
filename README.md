@@ -25,7 +25,7 @@ cargo build
 How to connect and run sql for a database named dbname on embedded version is like below.
 
 ``` shell
-cargo run -- -d <dbname>
+cargo run --bin esql -- -d <dbname>
 ```
 
 ## How to run on server/client version
