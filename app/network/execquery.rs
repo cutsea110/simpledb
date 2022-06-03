@@ -26,7 +26,6 @@ pub async fn exec_query(stmt: &mut NetworkStatement) {
                 end.as_secs(),
                 end.subsec_nanos() / 1_000_000
             );
-            println!();
         }
     }
 }

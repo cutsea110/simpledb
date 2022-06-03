@@ -119,6 +119,7 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
             let viewname = args[0];
             if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname) {
                 print_view_definition(&viewname, &viewdef);
+                println!();
             }
             return;
         }
@@ -135,6 +136,7 @@ fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
                 if &cmd == "select" {
                     if let Ok(plan_repr) = stmt.explain_plan() {
                         print_explain_plan(plan_repr);
+                        println!();
                         return;
                     }
                 }
@@ -159,8 +161,10 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
         let cmd = words[0].trim().to_ascii_lowercase();
         if &cmd == "select" {
             exec_query(&mut stmt);
+            println!();
         } else {
             exec_update_cmd(&mut stmt);
+            println!();
         }
     }
 }

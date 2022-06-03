@@ -166,6 +166,7 @@ async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
             let viewname = args[0];
             if let Ok((viewname, viewdef)) = conn.get_view_definition(viewname).await {
                 viewdef::print_view_definition(&viewname, &viewdef);
+                println!();
             }
             return;
         }
@@ -182,6 +183,7 @@ async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
                 if &cmd == "select" {
                     if let Ok(plan_repr) = stmt.explain_plan().await {
                         explainplan::print_explain_plan(plan_repr);
+                        println!();
                         return;
                     }
                 }
@@ -206,8 +208,10 @@ async fn exec(conn: &mut NetworkConnection, qry: &str) {
         let cmd = words[0].trim().to_ascii_lowercase();
         if &cmd == "select" {
             execquery::exec_query(&mut stmt).await;
+            println!();
         } else {
             updatecmd::exec_update_cmd(&mut stmt).await;
+            println!();
         }
     }
 }
