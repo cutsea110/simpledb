@@ -5,7 +5,7 @@ use super::{metadata::IndexInfo, statement::NetworkStatement};
 use crate::{
     rdbc::connectionadapter::ConnectionAdapter,
     record::schema::{FieldType, Schema},
-    remote_capnp::{self, remote_connection, void_box},
+    remote_capnp::{self, remote_connection, tx_box},
 };
 
 pub struct NetworkConnection {
@@ -94,17 +94,17 @@ impl NetworkConnection {
 }
 
 pub struct ResponseImpl {
-    client: void_box::Client,
+    client: tx_box::Client,
 }
 impl ResponseImpl {
-    pub fn new(client: void_box::Client) -> Self {
+    pub fn new(client: tx_box::Client) -> Self {
         Self { client }
     }
-    pub async fn response(&self) -> Result<()> {
+    pub async fn response(&self) -> Result<i32> {
         let request = self.client.read_request();
-        request.send().promise.await?.get()?.get_void();
+        let tx_num = request.send().promise.await?.get()?.get_tx();
 
-        Ok(())
+        Ok(tx_num)
     }
 }
 

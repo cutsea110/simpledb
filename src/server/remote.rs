@@ -14,7 +14,7 @@ use crate::{
     record::schema::{FieldType, Schema},
     remote_capnp::{
         self, affected, bool_box, int32_box, remote_connection, remote_driver, remote_meta_data,
-        remote_result_set, remote_statement, schema, string_box, void_box,
+        remote_result_set, remote_statement, schema, string_box, tx_box,
     },
     repr,
     repr::planrepr::PlanRepr,
@@ -102,6 +102,10 @@ impl ConnectionInternal {
         self.current_tx = Arc::new(Mutex::new(new_tx));
 
         Ok(())
+    }
+    // my own extends
+    pub fn current_tx_num(&self) -> i32 {
+        self.current_tx.lock().unwrap().tx_num()
     }
 }
 
@@ -270,14 +274,21 @@ fn set_plan_repr(planrepr: Arc<dyn PlanRepr>, pr: &mut remote_statement::plan_re
     }
 }
 
-pub struct VoidImpl;
-impl void_box::Server for VoidImpl {
+pub struct TxImpl {
+    tx: i32,
+}
+impl TxImpl {
+    pub fn new(tx: i32) -> Self {
+        Self { tx }
+    }
+}
+impl tx_box::Server for TxImpl {
     fn read(
         &mut self,
-        _: void_box::ReadParams,
-        mut results: void_box::ReadResults,
+        _: tx_box::ReadParams,
+        mut results: tx_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
-        results.get().set_void(());
+        results.get().set_tx(self.tx);
         Promise::ok(())
     }
 }
@@ -314,8 +325,9 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
+        let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
-        let client: void_box::Client = capnp_rpc::new_client(VoidImpl);
+        let client: tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
         results.get().set_res(client);
 
         Promise::ok(())
@@ -421,10 +433,14 @@ impl remote_connection::Server for RemoteConnectionImpl {
 
 pub struct AffectedImpl {
     affected: i32,
+    committed_tx: i32,
 }
 impl AffectedImpl {
-    pub fn new(affected: i32) -> Self {
-        Self { affected }
+    pub fn new(affected: i32, committed_tx: i32) -> Self {
+        Self {
+            affected,
+            committed_tx,
+        }
     }
 }
 impl affected::Server for AffectedImpl {
@@ -434,6 +450,14 @@ impl affected::Server for AffectedImpl {
         mut results: affected::ReadResults,
     ) -> Promise<(), capnp::Error> {
         results.get().set_affected(self.affected);
+        Promise::ok(())
+    }
+    fn committed_tx(
+        &mut self,
+        _: affected::CommittedTxParams,
+        mut results: affected::CommittedTxResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_tx(self.committed_tx);
         Promise::ok(())
     }
 }
@@ -540,8 +564,9 @@ impl remote_statement::Server for RemoteStatementImpl {
             .planner
             .execute_update(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
             .expect("execute update");
+        let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
-        let affected: affected::Client = capnp_rpc::new_client(AffectedImpl::new(affected));
+        let affected: affected::Client = capnp_rpc::new_client(AffectedImpl::new(affected, tx_num));
         results.get().set_affected(affected);
 
         Promise::ok(())
@@ -552,8 +577,9 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
+        let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
-        let client: void_box::Client = capnp_rpc::new_client(VoidImpl);
+        let client: tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
         results.get().set_res(client);
 
         Promise::ok(())
@@ -609,8 +635,9 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         mut results: remote_result_set::CloseResults,
     ) -> Promise<(), capnp::Error> {
         trace!("close");
+        let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
-        let client: void_box::Client = capnp_rpc::new_client(VoidImpl);
+        let client: tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
         results.get().set_res(client);
 
         Promise::ok(())

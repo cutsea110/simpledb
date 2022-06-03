@@ -19,6 +19,12 @@ impl AffectedImpl {
 
         Ok(reply.get()?.get_affected())
     }
+    pub async fn committed_tx(&self) -> Result<i32> {
+        let request = self.client.committed_tx_request();
+        let reply = request.send().promise.await?;
+
+        Ok(reply.get()?.get_tx())
+    }
 }
 
 pub struct NetworkStatement {

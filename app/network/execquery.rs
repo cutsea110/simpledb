@@ -18,7 +18,7 @@ pub async fn exec_query(stmt: &mut NetworkStatement) {
     match stmt.execute_query() {
         Err(_) => println!("invalid query"),
         Ok(result) => {
-            let cnt = print_result_set(result).await.expect("print result set");
+            let (cnt, tx_num) = print_result_set(result).await.expect("print result set");
             let end = start.elapsed();
             println!(
                 "Rows {} ({}.{:03}s)",
@@ -26,11 +26,12 @@ pub async fn exec_query(stmt: &mut NetworkStatement) {
                 end.as_secs(),
                 end.subsec_nanos() / 1_000_000
             );
+            println!("transaction {} committed", tx_num);
         }
     }
 }
 
-async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
+async fn print_result_set(mut results: NetworkResultSet) -> Result<(i32, i32)> {
     // resultset metadata
     let mut meta = results.get_meta_data()?;
     meta.load_schema().await.expect("load schema");
@@ -66,9 +67,9 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
         }
     }
     // unpin!
-    results.close()?.response().await.expect("close");
+    let tx_num = results.close()?.response().await.expect("close");
 
-    Ok(total_count)
+    Ok((total_count, tx_num))
 }
 
 fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMetaData) {
