@@ -10,7 +10,7 @@ text: [Database Design and Implementation: Second Edition](https://www.amazon.co
 
 ## Status
 
-Done to implement all of book contents, except for exercises and chap 11 remote server.
+Done to implement all of book contents, but any exercise.
 
 ## Build
 
