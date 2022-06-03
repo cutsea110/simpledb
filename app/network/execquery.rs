@@ -11,7 +11,6 @@ use simpledb::rdbc::{
     statementadapter::StatementAdapter,
 };
 
-// TODO: give limit(80) from caller
 const MAX_ROWS: u32 = 80;
 
 pub async fn exec_query(stmt: &mut NetworkStatement) {
@@ -63,7 +62,7 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<i32> {
         }
         total_count += c as i32;
 
-        if total_count < MAX_ROWS as i32 {
+        if c < MAX_ROWS as usize {
             break;
         }
     }
