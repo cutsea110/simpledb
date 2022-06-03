@@ -82,15 +82,12 @@ fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMet
         let w = meta
             .get_column_display_size(i)
             .expect("get column display size");
-        match row.get(fldname.as_str()) {
-            Some(resultset::Value::Int32(v)) => {
+        match row.get(fldname.as_str()).expect("get field value") {
+            resultset::Value::Int32(v) => {
                 print!("{:width$} ", v.clone(), width = w);
             }
-            Some(resultset::Value::String(s)) => {
+            resultset::Value::String(s) => {
                 print!("{:width$} ", s, width = w);
-            }
-            None => {
-                panic!("shouldn't be here!")
             }
         }
     }
