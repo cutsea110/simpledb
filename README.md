@@ -4,9 +4,9 @@ This is a project to develop SimpleDB in Rust.
 
 text: [Database Design and Implementation: Second Edition](https://www.amazon.co.jp/gp/product/3030338355/)
 
-## Demo
+## Demo movie
 
-<img src="./movie/demo-x2-resized.gif" width="800">
+<img src="./movie/demo-x2-resized.gif" width="800" alt="Demo movie">
 
 ## Status
 
