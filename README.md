@@ -4,6 +4,10 @@ This is a project to develop SimpleDB in Rust.
 
 text: [Database Design and Implementation: Second Edition](https://www.amazon.co.jp/gp/product/3030338355/)
 
+## Demo
+
+<img src="./movie/demo-x2-resized.gif" width="800">
+
 ## Status
 
 Done to implement all of book contents, except for exercises and chap 11 remote server.
