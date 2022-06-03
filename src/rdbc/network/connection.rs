@@ -100,11 +100,11 @@ impl ResponseImpl {
     pub fn new(client: tx_box::Client) -> Self {
         Self { client }
     }
-    pub async fn response(&self) -> Result<()> {
+    pub async fn response(&self) -> Result<i32> {
         let request = self.client.read_request();
-        request.send().promise.await?.get()?.get_tx();
+        let tx_num = request.send().promise.await?.get()?.get_tx();
 
-        Ok(())
+        Ok(tx_num)
     }
 }
 
