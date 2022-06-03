@@ -51,13 +51,13 @@ interface RemoteDriver {
   }
 }
 
-interface VoidBox {
-  read @0 () -> (void :Void);
+interface TxBox {
+  read @0 () -> (tx :Int32);
 }
 
 interface RemoteConnection {
   createStatement   @0 (sql :Text) -> (stmt :RemoteStatement);
-  close             @1 () -> (res :VoidBox);
+  close             @1 () -> (res :TxBox);
   commit            @2 () -> (tx :Int32);
   rollback          @3 () -> (tx :Int32);
 
@@ -144,12 +144,13 @@ interface RemoteStatement {
 
   executeQuery  @0 () -> (result :RemoteResultSet);
   executeUpdate @1 () -> (affected :Affected);
-  close         @2 () -> (res :VoidBox);
+  close         @2 () -> (res :TxBox);
   explainPlan   @3 () -> (planrepr :PlanRepr);
 }
 
 interface Affected {
-  read @0 () -> (affected :Int32);
+  read        @0 () -> (affected :Int32);
+  committedTx @1 () -> (tx :Int32);
 }
 
 interface BoolBox {
@@ -165,7 +166,7 @@ interface StringBox {
 
 interface RemoteResultSet {
   next        @0 () -> (val :BoolBox);
-  close       @1 () -> (res :VoidBox);
+  close       @1 () -> (res :TxBox);
   getMetadata @2 () -> (metadata :RemoteMetaData);
   getInt32    @3 (fldname :Text) -> (val :Int32Box);
   getString   @4 (fldname :Text) -> (val :StringBox);
