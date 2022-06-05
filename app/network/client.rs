@@ -143,10 +143,10 @@ async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
         }
         ":q" | ":quit" | ":exit" => {
             match conn.close() {
-                Ok(res) => match res.response().await {
-                    Ok(tx_num) => println!("transaction {} closed", tx_num),
-                    Err(e) => println!("already disconnected: {:?}", e),
-                },
+                Ok(res) => res.response().await.map_or_else(
+                    |e| println!("failed to get server response: {:?}", e),
+                    |tx_num| println!("transaction {} closed", tx_num),
+                ),
                 Err(e) => {
                     println!("failed to close transaction: {:?}", e);
                 }
