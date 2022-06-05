@@ -142,7 +142,15 @@ async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
             print_help_meta_cmd();
         }
         ":q" | ":quit" | ":exit" => {
-            conn.close().unwrap().response().await.expect("close");
+            match conn.close() {
+                Ok(res) => match res.response().await {
+                    Ok(tx_num) => println!("transaction {} closed", tx_num),
+                    Err(e) => println!("already disconnected: {:?}", e),
+                },
+                Err(e) => {
+                    println!("failed to close transaction: {:?}", e);
+                }
+            }
             println!("disconnected");
             process::exit(0);
         }
