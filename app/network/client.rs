@@ -49,9 +49,9 @@ struct Opt {
 
 #[derive(Debug, Clone)]
 struct Config {
-    pub addr: SocketAddr,
-    pub dbname: String,
-    pub version: bool,
+    addr: SocketAddr,
+    dbname: String,
+    version: bool,
 }
 impl Config {
     pub fn new(opt: Opt) -> Self {
