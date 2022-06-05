@@ -34,13 +34,13 @@ cargo run --bin esql -- -d <dbname>
 
 ## How to run on server/client version
 
-How to run server.
+How to run simpledb-server.
 
 ``` shell
-cargo run --bin simpledb-server
+cargo run --bin simpledb server program.
 ```
 
-How to run client.
+How to run sql as simpledb client program.
 
 ``` shell
 cargo run --bin sql -- -d <dbname>
