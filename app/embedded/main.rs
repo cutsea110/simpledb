@@ -54,15 +54,6 @@ impl Config {
     }
 }
 
-fn read_query() -> Result<String> {
-    print!("SQL> ");
-    stdout().flush().expect("require input");
-
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-    Ok(input)
-}
-
 fn confirm_new_db(dbname: &str) {
     print!("create new '{}'? [Yes/no]> ", dbname);
     stdout().flush().expect("confirm");
@@ -74,6 +65,15 @@ fn confirm_new_db(dbname: &str) {
         println!("terminates the process.");
         process::exit(0);
     }
+}
+
+fn read_query() -> Result<String> {
+    print!("SQL> ");
+    stdout().flush().expect("require input");
+
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    Ok(input)
 }
 
 fn exec(conn: &mut EmbeddedConnection, qry: &str) {
