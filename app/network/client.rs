@@ -70,21 +70,33 @@ impl Config {
     }
 }
 
-#[tokio::main(flavor = "current_thread")]
-pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
+fn read_query(cfg: &Config) -> Result<String> {
+    print!("{}({})> ", &cfg.addr, &cfg.dbname);
+    stdout().flush().expect("require input");
 
-    let opt = Opt::from_args();
-    debug!("Opt: {:?}", opt);
-    let cfg = Config::new(opt);
-    debug!("Config: {:?}", cfg);
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    Ok(input)
+}
 
-    if cfg.version {
-        println!("rSQL version {}", VERSION);
-        process::exit(0);
+async fn exec(conn: &mut NetworkConnection, qry: &str) {
+    if qry.starts_with(":") {
+        exec_meta_cmd(conn, qry).await;
+        return;
     }
 
-    tokio::task::LocalSet::new().run_until(try_main(cfg)).await
+    let mut stmt = conn.create_statement(&qry).expect("create statement");
+    let words: Vec<&str> = qry.split_whitespace().collect();
+    if !words.is_empty() {
+        let cmd = words[0].trim().to_ascii_lowercase();
+        if &cmd == "select" {
+            execquery::exec_query(&mut stmt).await;
+            println!();
+        } else {
+            updatecmd::exec_update_cmd(&mut stmt).await;
+            println!();
+        }
+    }
 }
 
 async fn try_main<'a>(cfg: Config) -> Result<(), Box<dyn std::error::Error>> {
@@ -117,31 +129,19 @@ async fn try_main<'a>(cfg: Config) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn read_query(cfg: &Config) -> Result<String> {
-    print!("{}({})> ", &cfg.addr, &cfg.dbname);
-    stdout().flush().expect("require input");
+#[tokio::main(flavor = "current_thread")]
+pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::Builder::from_env(Env::default().default_filter_or("warn")).init();
 
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)?;
-    Ok(input)
-}
+    let opt = Opt::from_args();
+    debug!("Opt: {:?}", opt);
+    let cfg = Config::new(opt);
+    debug!("Config: {:?}", cfg);
 
-async fn exec(conn: &mut NetworkConnection, qry: &str) {
-    if qry.starts_with(":") {
-        exec_meta_cmd(conn, qry).await;
-        return;
+    if cfg.version {
+        println!("rSQL version {}", VERSION);
+        process::exit(0);
     }
 
-    let mut stmt = conn.create_statement(&qry).expect("create statement");
-    let words: Vec<&str> = qry.split_whitespace().collect();
-    if !words.is_empty() {
-        let cmd = words[0].trim().to_ascii_lowercase();
-        if &cmd == "select" {
-            execquery::exec_query(&mut stmt).await;
-            println!();
-        } else {
-            updatecmd::exec_update_cmd(&mut stmt).await;
-            println!();
-        }
-    }
+    tokio::task::LocalSet::new().run_until(try_main(cfg)).await
 }
