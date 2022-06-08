@@ -1,6 +1,5 @@
-use std::process;
-
 use itertools::Itertools;
+use std::process;
 
 use simpledb::rdbc::{
     connectionadapter::ConnectionAdapter, network::connection::NetworkConnection,

@@ -1,6 +1,6 @@
+use anyhow::Result;
 use std::time::Instant;
 
-use anyhow::Result;
 use simpledb::rdbc::{
     embedded::{
         metadata::EmbeddedMetaData, resultset::EmbeddedResultSet, statement::EmbeddedStatement,
