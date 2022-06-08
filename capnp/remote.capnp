@@ -1,11 +1,15 @@
 @0xa9ab30b6c567e6ae;
 
 struct Tuple(T, U) {
+  # generic pair
+
   fst @0 :T;
   snd @1 :U;
 }
 
 struct Map(Key, Value) {
+  # generic map
+
   entries @0 :List(Entry);
 
   struct Entry {
@@ -16,23 +20,30 @@ struct Map(Key, Value) {
 
 
 enum FieldType {
+  # support just only integer and varchar, now
   integer @0;
   varchar @1;
 }
 
 struct FieldInfo {
+  # field's information
+
   type   @0 :FieldType;
-  length @1 :Int32;
+  length @1 :Int32;      # for varchar
 }
 
 struct Schema {
+  # table schema
+
   fields @0 :List(Text);
   info   @1 :Map(Text, FieldInfo);
 }
 
 struct ViewDef {
-  vwname @0 :Text;
-  vwdef  @1 :Text;
+  # view definition
+
+  vwname @0 :Text;  # view name
+  vwdef  @1 :Text;  # sql as view definition
 }
 
 struct IndexInfo {
@@ -42,6 +53,8 @@ struct IndexInfo {
 
 
 interface RemoteDriver {
+  # driver
+
   connect    @0 (dbname :Text) -> (conn :RemoteConnection);
   getVersion @1 () -> (ver :Version);
 
@@ -56,6 +69,8 @@ interface TxBox {
 }
 
 interface RemoteConnection {
+  # connection
+
   createStatement   @0 (sql :Text) -> (stmt :RemoteStatement);
   close             @1 () -> (res :TxBox);
   commit            @2 () -> (tx :Int32);
@@ -67,7 +82,11 @@ interface RemoteConnection {
 }
 
 interface RemoteStatement {
+  # statement
+
   struct PlanRepr {
+    # representation for plan
+
     operation :union {
       indexJoinScan          @0  :IndexJoinScan;
       indexSelectScan        @1  :IndexSelectScan;
@@ -165,15 +184,19 @@ interface StringBox {
 }
 
 interface RemoteResultSet {
+  # result set
+
   next        @0 () -> (val :BoolBox);
   close       @1 () -> (res :TxBox);
   getMetadata @2 () -> (metadata :RemoteMetaData);
   getInt32    @3 (fldname :Text) -> (val :Int32Box);
   getString   @4 (fldname :Text) -> (val :StringBox);
-  getRow      @5 () -> (row :Row);
-  getRows     @6 (limit :UInt32) -> (count :UInt32, rows :List(Row));
+  getRow      @5 () -> (row :Row); # get one record
+  getRows     @6 (limit :UInt32) -> (count :UInt32, rows :List(Row)); # get records up to limit
 
   struct Row {
+    # record
+
     map @0 :Map(Text, Value);
   }
   struct Value {
@@ -185,5 +208,7 @@ interface RemoteResultSet {
 }
 
 interface RemoteMetaData {
+  # metadata
+
   getSchema @0 () -> (sch :Schema);
 }
