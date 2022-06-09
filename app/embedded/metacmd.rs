@@ -1,24 +1,15 @@
 use itertools::Itertools;
-use std::{collections::HashMap, process};
+use std::process;
 
-use simpledb::rdbc::{
-    connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection,
-    model::IndexInfo,
+use simpledb::{
+    client::{
+        explainplan::print_explain_plan, metacmd::print_help_meta_cmd,
+        tableschema::print_table_schema, viewdef::print_view_definition,
+    },
+    rdbc::{connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection},
 };
 
-use crate::{
-    explainplan::print_explain_plan, tableschema::print_table_schema,
-    viewdef::print_view_definition,
-};
-
-fn print_help_meta_cmd() {
-    println!(":h, :help                       Show this help");
-    println!(":q, :quit, :exit                Quit the program");
-    println!(":t, :table   <table_name>       Show table schema");
-    println!(":v, :view    <view_name>        Show view definition");
-    println!(":e, :explain <sql>              Explain plan");
-}
-
+// TODO: make this common and move to simpledb::client
 pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
@@ -39,7 +30,7 @@ pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
             }
             let tblname = args[0];
             if let Ok(sch) = conn.get_table_schema(tblname) {
-                let idx_info: HashMap<String, IndexInfo> = conn
+                let idx_info = conn
                     .get_index_info(tblname)
                     .unwrap_or_default()
                     .iter()
@@ -73,7 +64,7 @@ pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
                 let cmd = words[0].trim().to_ascii_lowercase();
                 if &cmd == "select" {
                     if let Ok(plan_repr) = stmt.explain_plan() {
-                        print_explain_plan(plan_repr);
+                        print_explain_plan(plan_repr.repr());
                         println!();
                         return;
                     }

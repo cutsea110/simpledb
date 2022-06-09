@@ -11,6 +11,7 @@ use simpledb::rdbc::{
     statementadapter::StatementAdapter,
 };
 
+// TODO: make this common and move to simpledb::client
 fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedMetaData) -> Result<()> {
     for i in 0..meta.get_column_count() {
         let fldname = meta.get_column_name(i).expect("get column name");
@@ -31,6 +32,7 @@ fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedMetaData) -> Res
     Ok(())
 }
 
+// TODO: make this common and move to simpledb::client
 fn print_result_set(mut results: EmbeddedResultSet) -> Result<i32> {
     // resultset metadata
     let meta = results.get_meta_data()?;
@@ -64,6 +66,7 @@ fn print_result_set(mut results: EmbeddedResultSet) -> Result<i32> {
     Ok(c)
 }
 
+// TODO: make this common and move to simpledb::client
 pub fn exec_query<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
     let qry = stmt.sql().to_string();
     let start = Instant::now();

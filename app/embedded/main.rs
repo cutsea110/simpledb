@@ -18,11 +18,8 @@ use execquery::exec_query;
 use updatecmd::exec_update_cmd;
 
 pub mod execquery;
-pub mod explainplan;
 pub mod metacmd;
-pub mod tableschema;
 pub mod updatecmd;
-pub mod viewdef;
 
 const DB_DIR: &str = "data";
 const VERSION: &str = "0.1.0";
