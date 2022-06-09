@@ -1,15 +1,12 @@
 use itertools::Itertools;
-use std::{collections::HashMap, process};
+use std::process;
 
 use simpledb::{
     client::{
         explainplan::print_explain_plan, metacmd::print_help_meta_cmd,
         tableschema::print_table_schema, viewdef::print_view_definition,
     },
-    rdbc::{
-        connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection,
-        model::IndexInfo,
-    },
+    rdbc::{connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection},
 };
 
 // TODO: make this common and move to simpledb::client
@@ -33,7 +30,7 @@ pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
             }
             let tblname = args[0];
             if let Ok(sch) = conn.get_table_schema(tblname) {
-                let idx_info: HashMap<String, IndexInfo> = conn
+                let idx_info = conn
                     .get_index_info(tblname)
                     .unwrap_or_default()
                     .iter()
