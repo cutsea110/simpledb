@@ -5,7 +5,8 @@ use simpledb::rdbc::{embedded::statement::EmbeddedStatement, statementadapter::S
 pub fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
     let qry = stmt.sql().to_string();
     let start = Instant::now();
-    match stmt.execute_update() {
+    let res = stmt.execute_update();
+    match res {
         Err(_) => println!("invalid command: {}", qry),
         Ok(affected) => {
             let end = start.elapsed();
