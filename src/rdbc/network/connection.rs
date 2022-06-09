@@ -1,9 +1,9 @@
 use anyhow::Result;
 use std::{collections::HashMap, sync::Arc, usize};
 
-use super::{metadata::IndexInfo, statement::NetworkStatement};
+use super::statement::NetworkStatement;
 use crate::{
-    rdbc::connectionadapter::ConnectionAdapter,
+    rdbc::{connectionadapter::ConnectionAdapter, model::IndexInfo},
     record::schema::{FieldType, Schema},
     remote_capnp::{self, remote_connection, tx_box},
 };

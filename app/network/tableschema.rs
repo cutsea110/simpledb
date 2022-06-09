@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use simpledb::{
-    rdbc::network::metadata::IndexInfo,
+    rdbc::model::IndexInfo,
     record::schema::{FieldType, Schema},
 };
 
