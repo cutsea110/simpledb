@@ -22,7 +22,6 @@ pub mod explainplan;
 pub mod metacmd;
 pub mod tableschema;
 pub mod updatecmd;
-pub mod viewdef;
 
 const DB_DIR: &str = "data";
 const VERSION: &str = "0.1.0";
