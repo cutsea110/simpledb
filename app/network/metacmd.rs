@@ -9,6 +9,7 @@ use simpledb::{
     rdbc::{connectionadapter::ConnectionAdapter, network::connection::NetworkConnection},
 };
 
+// TODO: make this common and move to simpledb::client
 pub async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();

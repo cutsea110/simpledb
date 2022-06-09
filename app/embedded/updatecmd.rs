@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use simpledb::rdbc::{embedded::statement::EmbeddedStatement, statementadapter::StatementAdapter};
 
+// TODO: make this common and move to simpledb::client
 pub fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
     let qry = stmt.sql().to_string();
     let start = Instant::now();

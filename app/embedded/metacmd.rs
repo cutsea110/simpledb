@@ -12,6 +12,7 @@ use simpledb::{
     },
 };
 
+// TODO: make this common and move to simpledb::client
 pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();
