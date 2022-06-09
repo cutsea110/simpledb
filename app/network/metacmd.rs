@@ -73,7 +73,7 @@ pub async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
                 let cmd = words[0].trim().to_ascii_lowercase();
                 if &cmd == "select" {
                     if let Ok(plan_repr) = stmt.explain_plan().await {
-                        print_explain_plan(plan_repr);
+                        print_explain_plan(plan_repr.repr());
                         println!();
                         return;
                     }

@@ -1,10 +1,7 @@
 use itertools::Itertools;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use simpledb::{
-    rdbc::network::planrepr::NetworkPlanRepr,
-    repr::planrepr::{Operation, PlanRepr},
-};
+use simpledb::repr::planrepr::{Operation, PlanRepr};
 
 fn format_operation(op: Operation) -> String {
     match op {
@@ -65,7 +62,7 @@ fn format_name(op: Operation) -> String {
     }
 }
 
-pub fn print_explain_plan(epr: NetworkPlanRepr) {
+pub fn print_explain_plan(pr: Arc<dyn PlanRepr>) {
     const MAX_OP_WIDTH: usize = 60;
 
     fn print_pr(pr: Arc<dyn PlanRepr>, n: Rc<RefCell<i32>>, depth: usize) {
@@ -92,7 +89,6 @@ pub fn print_explain_plan(epr: NetworkPlanRepr) {
     }
 
     let row_num = Rc::new(RefCell::new(1));
-    let pr = epr.repr();
     println!(
         "{:<2} {:<width$} {:<20} {:>8} {:>8}",
         "#",
