@@ -39,10 +39,12 @@ pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
             }
             let tblname = args[0];
             if let Ok(sch) = conn.get_table_schema(tblname) {
-                let mut idx_info = HashMap::<String, IndexInfo>::new();
-                for (k, v) in conn.get_index_info(tblname).unwrap_or_default().iter() {
-                    idx_info.insert(k.clone(), v.clone().into());
-                }
+                let idx_info: HashMap<String, IndexInfo> = conn
+                    .get_index_info(tblname)
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.clone().into()))
+                    .collect();
                 print_table_schema(tblname, sch, idx_info);
             }
             return;
