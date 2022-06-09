@@ -1,8 +1,9 @@
 use itertools::Itertools;
-use std::process;
+use std::{collections::HashMap, process};
 
 use simpledb::rdbc::{
     connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection,
+    model::IndexInfo,
 };
 
 use crate::{
@@ -38,7 +39,10 @@ pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
             }
             let tblname = args[0];
             if let Ok(sch) = conn.get_table_schema(tblname) {
-                let idx_info = conn.get_index_info(tblname).unwrap_or_default();
+                let mut idx_info = HashMap::<String, IndexInfo>::new();
+                for (k, v) in conn.get_index_info(tblname).unwrap_or_default().iter() {
+                    idx_info.insert(k.clone(), v.clone().into());
+                }
                 print_table_schema(tblname, sch, idx_info);
             }
             return;

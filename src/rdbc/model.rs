@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 
-use crate::{record, remote_capnp};
+use crate::{metadata, record, remote_capnp};
 
 pub struct Schema {
     pub fields: Vec<String>,
@@ -138,5 +138,14 @@ impl IndexInfo {
     }
     pub fn index_name(&self) -> &str {
         &self.idxname
+    }
+}
+
+impl From<metadata::indexmanager::IndexInfo> for IndexInfo {
+    fn from(ii: metadata::indexmanager::IndexInfo) -> Self {
+        Self {
+            fldname: ii.field_name().to_string(),
+            idxname: ii.index_name().to_string(),
+        }
     }
 }
