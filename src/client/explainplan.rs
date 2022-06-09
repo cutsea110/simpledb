@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use simpledb::repr::planrepr::{Operation, PlanRepr};
+use crate::repr::planrepr::{Operation, PlanRepr};
 
 fn format_operation(op: Operation) -> String {
     match op {

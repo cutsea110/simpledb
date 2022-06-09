@@ -24,7 +24,6 @@ use simpledb::{
 };
 
 pub mod execquery;
-pub mod explainplan;
 pub mod metacmd;
 pub mod updatecmd;
 

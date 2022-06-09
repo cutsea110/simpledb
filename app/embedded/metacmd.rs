@@ -2,14 +2,15 @@ use itertools::Itertools;
 use std::{collections::HashMap, process};
 
 use simpledb::{
-    client::{tableschema::print_table_schema, viewdef::print_view_definition},
+    client::{
+        explainplan::print_explain_plan, tableschema::print_table_schema,
+        viewdef::print_view_definition,
+    },
     rdbc::{
         connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection,
         model::IndexInfo,
     },
 };
-
-use crate::explainplan::print_explain_plan;
 
 fn print_help_meta_cmd() {
     println!(":h, :help                       Show this help");
