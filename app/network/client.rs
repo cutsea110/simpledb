@@ -26,7 +26,6 @@ use simpledb::{
 pub mod execquery;
 pub mod explainplan;
 pub mod metacmd;
-pub mod tableschema;
 pub mod updatecmd;
 
 const VERSION: &str = "0.1.0";

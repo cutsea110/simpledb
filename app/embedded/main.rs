@@ -20,7 +20,6 @@ use updatecmd::exec_update_cmd;
 pub mod execquery;
 pub mod explainplan;
 pub mod metacmd;
-pub mod tableschema;
 pub mod updatecmd;
 
 const DB_DIR: &str = "data";

@@ -2,11 +2,11 @@ use itertools::Itertools;
 use std::process;
 
 use simpledb::{
-    client::viewdef::print_view_definition,
+    client::{tableschema::print_table_schema, viewdef::print_view_definition},
     rdbc::{connectionadapter::ConnectionAdapter, network::connection::NetworkConnection},
 };
 
-use crate::{explainplan::print_explain_plan, tableschema::print_table_schema};
+use crate::explainplan::print_explain_plan;
 
 fn print_help_meta_cmd() {
     println!(":h, :help                       Show this help");
