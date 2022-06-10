@@ -1,6 +1,5 @@
 use anyhow::Result;
 use env_logger::{self, Env};
-use metacmd::exec_meta_cmd;
 use std::{
     io::{stdout, Write},
     path::Path,
@@ -14,12 +13,12 @@ use simpledb::rdbc::{
     embedded::{connection::EmbeddedConnection, driver::EmbeddedDriver},
 };
 
-use execquery::exec_query;
-use updatecmd::exec_update_cmd;
-
 pub mod execquery;
+pub mod explainplan;
 pub mod metacmd;
+pub mod tableschema;
 pub mod updatecmd;
+pub mod viewdef;
 
 const DB_DIR: &str = "data";
 const VERSION: &str = "0.1.0";
@@ -75,7 +74,7 @@ fn read_query() -> Result<String> {
 
 fn exec(conn: &mut EmbeddedConnection, qry: &str) {
     if qry.starts_with(":") {
-        exec_meta_cmd(conn, qry);
+        metacmd::exec_meta_cmd(conn, qry);
         return;
     }
 
@@ -84,10 +83,10 @@ fn exec(conn: &mut EmbeddedConnection, qry: &str) {
     if !words.is_empty() {
         let cmd = words[0].trim().to_ascii_lowercase();
         if &cmd == "select" {
-            exec_query(&mut stmt);
+            execquery::exec_query(&mut stmt);
             println!();
         } else {
-            exec_update_cmd(&mut stmt);
+            updatecmd::exec_update_cmd(&mut stmt);
             println!();
         }
     }
