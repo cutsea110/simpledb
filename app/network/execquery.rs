@@ -13,7 +13,6 @@ use simpledb::rdbc::{
 
 const MAX_ROWS: u32 = 80;
 
-// TODO: make this common and move to simpledb::client
 fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMetaData) {
     for i in 0..meta.get_column_count() {
         let fldname = meta.get_column_name(i).expect("get column name");
@@ -32,7 +31,6 @@ fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMet
     println!();
 }
 
-// TODO: make this common and move to simpledb::client
 async fn print_result_set(mut results: NetworkResultSet) -> Result<(i32, i32)> {
     // resultset metadata
     let mut meta = results.get_meta_data()?;
@@ -74,7 +72,6 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<(i32, i32)> {
     Ok((total_count, tx_num))
 }
 
-// TODO: make this common and move to simpledb::client
 pub async fn exec_query(stmt: &mut NetworkStatement) {
     let start = Instant::now();
     match stmt.execute_query() {

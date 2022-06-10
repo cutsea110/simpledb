@@ -2,7 +2,6 @@ use std::time::Instant;
 
 use simpledb::rdbc::{network::statement::NetworkStatement, statementadapter::StatementAdapter};
 
-// TODO: make this common and move to simpledb::client
 pub async fn exec_update_cmd(stmt: &mut NetworkStatement) {
     let start = Instant::now();
     let res = stmt.execute_update().unwrap();
