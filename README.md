@@ -7,6 +7,7 @@ text: [Database Design and Implementation: Second Edition](https://www.amazon.co
 ## Demo movie
 
 <img src="./movie/demo-x2-resized.gif" width="800" alt="Demo movie">
+[youtube]: https://www.youtube.com/watch?v=vr0wQq7cvHQ
 
 ## Status
 
