@@ -11,10 +11,8 @@ pub mod plan;
 pub mod query;
 pub mod rdbc;
 pub mod record;
-pub mod tx;
-
-pub mod client;
 pub mod server;
+pub mod tx;
 
 // my own extends
 pub mod repr;

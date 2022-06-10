@@ -1,15 +1,23 @@
 use itertools::Itertools;
 use std::process;
 
-use simpledb::{
-    client::{
-        explainplan::print_explain_plan, metacmd::print_help_meta_cmd,
-        tableschema::print_table_schema, viewdef::print_view_definition,
-    },
-    rdbc::{connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection},
+use simpledb::rdbc::{
+    connectionadapter::ConnectionAdapter, embedded::connection::EmbeddedConnection,
 };
 
-// TODO: make this common and move to simpledb::client
+use crate::{
+    explainplan::print_explain_plan, tableschema::print_table_schema,
+    viewdef::print_view_definition,
+};
+
+fn print_help_meta_cmd() {
+    println!(":h, :help                       Show this help");
+    println!(":q, :quit, :exit                Quit the program");
+    println!(":t, :table   <table_name>       Show table schema");
+    println!(":v, :view    <view_name>        Show view definition");
+    println!(":e, :explain <sql>              Explain plan");
+}
+
 pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
     let tokens: Vec<&str> = qry.trim().split_whitespace().collect_vec();
     let cmd = tokens[0].to_ascii_lowercase();

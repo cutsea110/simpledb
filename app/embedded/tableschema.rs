@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::{
+use simpledb::{
     rdbc::model::IndexInfo,
     record::schema::{FieldType, Schema},
 };

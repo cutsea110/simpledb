@@ -6,7 +6,6 @@ use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use env_logger::Env;
 use futures::{AsyncReadExt, FutureExt};
 use log::debug;
-use metacmd::exec_meta_cmd;
 use std::{
     io::{stdout, Write},
     net::{SocketAddr, ToSocketAddrs},
@@ -24,8 +23,11 @@ use simpledb::{
 };
 
 pub mod execquery;
+pub mod explainplan;
 pub mod metacmd;
+pub mod tableschema;
 pub mod updatecmd;
+pub mod viewdef;
 
 const VERSION: &str = "0.1.0";
 
@@ -78,7 +80,7 @@ fn read_query(cfg: &Config) -> Result<String> {
 
 async fn exec(conn: &mut NetworkConnection, qry: &str) {
     if qry.starts_with(":") {
-        exec_meta_cmd(conn, qry).await;
+        metacmd::exec_meta_cmd(conn, qry).await;
         return;
     }
 
