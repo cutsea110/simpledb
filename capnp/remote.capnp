@@ -47,8 +47,8 @@ struct ViewDef {
 }
 
 struct IndexInfo {
-  idxname @0 :Text;
-  fldname @1 :Text;
+  idxname @0 :Text; # index name
+  fldname @1 :Text; # field name
 }
 
 
@@ -59,8 +59,8 @@ interface RemoteDriver {
   getVersion @1 () -> (ver :Version);
 
   struct Version {
-    majorVer @0 :Int32;
-    minorVer @1 :Int32;
+    majorVer @0 :Int32; # major version
+    minorVer @1 :Int32; # minor version
   }
 }
 
@@ -106,27 +106,27 @@ interface RemoteStatement {
   }
 
   struct IndexJoinScan {
-    idxname    @0 :Text;
-    idxfldname @1 :Text;
-    joinfld    @2 :Text;
+    idxname    @0 :Text; # index name
+    idxfldname @1 :Text; # index field
+    joinfld    @2 :Text; # join key
   }
   struct IndexSelectScan {
-    idxname    @0 :Text;
-    idxfldname @1 :Text;
-    val        @2 :Constant;
+    idxname    @0 :Text;     # index name
+    idxfldname @1 :Text;     # index field
+    val        @2 :Constant; # value
   }
   struct GroupByScan {
-    fields @0 :List(Text);
-    aggfns @1 :List(Tuple(Text, Constant));
+    fields @0 :List(Text);                  # group by these fields
+    aggfns @1 :List(Tuple(Text, Constant)); # aggregation functions
   }
   struct Materialize {
   }
   struct MergeJoinScan {
-    fldname1 @0 :Text;
-    fldname2 @1 :Text;
+    fldname1 @0 :Text; # field name 1
+    fldname2 @1 :Text; # field name 2
   }
   struct SortScan {
-    compflds @0 :List(Text);
+    compflds @0 :List(Text); # compared fields
   }
   struct MultibufferProductScan {
   }
@@ -151,13 +151,13 @@ interface RemoteStatement {
     terms @0 :List(Term);
   }
   struct Term {
-    lhs @0 :Expression;
-    rhs @1 :Expression;
+    lhs @0 :Expression; # left hand side
+    rhs @1 :Expression; # right hand side
   }
   struct Expression {
     union {
-      val     @0 :Constant;
-      fldname @1 :Text;
+      val     @0 :Constant; # value
+      fldname @1 :Text;     # field name
     }
   }
 
