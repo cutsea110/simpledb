@@ -32,13 +32,8 @@ impl EmbeddedConnection {
         if self.current_tx.lock().unwrap().commit().is_err() {
             return Err(From::from(ConnectionError::CommitFailed));
         }
-        let (r, w) = self
-            .db
-            .file_mgr()
-            .lock()
-            .unwrap()
-            .nums_of_read_written_blocks();
-        info!("numbers of read/written blocks: {}/{}", r, w);
+        // just statistic dump
+        self.nums_of_read_written_blocks();
 
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
@@ -51,13 +46,9 @@ impl EmbeddedConnection {
         if self.current_tx.lock().unwrap().rollback().is_err() {
             return Err(From::from(ConnectionError::RollbackFailed));
         }
-        let (r, w) = self
-            .db
-            .file_mgr()
-            .lock()
-            .unwrap()
-            .nums_of_read_written_blocks();
-        info!("numbers of read/written blocks: {}/{}", r, w);
+        // just statistic dump
+        self.nums_of_read_written_blocks();
+
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
 
@@ -80,6 +71,17 @@ impl EmbeddedConnection {
     pub fn get_index_info(&self, tblname: &str) -> Result<HashMap<String, IndexInfo>> {
         self.db
             .get_index_info(tblname, Arc::clone(&self.current_tx))
+    }
+
+    // extends for statistic by exercise 3.15
+    fn nums_of_read_written_blocks(&self) {
+        let (r, w) = self
+            .db
+            .file_mgr()
+            .lock()
+            .unwrap()
+            .nums_of_read_written_blocks();
+        info!("numbers of read/written blocks: {}/{}", r, w);
     }
 }
 

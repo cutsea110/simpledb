@@ -80,7 +80,7 @@ interface RemoteConnection {
   getViewDefinition @5 (viewname :Text) -> (vwdef :ViewDef);
   getIndexInfo      @6 (tblname :Text) -> (ii :Map(Text, IndexInfo));
 
-  numsOfReadWrittenBlocks @7 () -> (r: UInt32, w: UInt32); # extends for statistics
+  numsOfReadWrittenBlocks @7 () -> (r: UInt32, w: UInt32); # extends for statistics by exercise 3.15
 }
 
 interface RemoteStatement {

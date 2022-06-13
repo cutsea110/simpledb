@@ -34,7 +34,7 @@ pub struct FileMgr {
     blocksize: i32,
     is_new: bool,
     open_files: HashMap<String, Arc<Mutex<File>>>,
-    // for statistics
+    // extends statistics by exercise 3.15
     num_of_read_blocks: u32,
     num_of_written_blocks: u32,
 }
@@ -174,7 +174,7 @@ impl FileMgr {
         Some(f)
     }
 
-    // extends by exercises
+    // extends by exercises 3.15
     pub fn nums_of_read_written_blocks(&self) -> (u32, u32) {
         (self.num_of_read_blocks, self.num_of_written_blocks)
     }
