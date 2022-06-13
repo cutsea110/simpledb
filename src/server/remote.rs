@@ -81,17 +81,32 @@ pub struct ConnectionInternal {
 }
 impl ConnectionInternal {
     pub fn close(&mut self) -> anyhow::Result<()> {
+        // for statistics by exercise 3.15
+        let (r, w) = self.numbers_of_read_written_blocks();
+        info!("numbers of read/written blocks: {}/{}", r, w);
+
+        // Essential body
         let tx_num = self.current_tx.lock().unwrap().tx_num();
         trace!("close tx: {}", tx_num);
         self.current_tx.lock().unwrap().commit()?;
         self.renew_tx()
     }
     pub fn commit(&mut self) -> anyhow::Result<()> {
+        // for statistics by exercise 3.15
+        let (r, w) = self.numbers_of_read_written_blocks();
+        info!("numbers of read/written blocks: {}/{}", r, w);
+
+        // Essential body
         let tx_num = self.current_tx.lock().unwrap().tx_num();
         trace!("commit tx: {}", tx_num);
         self.current_tx.lock().unwrap().commit()
     }
     pub fn rollback(&mut self) -> anyhow::Result<()> {
+        // for statistics by exercise 3.15
+        let (r, w) = self.numbers_of_read_written_blocks();
+        info!("numbers of read/written blocks: {}/{}", r, w);
+
+        // Essential body
         let tx_num = self.current_tx.lock().unwrap().tx_num();
         trace!("rollback tx: {}", tx_num);
         self.current_tx.lock().unwrap().rollback()
@@ -106,6 +121,17 @@ impl ConnectionInternal {
     // my own extends
     pub fn current_tx_num(&self) -> i32 {
         self.current_tx.lock().unwrap().tx_num()
+    }
+
+    // extends for statistics by exercise 3.15
+    pub fn numbers_of_read_written_blocks(&self) -> (u32, u32) {
+        self.db
+            .lock()
+            .unwrap()
+            .file_mgr()
+            .lock()
+            .unwrap()
+            .nums_of_read_written_blocks()
     }
 }
 
@@ -426,6 +452,20 @@ impl remote_connection::Server for RemoteConnectionImpl {
             val.reborrow().set_idxname(idxname.into());
             val.reborrow().set_fldname(fldname.into());
         }
+
+        Promise::ok(())
+    }
+
+    // extends for statistics by exercise 3.15
+    fn nums_of_read_written_blocks(
+        &mut self,
+        _: remote_connection::NumsOfReadWrittenBlocksParams,
+        mut results: remote_connection::NumsOfReadWrittenBlocksResults,
+    ) -> Promise<(), capnp::Error> {
+        trace!("nums of read/written blocks");
+        let (r, w) = self.conn.borrow().numbers_of_read_written_blocks();
+        results.get().set_r(r);
+        results.get().set_w(w);
 
         Promise::ok(())
     }

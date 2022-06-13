@@ -91,6 +91,17 @@ impl NetworkConnection {
 
         Ok(map)
     }
+
+    // extends for statistics by exercise 3.15
+    pub async fn numbers_of_read_written_blocks(&self) -> Result<(u32, u32)> {
+        // for statistics
+        let request = self.conn.nums_of_read_written_blocks_request();
+        let reply = request.send().promise.await?;
+        let r = reply.get()?.get_r();
+        let w = reply.get()?.get_w();
+
+        Ok((r, w))
+    }
 }
 
 pub struct ResponseImpl {

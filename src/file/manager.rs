@@ -34,6 +34,9 @@ pub struct FileMgr {
     blocksize: i32,
     is_new: bool,
     open_files: HashMap<String, Arc<Mutex<File>>>,
+    // extends statistics by exercise 3.15
+    num_of_read_blocks: u32,
+    num_of_written_blocks: u32,
 }
 
 impl FileMgr {
@@ -63,26 +66,33 @@ impl FileMgr {
             blocksize,
             is_new,
             open_files: HashMap::new(),
+            num_of_read_blocks: 0,
+            num_of_written_blocks: 0,
         })
     }
     // synchronized
     pub fn read(&mut self, blk: &BlockId, p: &mut Page) -> Result<()> {
         let offset = blk.number() * self.blocksize;
 
-        if let Some(file) = self.get_file(blk.file_name().as_str()) {
-            let mut f = file.lock().unwrap();
-            f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
+        if let Some(file) = self.get_file(&blk.file_name().as_str()) {
+            // limit the scope of f
+            {
+                let mut f = file.lock().unwrap();
+                f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
 
-            let read_len = f.read(p.contents())?;
-            let p_len = p.contents().len();
-            if read_len < p_len {
-                let tmp = vec![0; p_len - read_len];
-                f.write_all(&tmp)?;
+                let read_len = f.read(p.contents())?;
+                let p_len = p.contents().len();
+                if read_len < p_len {
+                    let tmp = vec![0; p_len - read_len];
+                    f.write_all(&tmp)?;
 
-                for i in read_len..p_len {
-                    p.contents()[i] = 0;
+                    for i in read_len..p_len {
+                        p.contents()[i] = 0;
+                    }
                 }
             }
+            // for statistics
+            self.num_of_read_blocks += 1;
 
             return Ok(());
         }
@@ -94,9 +104,14 @@ impl FileMgr {
         let offset = blk.number() * self.blocksize;
 
         if let Some(file) = self.get_file(blk.file_name().as_str()) {
-            let mut f = file.lock().unwrap();
-            f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
-            f.write_all(p.contents())?;
+            // limit the scope of f
+            {
+                let mut f = file.lock().unwrap();
+                f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
+                f.write_all(p.contents())?;
+            }
+            // for statistics
+            self.num_of_written_blocks += 1;
 
             return Ok(());
         }
@@ -111,9 +126,14 @@ impl FileMgr {
         let offset = blk.number() * self.blocksize;
 
         if let Some(file) = self.get_file(blk.file_name().as_str()) {
-            let mut f = file.lock().unwrap();
-            f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
-            f.write_all(&b)?;
+            // limit the scope of f
+            {
+                let mut f = file.lock().unwrap();
+                f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
+                f.write_all(&b)?;
+            }
+            // for statistics
+            self.num_of_written_blocks += 1;
 
             return Ok(blk);
         }
@@ -152,6 +172,11 @@ impl FileMgr {
             )));
 
         Some(f)
+    }
+
+    // extends by exercises 3.15
+    pub fn nums_of_read_written_blocks(&self) -> (u32, u32) {
+        (self.num_of_read_blocks, self.num_of_written_blocks)
     }
 }
 
