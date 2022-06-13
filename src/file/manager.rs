@@ -173,6 +173,11 @@ impl FileMgr {
 
         Some(f)
     }
+
+    // extends by exercises
+    pub fn nums_of_read_written_blocks(&self) -> (u32, u32) {
+        (self.num_of_read_blocks, self.num_of_written_blocks)
+    }
 }
 
 #[cfg(test)]
