@@ -79,6 +79,8 @@ interface RemoteConnection {
   getTableSchema    @4 (tblname :Text) -> (sch :Schema);
   getViewDefinition @5 (viewname :Text) -> (vwdef :ViewDef);
   getIndexInfo      @6 (tblname :Text) -> (ii :Map(Text, IndexInfo));
+
+  numsOfReadWrittenBlocks @7 () -> (r: UInt32, w: UInt32); # extends for statistics
 }
 
 interface RemoteStatement {
