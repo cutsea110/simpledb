@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::info;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -31,6 +32,14 @@ impl EmbeddedConnection {
         if self.current_tx.lock().unwrap().commit().is_err() {
             return Err(From::from(ConnectionError::CommitFailed));
         }
+        let (r, w) = self
+            .db
+            .file_mgr()
+            .lock()
+            .unwrap()
+            .nums_of_read_written_blocks();
+        info!("numbers of read/written blocks: {}/{}", r, w);
+
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
             return Ok(());
@@ -42,8 +51,16 @@ impl EmbeddedConnection {
         if self.current_tx.lock().unwrap().rollback().is_err() {
             return Err(From::from(ConnectionError::RollbackFailed));
         }
+        let (r, w) = self
+            .db
+            .file_mgr()
+            .lock()
+            .unwrap()
+            .nums_of_read_written_blocks();
+        info!("numbers of read/written blocks: {}/{}", r, w);
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
+
             return Ok(());
         }
 
