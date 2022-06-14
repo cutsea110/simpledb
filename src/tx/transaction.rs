@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use std::{
     sync::{Arc, Mutex},
     usize,
@@ -99,15 +100,86 @@ impl Transaction {
     pub fn unpin(&mut self, blk: &BlockId) -> Result<()> {
         self.mybuffers.unpin(blk)
     }
+    pub fn get_i8(&mut self, blk: &BlockId, offset: i32) -> Result<i8> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_i8(offset as usize)
+    }
+    pub fn set_i8(&mut self, blk: &BlockId, offset: i32, val: i8, ok_to_log: bool) -> Result<()> {
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_i8(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_i8(offset as usize, val)?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
+    }
+    pub fn get_u8(&mut self, blk: &BlockId, offset: i32) -> Result<u8> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_u8(offset as usize)
+    }
+    pub fn set_u8(&mut self, blk: &BlockId, offset: i32, val: u8, ok_to_log: bool) -> Result<()> {
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_u8(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_u8(offset as usize, val)?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
+    }
+    pub fn get_i16(&mut self, blk: &BlockId, offset: i32) -> Result<i16> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_i16(offset as usize)
+    }
+    pub fn set_i16(&mut self, blk: &BlockId, offset: i32, val: i16, ok_to_log: bool) -> Result<()> {
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_i16(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_i16(offset as usize, val)?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
+    }
+    pub fn get_u16(&mut self, blk: &BlockId, offset: i32) -> Result<u16> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_u16(offset as usize)
+    }
+    pub fn set_u16(&mut self, blk: &BlockId, offset: i32, val: u16, ok_to_log: bool) -> Result<()> {
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_u16(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_u16(offset as usize, val)?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
+    }
     pub fn get_i32(&mut self, blk: &BlockId, offset: i32) -> Result<i32> {
         self.concur_mgr.s_lock(blk)?;
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
         buff.contents().get_i32(offset as usize)
-    }
-    pub fn get_string(&mut self, blk: &BlockId, offset: i32) -> Result<String> {
-        self.concur_mgr.s_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        buff.contents().get_string(offset as usize)
     }
     pub fn set_i32(&mut self, blk: &BlockId, offset: i32, val: i32, ok_to_log: bool) -> Result<()> {
         self.concur_mgr.x_lock(blk)?;
@@ -122,6 +194,30 @@ impl Transaction {
         buff.set_modified(self.txnum, lsn);
 
         Ok(())
+    }
+    pub fn get_u32(&mut self, blk: &BlockId, offset: i32) -> Result<u32> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_u32(offset as usize)
+    }
+    pub fn set_u32(&mut self, blk: &BlockId, offset: i32, val: u32, ok_to_log: bool) -> Result<()> {
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_u32(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_u32(offset as usize, val)?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
+    }
+    pub fn get_string(&mut self, blk: &BlockId, offset: i32) -> Result<String> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_string(offset as usize)
     }
     pub fn set_string(
         &mut self,
@@ -139,6 +235,56 @@ impl Transaction {
         }
         let p = buff.contents();
         p.set_string(offset as usize, val.to_string())?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
+    }
+    pub fn get_bool(&mut self, blk: &BlockId, offset: i32) -> Result<bool> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_bool(offset as usize)
+    }
+    pub fn set_bool(
+        &mut self,
+        blk: &BlockId,
+        offset: i32,
+        val: bool,
+        ok_to_log: bool,
+    ) -> Result<()> {
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_bool(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_bool(offset as usize, val)?;
+        buff.set_modified(self.txnum, lsn);
+
+        Ok(())
+    }
+    pub fn get_date(&mut self, blk: &BlockId, offset: i32) -> Result<NaiveDate> {
+        self.concur_mgr.s_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        buff.contents().get_date(offset as usize)
+    }
+    pub fn set_date(
+        &mut self,
+        blk: &BlockId,
+        offset: i32,
+        val: NaiveDate,
+        ok_to_log: bool,
+    ) -> Result<()> {
+        self.concur_mgr.x_lock(blk)?;
+        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
+        let mut lsn: i32 = -1;
+        if ok_to_log {
+            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
+            lsn = rm.set_date(&mut buff, offset, val)?.try_into().unwrap();
+        }
+        let p = buff.contents();
+        p.set_date(offset as usize, val)?;
         buff.set_modified(self.txnum, lsn);
 
         Ok(())
