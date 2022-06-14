@@ -318,9 +318,8 @@ impl Transaction {
 
 #[cfg(test)]
 mod tests {
-    use crate::server::simpledb::SimpleDB;
-
     use super::*;
+    use crate::server::simpledb::SimpleDB;
 
     use anyhow::Result;
     use std::fs;
@@ -348,6 +347,8 @@ mod tests {
         let sval = tx2.get_string(&blk, 40)?;
         println!("initial value at location 80 = {}", ival);
         println!("initial value at location 40 = {}", sval);
+        assert_eq!(1, ival);
+        assert_eq!("one".to_string(), sval);
         let newival = ival + 1;
         let newsval = format!("{}!", sval);
         tx2.set_i32(&blk, 80, newival, true)?;
@@ -358,16 +359,20 @@ mod tests {
         tx3.pin(&blk)?;
         println!("new value at location 80 = {}", tx3.get_i32(&blk, 80)?);
         println!("new value at location 40 = {}", tx3.get_string(&blk, 40)?);
+        assert_eq!(2, tx3.get_i32(&blk, 80)?);
+        assert_eq!("one!".to_string(), tx3.get_string(&blk, 40)?);
         tx3.set_i32(&blk, 80, 9999, true)?;
         println!(
             "pre-rollback value at location 80 = {}",
             tx3.get_i32(&blk, 80)?
         );
+        assert_eq!(9999, tx3.get_i32(&blk, 80)?);
         tx3.rollback()?;
 
         let mut tx4 = simpledb.new_tx()?;
         tx4.pin(&blk)?;
         println!("post-rollback at location 80 = {}", tx4.get_i32(&blk, 80)?);
+        assert_eq!(2, tx4.get_i32(&blk, 80)?);
         tx4.commit()?;
 
         Ok(())
