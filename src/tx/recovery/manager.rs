@@ -1,11 +1,14 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
 use super::logrecord::{
     self, checkpoint_record::CheckpointRecord, commit_record::CommitRecord,
-    rollback_record::RollbackRecord, set_i32_record::SetI32Record,
-    set_string_record::SetStringRecord, TxType,
+    rollback_record::RollbackRecord, set_bool_record::SetBoolRecord,
+    set_date_record::SetDateRecord, set_i16_record::SetI16Record, set_i32_record::SetI32Record,
+    set_i8_record::SetI8Record, set_string_record::SetStringRecord, set_u16_record::SetU16Record,
+    set_u32_record::SetU32Record, set_u8_record::SetU8Record, TxType,
 };
 use crate::{
     buffer::{buffer::Buffer, manager::BufferMgr},
@@ -66,6 +69,70 @@ impl RecoveryMgr {
         let lsn = CheckpointRecord::write_to_log(Arc::clone(&self.lm))?;
         self.lm.lock().unwrap().flush(lsn)
     }
+    pub fn set_i8(&mut self, buff: &mut Buffer, offset: i32, _new_val: i8) -> Result<i32> {
+        let old_val = buff.contents().get_i8(offset as usize)?;
+        if let Some(blk) = buff.block() {
+            return SetI8Record::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
+        }
+
+        Err(From::from(RecoveryMgrError::BufferFailed(
+            "set_i8".to_string(),
+        )))
+    }
+    pub fn set_u8(&mut self, buff: &mut Buffer, offset: i32, _new_val: u8) -> Result<i32> {
+        let old_val = buff.contents().get_u8(offset as usize)?;
+        if let Some(blk) = buff.block() {
+            return SetU8Record::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
+        }
+
+        Err(From::from(RecoveryMgrError::BufferFailed(
+            "set_u8".to_string(),
+        )))
+    }
+    pub fn set_i16(&mut self, buff: &mut Buffer, offset: i32, _new_val: i16) -> Result<i32> {
+        let old_val = buff.contents().get_i16(offset as usize)?;
+        if let Some(blk) = buff.block() {
+            return SetI16Record::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
+        }
+
+        Err(From::from(RecoveryMgrError::BufferFailed(
+            "set_i16".to_string(),
+        )))
+    }
+    pub fn set_u16(&mut self, buff: &mut Buffer, offset: i32, _new_val: u16) -> Result<i32> {
+        let old_val = buff.contents().get_u16(offset as usize)?;
+        if let Some(blk) = buff.block() {
+            return SetU16Record::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
+        }
+
+        Err(From::from(RecoveryMgrError::BufferFailed(
+            "set_u16".to_string(),
+        )))
+    }
     pub fn set_i32(&mut self, buff: &mut Buffer, offset: i32, _new_val: i32) -> Result<i32> {
         let old_val = buff.contents().get_i32(offset as usize)?;
         if let Some(blk) = buff.block() {
@@ -82,6 +149,22 @@ impl RecoveryMgr {
             "set_i32".to_string(),
         )))
     }
+    pub fn set_u32(&mut self, buff: &mut Buffer, offset: i32, _new_val: u32) -> Result<i32> {
+        let old_val = buff.contents().get_u32(offset as usize)?;
+        if let Some(blk) = buff.block() {
+            return SetU32Record::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
+        }
+
+        Err(From::from(RecoveryMgrError::BufferFailed(
+            "set_u32".to_string(),
+        )))
+    }
     pub fn set_string(&mut self, buff: &mut Buffer, offset: i32, _new_val: &str) -> Result<i32> {
         let old_val = buff.contents().get_string(offset as usize)?;
         if let Some(blk) = buff.block() {
@@ -96,6 +179,38 @@ impl RecoveryMgr {
 
         Err(From::from(RecoveryMgrError::BufferFailed(
             "set_string".to_string(),
+        )))
+    }
+    pub fn set_bool(&mut self, buff: &mut Buffer, offset: i32, _new_val: bool) -> Result<i32> {
+        let old_val = buff.contents().get_bool(offset as usize)?;
+        if let Some(blk) = buff.block() {
+            return SetBoolRecord::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
+        }
+
+        Err(From::from(RecoveryMgrError::BufferFailed(
+            "set_bool".to_string(),
+        )))
+    }
+    pub fn set_date(&mut self, buff: &mut Buffer, offset: i32, _new_val: NaiveDate) -> Result<i32> {
+        let old_val = buff.contents().get_date(offset as usize)?;
+        if let Some(blk) = buff.block() {
+            return SetDateRecord::write_to_log(
+                Arc::clone(&self.lm),
+                self.txnum,
+                blk,
+                offset,
+                old_val,
+            );
+        }
+
+        Err(From::from(RecoveryMgrError::BufferFailed(
+            "set_date".to_string(),
         )))
     }
     fn do_rollback(&mut self) -> Result<()> {

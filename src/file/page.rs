@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::{Datelike, NaiveDate};
 use core::fmt;
 use itertools::izip;
 use std::mem;
@@ -31,6 +32,106 @@ impl Page {
             bb: vec![0u8; blocksize],
         }
     }
+    // extends by exercise 3.17
+    pub fn get_i8(&self, offset: usize) -> Result<i8> {
+        let i8_size = mem::size_of::<i8>();
+
+        if offset + i8_size - 1 < self.bb.len() {
+            let bytes = &self.bb[offset..offset + i8_size];
+            Ok(i8::from_be_bytes((*bytes).try_into()?))
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn set_i8(&mut self, offset: usize, n: i8) -> Result<usize> {
+        let bytes = n.to_be_bytes();
+
+        if offset + bytes.len() - 1 < self.bb.len() {
+            for (b, added) in izip!(&mut self.bb[offset..offset + bytes.len()], &bytes) {
+                *b = *added;
+            }
+
+            Ok(offset + bytes.len())
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn get_u8(&self, offset: usize) -> Result<u8> {
+        let u8_size = mem::size_of::<u8>();
+
+        if offset + u8_size - 1 < self.bb.len() {
+            let bytes = &self.bb[offset..offset + u8_size];
+            Ok(u8::from_be_bytes((*bytes).try_into()?))
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn set_u8(&mut self, offset: usize, n: u8) -> Result<usize> {
+        let bytes = n.to_be_bytes();
+
+        if offset + bytes.len() - 1 < self.bb.len() {
+            for (b, added) in izip!(&mut self.bb[offset..offset + bytes.len()], &bytes) {
+                *b = *added;
+            }
+
+            Ok(offset + bytes.len())
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn get_i16(&self, offset: usize) -> Result<i16> {
+        let i16_size = mem::size_of::<i16>();
+
+        if offset + i16_size - 1 < self.bb.len() {
+            let bytes = &self.bb[offset..offset + i16_size];
+            Ok(i16::from_be_bytes((*bytes).try_into()?))
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn set_i16(&mut self, offset: usize, n: i16) -> Result<usize> {
+        let bytes = n.to_be_bytes();
+
+        if offset + bytes.len() - 1 < self.bb.len() {
+            for (b, added) in izip!(&mut self.bb[offset..offset + bytes.len()], &bytes) {
+                *b = *added;
+            }
+
+            Ok(offset + bytes.len())
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn get_u16(&self, offset: usize) -> Result<u16> {
+        let u16_size = mem::size_of::<u16>();
+
+        if offset + u16_size - 1 < self.bb.len() {
+            let bytes = &self.bb[offset..offset + u16_size];
+            Ok(u16::from_be_bytes((*bytes).try_into()?))
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn set_u16(&mut self, offset: usize, n: u16) -> Result<usize> {
+        let bytes = n.to_be_bytes();
+
+        if offset + bytes.len() - 1 < self.bb.len() {
+            for (b, added) in izip!(&mut self.bb[offset..offset + bytes.len()], &bytes) {
+                *b = *added;
+            }
+
+            Ok(offset + bytes.len())
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
     pub fn get_i32(&self, offset: usize) -> Result<i32> {
         let i32_size = mem::size_of::<i32>();
 
@@ -42,6 +143,31 @@ impl Page {
         }
     }
     pub fn set_i32(&mut self, offset: usize, n: i32) -> Result<usize> {
+        let bytes = n.to_be_bytes();
+
+        if offset + bytes.len() - 1 < self.bb.len() {
+            for (b, added) in izip!(&mut self.bb[offset..offset + bytes.len()], &bytes) {
+                *b = *added;
+            }
+
+            Ok(offset + bytes.len())
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn get_u32(&self, offset: usize) -> Result<u32> {
+        let u32_size = mem::size_of::<u32>();
+
+        if offset + u32_size - 1 < self.bb.len() {
+            let bytes = &self.bb[offset..offset + u32_size];
+            Ok(u32::from_be_bytes((*bytes).try_into()?))
+        } else {
+            Err(From::from(PageError::BufferSizeExceeded))
+        }
+    }
+    // extends by exercise 3.17
+    pub fn set_u32(&mut self, offset: usize, n: u32) -> Result<usize> {
         let bytes = n.to_be_bytes();
 
         if offset + bytes.len() - 1 < self.bb.len() {
@@ -100,5 +226,41 @@ impl Page {
         } else {
             Err(From::from(PageError::BufferSizeExceeded))
         }
+    }
+    // extends by exercise 3.17
+    // internal representation of bool
+    // t: 1
+    // f: 0
+    pub fn get_bool(&self, offset: usize) -> Result<bool> {
+        self.get_u8(offset).map(|n| n != 0)
+    }
+    // extends by exercise 3.17
+    // internal representation of bool
+    // t: 1
+    // f: 0
+    pub fn set_bool(&mut self, offset: usize, b: bool) -> Result<usize> {
+        self.set_u8(offset, if b { 1 } else { 0 })
+    }
+    // extends by exercise 3.17
+    // internal representation of date
+    // yyyy: u16
+    // mm: u8
+    // dd: u8
+    pub fn get_date(&self, offset: usize) -> Result<NaiveDate> {
+        self.get_u32(offset).map(|ymd| {
+            let y = ymd >> 16;
+            let m = (ymd >> 8) & 255;
+            let d = ymd & 255;
+            NaiveDate::from_ymd(y as i32, m, d)
+        })
+    }
+    // extends by exercise 3.17
+    // internal representation of date
+    // yyyy: u16
+    // mm: u8
+    // dd: u8
+    pub fn set_date(&mut self, offset: usize, d: NaiveDate) -> Result<usize> {
+        let ymd = (((d.year() as u32) << 8) + d.month() << 8) + d.day();
+        self.set_u32(offset, ymd)
     }
 }

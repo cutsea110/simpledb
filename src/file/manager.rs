@@ -182,6 +182,7 @@ impl FileMgr {
 
 #[cfg(test)]
 mod tests {
+    use chrono::NaiveDate;
     use std::fs;
 
     use super::*;
@@ -219,6 +220,71 @@ mod tests {
         assert_eq!(
             "abcdefghijklm".to_string(),
             p2.get_string(pos1).expect("get string")
+        );
+    }
+
+    #[test]
+    fn exercise_3_17() {
+        if Path::new("_test/file/exercise_3_17").exists() {
+            fs::remove_dir_all("_test/file/exercise_3_17").expect("cleanup");
+        }
+
+        let simpledb = SimpleDB::new_with("_test/file/exercise_3_17", 400, 8);
+        let fm = simpledb.file_mgr();
+
+        let blk = BlockId::new("testfile", 2);
+        let mut p1 = Page::new_from_size(fm.lock().unwrap().block_size() as usize);
+        let pos1 = 0; // 88;
+        let size = p1.set_i8(pos1, 108).expect("set i8");
+
+        let pos2 = pos1 + size;
+        let size = p1.set_u8(pos2, 225).expect("set u8");
+
+        let pos3 = pos2 + size;
+        let size = p1.set_i16(pos3, 12345).expect("set i16");
+
+        let pos4 = pos3 + size;
+        let size = p1.set_u16(pos4, 54321).expect("set u16");
+
+        let pos5 = pos4 + size;
+        let size = p1.set_i32(pos5, 1234567890).expect("set i32");
+
+        let pos6 = pos5 + size;
+        let size = p1.set_u32(pos6, 3141592653).expect("set u32");
+
+        let pos7 = pos6 + size;
+        let size = p1.set_bool(pos7, true).expect("set bool");
+
+        let pos8 = pos7 + size;
+        let size = p1.set_bool(pos8, false).expect("set bool");
+
+        let pos9 = pos8 + size;
+        let _size = p1
+            .set_date(pos9, NaiveDate::from_ymd(2022, 6, 14))
+            .expect("set date");
+
+        fm.lock()
+            .unwrap()
+            .write(&blk, &mut p1)
+            .expect("write p1 to blk");
+
+        let mut p2 = Page::new_from_size(fm.lock().unwrap().block_size() as usize);
+        fm.lock()
+            .unwrap()
+            .read(&blk, &mut p2)
+            .expect("read blk to p2");
+
+        assert_eq!(108, p2.get_i8(pos1).expect("get i8"));
+        assert_eq!(225, p2.get_u8(pos2).expect("get u8"));
+        assert_eq!(12345, p2.get_i16(pos3).expect("get i16"));
+        assert_eq!(54321, p2.get_u16(pos4).expect("get u16"));
+        assert_eq!(1234567890, p2.get_i32(pos5).expect("get i32"));
+        assert_eq!(3141592653, p2.get_u32(pos6).expect("get u32"));
+        assert_eq!(true, p2.get_bool(pos7).expect("get bool"));
+        assert_eq!(false, p2.get_bool(pos8).expect("get bool"));
+        assert_eq!(
+            NaiveDate::from_ymd(2022, 6, 14),
+            p2.get_date(pos9).expect("get bool")
         );
     }
 }
