@@ -377,4 +377,42 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn exercise_3_17() -> Result<()> {
+        if Path::new("_test/tx/exercise_3_17").exists() {
+            fs::remove_dir_all("_test/tx/exercise_3_17")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/tx/exercise_3_17", 400, 8);
+
+        let mut tx1 = simpledb.new_tx()?;
+        let blk = BlockId::new("testfile", 1);
+        tx1.pin(&blk)?;
+        // Don't log initial block values.
+        tx1.set_i8(&blk, 10, 108, false)?;
+        tx1.set_u8(&blk, 20, 225, false)?;
+        tx1.set_i16(&blk, 30, 12345, false)?;
+        tx1.set_u16(&blk, 40, 54321, false)?;
+        tx1.set_i32(&blk, 50, 1234567890, false)?;
+        tx1.set_u32(&blk, 60, 3141592653, false)?;
+        tx1.set_bool(&blk, 70, true, false)?;
+        tx1.set_bool(&blk, 80, false, false)?;
+        tx1.set_date(&blk, 90, NaiveDate::from_ymd(2022, 6, 14), false)?;
+        tx1.commit()?;
+
+        let mut tx2 = simpledb.new_tx()?;
+        tx2.pin(&blk)?;
+        assert_eq!(108, tx2.get_i8(&blk, 10)?);
+        assert_eq!(225, tx2.get_u8(&blk, 20)?);
+        assert_eq!(12345, tx2.get_i16(&blk, 30)?);
+        assert_eq!(54321, tx2.get_u16(&blk, 40)?);
+        assert_eq!(1234567890, tx2.get_i32(&blk, 50)?);
+        assert_eq!(3141592653, tx2.get_u32(&blk, 60)?);
+        assert_eq!(true, tx2.get_bool(&blk, 70)?);
+        assert_eq!(false, tx2.get_bool(&blk, 80)?);
+        assert_eq!(NaiveDate::from_ymd(2022, 6, 14), tx2.get_date(&blk, 90)?);
+
+        Ok(())
+    }
 }
