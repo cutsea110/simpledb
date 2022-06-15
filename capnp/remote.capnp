@@ -18,11 +18,29 @@ struct Map(Key, Value) {
   }
 }
 
+struct Date {
+  # A standard Gregorian calendar date
+
+  year  @0 :Int16;
+  # The year. Must include the century.
+  # Negative value indicates BC.
+
+  month @1 :UInt8; # Month number, 1-12.
+  day   @2 :UInt8; # Day number, 1-31.
+}
 
 enum FieldType {
-  # support just only integer and varchar, now
-  integer @0;
-  varchar @1;
+  # support just only signed/unsigned integer family, varchar, bool and date, now
+
+  word      @0;
+  uWord     @1;
+  short     @2;
+  uShort    @3;
+  integer   @4;
+  uInteger  @5;
+  varchar   @6;
+  bool      @7;
+  date      @8;
 }
 
 struct FieldInfo {
@@ -145,8 +163,15 @@ interface RemoteStatement {
 
   struct Constant {
     union {
-      int32  @0 :Int32;
-      string @1 :Text;
+      int8    @0 :Int8;
+      uint8   @1 :UInt8;
+      int16   @2 :Int16;
+      uint16  @3 :UInt16;
+      int32   @4 :Int32;
+      uint32  @5 :UInt32;
+      string  @6 :Text;
+      bool    @7 :Bool;
+      date    @8 :Date;
     }
   }
   struct Predicate {
@@ -174,27 +199,52 @@ interface Affected {
   committedTx @1 () -> (tx :Int32);
 }
 
-interface BoolBox {
-  read @0 () -> (val :Bool);
+interface Int8Box {
+  read @0 () -> (val :Int8);
 }
-
+interface UInt8Box {
+  read @0 () -> (val :UInt8);
+}
+interface Int16Box {
+  read @0 () -> (val :Int16);
+}
+interface UInt16Box {
+  read @0 () -> (val :UInt16);
+}
 interface Int32Box {
   read @0 () -> (val :Int32);
+}
+interface UInt32Box {
+  read @0 () -> (val :UInt32);
 }
 interface StringBox {
   read @0 () -> (val :Text);
 }
+interface BoolBox {
+  read @0 () -> (val :Bool);
+}
+interface DateBox {
+  read @0 () -> (val :Date);
+}
+
 
 interface RemoteResultSet {
   # result set
 
-  next        @0 () -> (val :BoolBox);
-  close       @1 () -> (res :TxBox);
-  getMetadata @2 () -> (metadata :RemoteMetaData);
-  getInt32    @3 (fldname :Text) -> (val :Int32Box);
-  getString   @4 (fldname :Text) -> (val :StringBox);
-  getRow      @5 () -> (row :Row); # get one record
-  getRows     @6 (limit :UInt32) -> (count :UInt32, rows :List(Row)); # get records up to limit
+  next        @0  () -> (val :BoolBox);
+  close       @1  () -> (res :TxBox);
+  getMetadata @2  () -> (metadata :RemoteMetaData);
+  getInt8     @3  (fldname :Text) -> (val :Int8Box);
+  getUInt8    @4  (fldname :Text) -> (val :UInt8Box);
+  getInt16    @5  (fldname :Text) -> (val :Int16Box);
+  getUInt16   @6  (fldname :Text) -> (val :UInt16Box);
+  getInt32    @7  (fldname :Text) -> (val :Int32Box);
+  getUInt32   @8  (fldname :Text) -> (val :UInt32Box);
+  getString   @9  (fldname :Text) -> (val :StringBox);
+  getBool     @10 (fldname :Text) -> (val :BoolBox);
+  getDate     @11 (fldname :Text) -> (val :DateBox);
+  getRow      @12 () -> (row :Row); # get one record
+  getRows     @13 (limit :UInt32) -> (count :UInt32, rows :List(Row)); # get records up to limit
 
   struct Row {
     # record
@@ -203,8 +253,15 @@ interface RemoteResultSet {
   }
   struct Value {
     union {
-      int32  @0 :Int32;
-      string @1 :Text;
+      int8    @0 :Int8;
+      uint8   @1 :UInt8;
+      int16   @2 :Int16;
+      uint16  @3 :UInt16;
+      int32   @4 :Int32;
+      uint32  @5 :UInt32;
+      string  @6 :Text;
+      bool    @7 :Bool;
+      date    @8 :Date;
     }
   }
 }

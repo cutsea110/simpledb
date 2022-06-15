@@ -19,11 +19,32 @@ impl Schema {
         self.info
             .insert(fldname.to_string(), FieldInfo::new(fld_type, length));
     }
+    pub fn add_i8_field(&mut self, fldname: &str) {
+        self.add_field(fldname, FieldType::WORD, 0)
+    }
+    pub fn add_u8_field(&mut self, fldname: &str) {
+        self.add_field(fldname, FieldType::UWORD, 0)
+    }
+    pub fn add_i16_field(&mut self, fldname: &str) {
+        self.add_field(fldname, FieldType::SHORT, 0)
+    }
+    pub fn add_u16_field(&mut self, fldname: &str) {
+        self.add_field(fldname, FieldType::USHORT, 0)
+    }
     pub fn add_i32_field(&mut self, fldname: &str) {
         self.add_field(fldname, FieldType::INTEGER, 0)
     }
+    pub fn add_u32_field(&mut self, fldname: &str) {
+        self.add_field(fldname, FieldType::UINTEGER, 0)
+    }
     pub fn add_string_field(&mut self, fldname: &str, length: usize) {
         self.add_field(fldname, FieldType::VARCHAR, length)
+    }
+    pub fn add_bool_field(&mut self, fldname: &str) {
+        self.add_field(fldname, FieldType::BOOL, 0)
+    }
+    pub fn add_date_field(&mut self, fldname: &str) {
+        self.add_field(fldname, FieldType::DATE, 0)
     }
     pub fn add(&mut self, fldname: &str, sch: Arc<Schema>) {
         let fld_type = sch.field_type(fldname);
@@ -55,8 +76,24 @@ impl Schema {
 
 #[derive(FromPrimitive, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FieldType {
-    INTEGER = 4,
-    VARCHAR = 12,
+    // i8
+    WORD = 1,
+    // u8
+    UWORD = 2,
+    // i16
+    SHORT = 3,
+    // u16
+    USHORT = 4,
+    // i32
+    INTEGER = 5,
+    // u32
+    UINTEGER = 6,
+    // String
+    VARCHAR = 7,
+    // bool
+    BOOL = 8,
+    // date
+    DATE = 9,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

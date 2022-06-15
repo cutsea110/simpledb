@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -120,15 +121,57 @@ impl Scan for MultibufferProductScan {
 
         true
     }
+    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
+        match self.prodscan.as_ref() {
+            Some(prodscan) => prodscan.lock().unwrap().get_i8(fldname),
+            None => Err(From::from(MultibufferProductScanError::NoProductScan)),
+        }
+    }
+    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
+        match self.prodscan.as_ref() {
+            Some(prodscan) => prodscan.lock().unwrap().get_u8(fldname),
+            None => Err(From::from(MultibufferProductScanError::NoProductScan)),
+        }
+    }
+    fn get_i16(&mut self, fldname: &str) -> Result<i16> {
+        match self.prodscan.as_ref() {
+            Some(prodscan) => prodscan.lock().unwrap().get_i16(fldname),
+            None => Err(From::from(MultibufferProductScanError::NoProductScan)),
+        }
+    }
+    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
+        match self.prodscan.as_ref() {
+            Some(prodscan) => prodscan.lock().unwrap().get_u16(fldname),
+            None => Err(From::from(MultibufferProductScanError::NoProductScan)),
+        }
+    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         match self.prodscan.as_ref() {
             Some(prodscan) => prodscan.lock().unwrap().get_i32(fldname),
             None => Err(From::from(MultibufferProductScanError::NoProductScan)),
         }
     }
+    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
+        match self.prodscan.as_ref() {
+            Some(prodscan) => prodscan.lock().unwrap().get_u32(fldname),
+            None => Err(From::from(MultibufferProductScanError::NoProductScan)),
+        }
+    }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         match self.prodscan.as_ref() {
             Some(prodscan) => prodscan.lock().unwrap().get_string(fldname),
+            None => Err(From::from(MultibufferProductScanError::NoProductScan)),
+        }
+    }
+    fn get_bool(&mut self, fldname: &str) -> Result<bool> {
+        match self.prodscan.as_ref() {
+            Some(prodscan) => prodscan.lock().unwrap().get_bool(fldname),
+            None => Err(From::from(MultibufferProductScanError::NoProductScan)),
+        }
+    }
+    fn get_date(&mut self, fldname: &str) -> Result<NaiveDate> {
+        match self.prodscan.as_ref() {
+            Some(prodscan) => prodscan.lock().unwrap().get_date(fldname),
             None => Err(From::from(MultibufferProductScanError::NoProductScan)),
         }
     }

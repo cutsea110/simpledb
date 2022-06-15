@@ -166,12 +166,33 @@ impl IndexInfo {
         sch.add_i32_field("block");
         sch.add_i32_field("id");
         match self.tbl_schema.field_type(&self.fldname) {
+            FieldType::WORD => {
+                sch.add_i8_field("dataval");
+            }
+            FieldType::UWORD => {
+                sch.add_u8_field("dataval");
+            }
+            FieldType::SHORT => {
+                sch.add_i16_field("dataval");
+            }
+            FieldType::USHORT => {
+                sch.add_u16_field("dataval");
+            }
             FieldType::INTEGER => {
                 sch.add_i32_field("dataval");
+            }
+            FieldType::UINTEGER => {
+                sch.add_u32_field("dataval");
             }
             FieldType::VARCHAR => {
                 let fldlen = self.tbl_schema.length(&self.fldname);
                 sch.add_string_field("dataval", fldlen);
+            }
+            FieldType::BOOL => {
+                sch.add_bool_field("dataval");
+            }
+            FieldType::DATE => {
+                sch.add_date_field("dataval");
             }
         }
 

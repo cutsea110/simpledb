@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::{Datelike, NaiveDate, Utc};
 use std::sync::{Arc, Mutex};
 
 use super::{btreedir::BTreeDir, btreeleaf::BTreeLeaf};
@@ -53,8 +54,22 @@ impl BTreeIndex {
             // insert initial directory entry
             let fldtype = dirsch.field_type("dataval");
             let minval = match fldtype {
+                FieldType::WORD => Constant::new_i8(i8::MIN),
+                FieldType::UWORD => Constant::new_u8(u8::MIN),
+                FieldType::SHORT => Constant::new_i16(i16::MIN),
+                FieldType::USHORT => Constant::new_u16(u16::MIN),
                 FieldType::INTEGER => Constant::new_i32(i32::MIN),
+                FieldType::UINTEGER => Constant::new_u32(u32::MIN),
                 FieldType::VARCHAR => Constant::new_string("".to_string()),
+                FieldType::BOOL => Constant::new_bool(false),
+                FieldType::DATE => {
+                    let today = Utc::today();
+                    Constant::new_date(NaiveDate::from_ymd(
+                        today.year(),
+                        today.month(),
+                        today.day(),
+                    ))
+                }
             };
             node.insert_dir(0, minval, 0)?;
             node.close()?;

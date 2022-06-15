@@ -120,11 +120,32 @@ mod tests {
                 let fldname = meta.get_column_name(i).unwrap();
                 let w = meta.get_column_display_size(i).unwrap();
                 match meta.get_column_type(i).unwrap() {
+                    DataType::Int8 => {
+                        print!("{:width$} ", results.get_i8(fldname)?, width = w);
+                    }
+                    DataType::UInt8 => {
+                        print!("{:width$} ", results.get_u8(fldname)?, width = w);
+                    }
+                    DataType::Int16 => {
+                        print!("{:width$} ", results.get_i16(fldname)?, width = w);
+                    }
+                    DataType::UInt16 => {
+                        print!("{:width$} ", results.get_u16(fldname)?, width = w);
+                    }
                     DataType::Int32 => {
                         print!("{:width$} ", results.get_i32(fldname)?, width = w);
                     }
+                    DataType::UInt32 => {
+                        print!("{:width$} ", results.get_u32(fldname)?, width = w);
+                    }
                     DataType::Varchar => {
                         print!("{:width$} ", results.get_string(fldname)?, width = w);
+                    }
+                    DataType::Bool => {
+                        print!("{:width$} ", results.get_bool(fldname)?, width = w);
+                    }
+                    DataType::Date => {
+                        print!("{:width$} ", results.get_date(fldname)?, width = w);
                     }
                 }
             }

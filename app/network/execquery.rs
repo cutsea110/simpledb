@@ -20,11 +20,32 @@ fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMet
             .get_column_display_size(i)
             .expect("get column display size");
         match row.get(fldname.as_str()).expect("get field value") {
+            resultset::Value::Int8(v) => {
+                print!("{:width$} ", v.clone(), width = w);
+            }
+            resultset::Value::UInt8(v) => {
+                print!("{:width$} ", v.clone(), width = w);
+            }
+            resultset::Value::Int16(v) => {
+                print!("{:width$} ", v.clone(), width = w);
+            }
+            resultset::Value::UInt16(v) => {
+                print!("{:width$} ", v.clone(), width = w);
+            }
             resultset::Value::Int32(v) => {
+                print!("{:width$} ", v.clone(), width = w);
+            }
+            resultset::Value::UInt32(v) => {
                 print!("{:width$} ", v.clone(), width = w);
             }
             resultset::Value::String(s) => {
                 print!("{:width$} ", s, width = w);
+            }
+            resultset::Value::Bool(v) => {
+                print!("{:width$} ", v.clone(), width = w);
+            }
+            resultset::Value::Date(v) => {
+                print!("{:width$} ", v.clone(), width = w);
             }
         }
     }

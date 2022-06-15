@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -99,17 +100,51 @@ impl Scan for ChunkScan {
 
         true
     }
+    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
+        self.rp.as_mut().unwrap().get_i8(self.currentslot, fldname)
+    }
+    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
+        self.rp.as_mut().unwrap().get_u8(self.currentslot, fldname)
+    }
+    fn get_i16(&mut self, fldname: &str) -> Result<i16> {
+        self.rp.as_mut().unwrap().get_i16(self.currentslot, fldname)
+    }
+    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
+        self.rp.as_mut().unwrap().get_u16(self.currentslot, fldname)
+    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.rp.as_mut().unwrap().get_i32(self.currentslot, fldname)
+    }
+    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
+        self.rp.as_mut().unwrap().get_u32(self.currentslot, fldname)
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         let rp = self.rp.as_mut().unwrap();
         rp.get_string(self.currentslot, fldname)
     }
+    fn get_bool(&mut self, fldname: &str) -> Result<bool> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .get_bool(self.currentslot, fldname)
+    }
+    fn get_date(&mut self, fldname: &str) -> Result<NaiveDate> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .get_date(self.currentslot, fldname)
+    }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
         match self.layout.schema().field_type(fldname) {
+            FieldType::WORD => Ok(Constant::new_i8(self.get_i8(fldname)?)),
+            FieldType::UWORD => Ok(Constant::new_u8(self.get_u8(fldname)?)),
+            FieldType::SHORT => Ok(Constant::new_i16(self.get_i16(fldname)?)),
+            FieldType::USHORT => Ok(Constant::new_u16(self.get_u16(fldname)?)),
             FieldType::INTEGER => Ok(Constant::new_i32(self.get_i32(fldname)?)),
+            FieldType::UINTEGER => Ok(Constant::new_u32(self.get_u32(fldname)?)),
             FieldType::VARCHAR => Ok(Constant::new_string(self.get_string(fldname)?)),
+            FieldType::BOOL => Ok(Constant::new_bool(self.get_bool(fldname)?)),
+            FieldType::DATE => Ok(Constant::new_date(self.get_date(fldname)?)),
         }
     }
     fn has_field(&self, fldname: &str) -> bool {

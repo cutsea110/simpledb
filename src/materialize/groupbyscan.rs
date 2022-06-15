@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -94,13 +95,34 @@ impl Scan for GroupByScan {
 
         true
     }
+    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
+        self.get_val(fldname)?.as_i8()
+    }
+    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
+        self.get_val(fldname)?.as_u8()
+    }
+    fn get_i16(&mut self, fldname: &str) -> Result<i16> {
+        self.get_val(fldname)?.as_i16()
+    }
+    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
+        self.get_val(fldname)?.as_u16()
+    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.get_val(fldname)?.as_i32()
+    }
+    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
+        self.get_val(fldname)?.as_u32()
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.get_val(fldname)?
             .as_string()
             .map(|sval| sval.to_string())
+    }
+    fn get_bool(&mut self, fldname: &str) -> Result<bool> {
+        self.get_val(fldname)?.as_bool()
+    }
+    fn get_date(&mut self, fldname: &str) -> Result<NaiveDate> {
+        self.get_val(fldname)?.as_date()
     }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
         if self.groupfields.contains(&fldname.to_string()) {

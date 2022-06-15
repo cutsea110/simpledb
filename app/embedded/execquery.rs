@@ -18,11 +18,32 @@ fn print_record(results: &mut EmbeddedResultSet, meta: &EmbeddedMetaData) -> Res
             .get_column_display_size(i)
             .expect("get column display size");
         match meta.get_column_type(i).expect("get column type") {
+            DataType::Int8 => {
+                print!("{:width$} ", results.get_i8(fldname)?, width = w);
+            }
+            DataType::UInt8 => {
+                print!("{:width$} ", results.get_u8(fldname)?, width = w);
+            }
+            DataType::Int16 => {
+                print!("{:width$} ", results.get_i16(fldname)?, width = w);
+            }
+            DataType::UInt16 => {
+                print!("{:width$} ", results.get_u16(fldname)?, width = w);
+            }
             DataType::Int32 => {
                 print!("{:width$} ", results.get_i32(fldname)?, width = w);
             }
+            DataType::UInt32 => {
+                print!("{:width$} ", results.get_u32(fldname)?, width = w);
+            }
             DataType::Varchar => {
                 print!("{:width$} ", results.get_string(fldname)?, width = w);
+            }
+            DataType::Bool => {
+                print!("{:width$} ", results.get_bool(fldname)?, width = w);
+            }
+            DataType::Date => {
+                print!("{:width$} ", results.get_date(fldname)?, width = w);
             }
         }
     }
