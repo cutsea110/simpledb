@@ -1,7 +1,8 @@
+use chrono::NaiveDate;
 use combine::{
     any, attempt,
     error::ParseError,
-    parser::char::{alpha_num, char, digit, letter, spaces, string, string_cmp},
+    parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
     stream::Stream,
     {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
@@ -286,6 +287,18 @@ where
         .skip(spaces().silent())
 }
 
+fn u32_tok<Input>() -> impl Parser<Input, Output = u32>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    optional(char('+'))
+        .and(many1(digit()).map(|s: String| s.parse::<u32>()))
+        .map(|(_s, v)| v.unwrap_or_default())
+        // lexeme
+        .skip(spaces().silent())
+}
+
 fn str_tok<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -310,9 +323,23 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    string("false")
+    keyword("FALSE")
         .map(|_| false)
-        .or(string("true").map(|_| true))
+        .or(keyword("TRUE").map(|_| true))
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn date_tok<Input>() -> impl Parser<Input, Output = NaiveDate>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    i32_tok()
+        .skip(char('-'))
+        .and(u32_tok().skip(char('-')))
+        .and(u32_tok())
+        .map(|((y, m), d)| NaiveDate::from_ymd(y, m, d))
         // lexeme
         .skip(spaces().silent())
 }
@@ -334,7 +361,10 @@ where
 {
     str_tok()
         .map(|sval| Constant::new_string(sval))
-        .or(i32_tok().map(|ival| Constant::new_i32(ival)))
+        .or(u32_tok().map(|ival| Constant::new_u32(ival))) // pick up in largest integer
+        .or(i32_tok().map(|ival| Constant::new_i32(ival))) // pick it up as the largest signed integer
+        .or(bool_tok().map(|bval| Constant::new_bool(bval)))
+        .or(date_tok().map(|dval| Constant::new_date(dval)))
 }
 
 pub fn expression<Input>() -> impl Parser<Input, Output = Expression>
@@ -633,6 +663,19 @@ mod tests {
     }
 
     #[test]
+    fn u32_tok_test() {
+        let mut parser = u32_tok();
+        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
+        assert_eq!(parser.parse("42"), Ok((42, "")));
+        assert_eq!(parser.parse("42 "), Ok((42, "")));
+        assert_eq!(parser.parse("+42"), Ok((42, "")));
+        assert_eq!(
+            parser.parse("-42 "),
+            Err(StringStreamError::UnexpectedParse)
+        );
+    }
+
+    #[test]
     fn str_tok_test() {
         let mut parser = str_tok();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
@@ -657,7 +700,27 @@ mod tests {
         assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
         assert_eq!(parser.parse("42"), Err(StringStreamError::UnexpectedParse));
         assert_eq!(parser.parse("false"), Ok((false, "")));
+        assert_eq!(parser.parse("false123"), Ok((false, "123")));
         assert_eq!(parser.parse("true"), Ok((true, "")));
+        assert_eq!(parser.parse("trueabc"), Ok((true, "abc")));
+    }
+
+    #[test]
+    fn date_tok_test() {
+        let mut parser = date_tok();
+        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
+        assert_eq!(
+            parser.parse("2022-06-14"),
+            Ok((NaiveDate::from_ymd(2022, 6, 14), ""))
+        );
+        assert_eq!(
+            parser.parse("2022-6-9"),
+            Ok((NaiveDate::from_ymd(2022, 6, 9), ""))
+        );
+        assert_eq!(
+            parser.parse("2024-02-29"),
+            Ok((NaiveDate::from_ymd(2024, 2, 29), ""))
+        );
     }
 
     #[test]
