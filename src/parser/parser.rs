@@ -2,9 +2,9 @@ use chrono::NaiveDate;
 use combine::{
     any, attempt,
     error::ParseError,
-    parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
+    parser::char::{alpha_num, char, digit, letter, spaces, string, string_cmp},
     stream::Stream,
-    {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
+    token, {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
 use std::usize;
 
@@ -323,9 +323,9 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    keyword("FALSE")
+    string("false")
         .map(|_| false)
-        .or(keyword("TRUE").map(|_| true))
+        .or(string("true").map(|_| true))
         // lexeme
         .skip(spaces().silent())
 }
@@ -335,11 +335,16 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    i32_tok()
+    let date = i32_tok()
         .skip(char('-'))
         .and(u32_tok().skip(char('-')))
         .and(u32_tok())
-        .map(|((y, m), d)| NaiveDate::from_ymd(y, m, d))
+        .map(|((y, m), d)| NaiveDate::from_ymd(y, m, d));
+
+    keyword("DATE")
+        .with(token('('))
+        .with(date)
+        .skip(token(')'))
         // lexeme
         .skip(spaces().silent())
 }
@@ -596,11 +601,18 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     let int32_def = kw_int32().map(|_| FieldInfo::new(FieldType::INTEGER, 0));
+    let uint32_def = kw_uint32().map(|_| FieldInfo::new(FieldType::UINTEGER, 0));
     let varchar_def = kw_varchar()
         .with(between(delim_parenl(), delim_parenr(), i32_tok()))
         .map(|n| FieldInfo::new(FieldType::VARCHAR, n as usize));
+    let bool_def = kw_bool().map(|_| FieldInfo::new(FieldType::BOOL, 0));
+    let date_def = kw_date().map(|_| FieldInfo::new(FieldType::DATE, 0));
 
-    int32_def.or(varchar_def)
+    uint32_def
+        .or(int32_def)
+        .or(varchar_def)
+        .or(bool_def)
+        .or(date_def)
 }
 
 /// Method for parsing create view commands
