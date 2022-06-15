@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -74,6 +75,34 @@ impl Scan for IndexJoinScan {
             self.reset_index().unwrap();
         }
     }
+    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
+        if self.rhs.lock().unwrap().has_field(fldname) {
+            self.rhs.lock().unwrap().get_i8(fldname)
+        } else {
+            self.lhs.lock().unwrap().get_i8(fldname)
+        }
+    }
+    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
+        if self.rhs.lock().unwrap().has_field(fldname) {
+            self.rhs.lock().unwrap().get_u8(fldname)
+        } else {
+            self.lhs.lock().unwrap().get_u8(fldname)
+        }
+    }
+    fn get_i16(&mut self, fldname: &str) -> Result<i16> {
+        if self.rhs.lock().unwrap().has_field(fldname) {
+            self.rhs.lock().unwrap().get_i16(fldname)
+        } else {
+            self.lhs.lock().unwrap().get_i16(fldname)
+        }
+    }
+    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
+        if self.rhs.lock().unwrap().has_field(fldname) {
+            self.rhs.lock().unwrap().get_u16(fldname)
+        } else {
+            self.lhs.lock().unwrap().get_u16(fldname)
+        }
+    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         if self.rhs.lock().unwrap().has_field(fldname) {
             self.rhs.lock().unwrap().get_i32(fldname)
@@ -81,11 +110,32 @@ impl Scan for IndexJoinScan {
             self.lhs.lock().unwrap().get_i32(fldname)
         }
     }
+    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
+        if self.rhs.lock().unwrap().has_field(fldname) {
+            self.rhs.lock().unwrap().get_u32(fldname)
+        } else {
+            self.lhs.lock().unwrap().get_u32(fldname)
+        }
+    }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         if self.rhs.lock().unwrap().has_field(fldname) {
             self.rhs.lock().unwrap().get_string(fldname)
         } else {
             self.lhs.lock().unwrap().get_string(fldname)
+        }
+    }
+    fn get_bool(&mut self, fldname: &str) -> Result<bool> {
+        if self.rhs.lock().unwrap().has_field(fldname) {
+            self.rhs.lock().unwrap().get_bool(fldname)
+        } else {
+            self.lhs.lock().unwrap().get_bool(fldname)
+        }
+    }
+    fn get_date(&mut self, fldname: &str) -> Result<NaiveDate> {
+        if self.rhs.lock().unwrap().has_field(fldname) {
+            self.rhs.lock().unwrap().get_date(fldname)
+        } else {
+            self.lhs.lock().unwrap().get_date(fldname)
         }
     }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {

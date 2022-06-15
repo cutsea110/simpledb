@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::{Datelike, NaiveDate, Utc};
 use core::fmt;
 use std::{
     mem,
@@ -128,13 +129,47 @@ impl BTPage {
         for fldname in self.layout.schema().fields() {
             let offset = self.layout.offset(fldname);
             match self.layout.schema().field_type(fldname) {
+                FieldType::WORD => {
+                    let mut tx = self.tx.lock().unwrap();
+                    tx.set_i8(blk, (pos + offset) as i32, 0, false)?;
+                }
+                FieldType::UWORD => {
+                    let mut tx = self.tx.lock().unwrap();
+                    tx.set_u8(blk, (pos + offset) as i32, 0, false)?;
+                }
+                FieldType::SHORT => {
+                    let mut tx = self.tx.lock().unwrap();
+                    tx.set_i16(blk, (pos + offset) as i32, 0, false)?;
+                }
+                FieldType::USHORT => {
+                    let mut tx = self.tx.lock().unwrap();
+                    tx.set_u16(blk, (pos + offset) as i32, 0, false)?;
+                }
                 FieldType::INTEGER => {
                     let mut tx = self.tx.lock().unwrap();
                     tx.set_i32(blk, (pos + offset) as i32, 0, false)?;
                 }
+                FieldType::UINTEGER => {
+                    let mut tx = self.tx.lock().unwrap();
+                    tx.set_u32(blk, (pos + offset) as i32, 0, false)?;
+                }
                 FieldType::VARCHAR => {
                     let mut tx = self.tx.lock().unwrap();
                     tx.set_string(blk, (pos + offset) as i32, "", false)?;
+                }
+                FieldType::BOOL => {
+                    let mut tx = self.tx.lock().unwrap();
+                    tx.set_bool(blk, (pos + offset) as i32, false, false)?;
+                }
+                FieldType::DATE => {
+                    let mut tx = self.tx.lock().unwrap();
+                    let today = Utc::today();
+                    tx.set_date(
+                        blk,
+                        (pos + offset) as i32,
+                        NaiveDate::from_ymd(today.year(), today.month(), today.day()),
+                        false,
+                    )?;
                 }
             }
         }
@@ -179,10 +214,50 @@ impl BTPage {
         Err(From::from(BTPageError::NoCurrentBlockError))
     }
     // Private methods
+    fn get_i8(&self, slot: i32, fldname: &str) -> Result<i8> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_i8(currentblk, pos);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn get_u8(&self, slot: i32, fldname: &str) -> Result<u8> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_u8(currentblk, pos);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn get_i16(&self, slot: i32, fldname: &str) -> Result<i16> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_i16(currentblk, pos);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn get_u16(&self, slot: i32, fldname: &str) -> Result<u16> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_u16(currentblk, pos);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
     fn get_i32(&self, slot: i32, fldname: &str) -> Result<i32> {
         if let Some(currentblk) = self.currentblk.as_ref() {
             let pos = self.fldpos(slot, fldname);
             return self.tx.lock().unwrap().get_i32(currentblk, pos);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn get_u32(&self, slot: i32, fldname: &str) -> Result<u32> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_u32(currentblk, pos);
         }
 
         Err(From::from(BTPageError::NoCurrentBlockError))
@@ -195,18 +270,86 @@ impl BTPage {
 
         Err(From::from(BTPageError::NoCurrentBlockError))
     }
+    fn get_bool(&self, slot: i32, fldname: &str) -> Result<bool> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_bool(currentblk, pos);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn get_date(&self, slot: i32, fldname: &str) -> Result<NaiveDate> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            return self.tx.lock().unwrap().get_date(currentblk, pos);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
     fn get_val(&self, slot: i32, fldname: &str) -> Result<Constant> {
         let fldtype = self.layout.schema().field_type(fldname);
         match fldtype {
+            FieldType::WORD => Ok(Constant::new_i8(self.get_i8(slot, fldname)?)),
+            FieldType::UWORD => Ok(Constant::new_u8(self.get_u8(slot, fldname)?)),
+            FieldType::SHORT => Ok(Constant::new_i16(self.get_i16(slot, fldname)?)),
+            FieldType::USHORT => Ok(Constant::new_u16(self.get_u16(slot, fldname)?)),
             FieldType::INTEGER => Ok(Constant::new_i32(self.get_i32(slot, fldname)?)),
+            FieldType::UINTEGER => Ok(Constant::new_u32(self.get_u32(slot, fldname)?)),
             FieldType::VARCHAR => Ok(Constant::new_string(self.get_string(slot, fldname)?)),
+            FieldType::BOOL => Ok(Constant::new_bool(self.get_bool(slot, fldname)?)),
+            FieldType::DATE => Ok(Constant::new_date(self.get_date(slot, fldname)?)),
         }
+    }
+    fn set_i8(&mut self, slot: i32, fldname: &str, val: i8) -> Result<()> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_i8(currentblk, pos, val, true);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn set_u8(&mut self, slot: i32, fldname: &str, val: u8) -> Result<()> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_u8(currentblk, pos, val, true);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn set_i16(&mut self, slot: i32, fldname: &str, val: i16) -> Result<()> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_i16(currentblk, pos, val, true);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn set_u16(&mut self, slot: i32, fldname: &str, val: u16) -> Result<()> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_u16(currentblk, pos, val, true);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
     }
     fn set_i32(&mut self, slot: i32, fldname: &str, val: i32) -> Result<()> {
         if let Some(currentblk) = self.currentblk.as_ref() {
             let pos = self.fldpos(slot, fldname);
             let mut tx = self.tx.lock().unwrap();
             return tx.set_i32(currentblk, pos, val, true);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn set_u32(&mut self, slot: i32, fldname: &str, val: u32) -> Result<()> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_u32(currentblk, pos, val, true);
         }
 
         Err(From::from(BTPageError::NoCurrentBlockError))
@@ -220,11 +363,36 @@ impl BTPage {
 
         Err(From::from(BTPageError::NoCurrentBlockError))
     }
+    fn set_bool(&mut self, slot: i32, fldname: &str, val: bool) -> Result<()> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_bool(currentblk, pos, val, true);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
+    fn set_date(&mut self, slot: i32, fldname: &str, val: NaiveDate) -> Result<()> {
+        if let Some(currentblk) = self.currentblk.as_ref() {
+            let pos = self.fldpos(slot, fldname);
+            let mut tx = self.tx.lock().unwrap();
+            return tx.set_date(currentblk, pos, val, true);
+        }
+
+        Err(From::from(BTPageError::NoCurrentBlockError))
+    }
     fn set_val(&mut self, slot: i32, fldname: &str, val: Constant) -> Result<()> {
         let fldtype = self.layout.schema().field_type(fldname);
         match fldtype {
+            FieldType::WORD => self.set_i8(slot, fldname, val.as_i8()?),
+            FieldType::UWORD => self.set_u8(slot, fldname, val.as_u8()?),
+            FieldType::SHORT => self.set_i16(slot, fldname, val.as_i16()?),
+            FieldType::USHORT => self.set_u16(slot, fldname, val.as_u16()?),
             FieldType::INTEGER => self.set_i32(slot, fldname, val.as_i32()?),
+            FieldType::UINTEGER => self.set_u32(slot, fldname, val.as_u32()?),
             FieldType::VARCHAR => self.set_string(slot, fldname, val.as_string()?),
+            FieldType::BOOL => self.set_bool(slot, fldname, val.as_bool()?),
+            FieldType::DATE => self.set_date(slot, fldname, val.as_date()?),
         }
     }
     fn set_num_recs(&mut self, n: i32) -> Result<()> {

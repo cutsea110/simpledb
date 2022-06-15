@@ -44,11 +44,32 @@ impl NetworkConnection {
             let fldname = entry.get_key()?;
             let val = entry.get_value()?;
             match val.get_type()? {
+                remote_capnp::FieldType::Word => {
+                    map.insert(fldname, (FieldType::WORD, val.get_length()));
+                }
+                remote_capnp::FieldType::UWord => {
+                    map.insert(fldname, (FieldType::UWORD, val.get_length()));
+                }
+                remote_capnp::FieldType::Short => {
+                    map.insert(fldname, (FieldType::SHORT, val.get_length()));
+                }
+                remote_capnp::FieldType::UShort => {
+                    map.insert(fldname, (FieldType::USHORT, val.get_length()));
+                }
                 remote_capnp::FieldType::Integer => {
                     map.insert(fldname, (FieldType::INTEGER, val.get_length()));
                 }
+                remote_capnp::FieldType::UInteger => {
+                    map.insert(fldname, (FieldType::UINTEGER, val.get_length()));
+                }
                 remote_capnp::FieldType::Varchar => {
                     map.insert(fldname, (FieldType::VARCHAR, val.get_length()));
+                }
+                remote_capnp::FieldType::Bool => {
+                    map.insert(fldname, (FieldType::BOOL, val.get_length()));
+                }
+                remote_capnp::FieldType::Date => {
+                    map.insert(fldname, (FieldType::DATE, val.get_length()));
                 }
             }
         }

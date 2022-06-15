@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::{Datelike, NaiveDate, Utc};
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -66,8 +67,23 @@ impl Scan for TableScan {
 
         true
     }
+    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
+        self.rp.as_mut().unwrap().get_i8(self.currentslot, fldname)
+    }
+    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
+        self.rp.as_mut().unwrap().get_u8(self.currentslot, fldname)
+    }
+    fn get_i16(&mut self, fldname: &str) -> Result<i16> {
+        self.rp.as_mut().unwrap().get_i16(self.currentslot, fldname)
+    }
+    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
+        self.rp.as_mut().unwrap().get_u16(self.currentslot, fldname)
+    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.rp.as_mut().unwrap().get_i32(self.currentslot, fldname)
+    }
+    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
+        self.rp.as_mut().unwrap().get_u32(self.currentslot, fldname)
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.rp
@@ -75,17 +91,43 @@ impl Scan for TableScan {
             .unwrap()
             .get_string(self.currentslot, fldname)
     }
+    fn get_bool(&mut self, fldname: &str) -> Result<bool> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .get_bool(self.currentslot, fldname)
+    }
+    fn get_date(&mut self, fldname: &str) -> Result<NaiveDate> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .get_date(self.currentslot, fldname)
+    }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
-        match self.layout.schema().field_type(fldname) {
-            FieldType::INTEGER => {
-                return Ok(Constant::new_i32(self.get_i32(fldname).unwrap_or(0)));
+        return match self.layout.schema().field_type(fldname) {
+            FieldType::WORD => Ok(Constant::new_i8(self.get_i8(fldname).unwrap_or(0))),
+            FieldType::UWORD => Ok(Constant::new_u8(self.get_u8(fldname).unwrap_or(0))),
+            FieldType::SHORT => Ok(Constant::new_i16(self.get_i16(fldname).unwrap_or(0))),
+            FieldType::USHORT => Ok(Constant::new_u16(self.get_u16(fldname).unwrap_or(0))),
+            FieldType::INTEGER => Ok(Constant::new_i32(self.get_i32(fldname).unwrap_or(0))),
+            FieldType::UINTEGER => Ok(Constant::new_u32(self.get_u32(fldname).unwrap_or(0))),
+            FieldType::VARCHAR => Ok(Constant::new_string(
+                self.get_string(fldname).unwrap_or("".to_string()),
+            )),
+            FieldType::BOOL => Ok(Constant::new_bool(
+                self.get_bool(fldname).unwrap_or_default(),
+            )),
+            FieldType::DATE => {
+                let today = Utc::today();
+                let year = today.year();
+                let month = today.month();
+                let day = today.day();
+                Ok(Constant::new_date(
+                    self.get_date(fldname)
+                        .unwrap_or(NaiveDate::from_ymd(year, month, day)),
+                ))
             }
-            FieldType::VARCHAR => {
-                return Ok(Constant::new_string(
-                    self.get_string(fldname).unwrap_or("".to_string()),
-                ));
-            }
-        }
+        };
     }
     fn has_field(&self, fldname: &str) -> bool {
         self.layout.schema().has_field(fldname)
@@ -113,11 +155,41 @@ impl Scan for TableScan {
 }
 
 impl UpdateScan for TableScan {
+    fn set_i8(&mut self, fldname: &str, val: i8) -> Result<()> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .set_i8(self.currentslot, fldname, val)
+    }
+    fn set_u8(&mut self, fldname: &str, val: u8) -> Result<()> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .set_u8(self.currentslot, fldname, val)
+    }
+    fn set_i16(&mut self, fldname: &str, val: i16) -> Result<()> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .set_i16(self.currentslot, fldname, val)
+    }
+    fn set_u16(&mut self, fldname: &str, val: u16) -> Result<()> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .set_u16(self.currentslot, fldname, val)
+    }
     fn set_i32(&mut self, fldname: &str, val: i32) -> Result<()> {
         self.rp
             .as_mut()
             .unwrap()
             .set_i32(self.currentslot, fldname, val)
+    }
+    fn set_u32(&mut self, fldname: &str, val: u32) -> Result<()> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .set_u32(self.currentslot, fldname, val)
     }
     fn set_string(&mut self, fldname: &str, val: String) -> Result<()> {
         self.rp
@@ -125,13 +197,46 @@ impl UpdateScan for TableScan {
             .unwrap()
             .set_string(self.currentslot, fldname, val)
     }
+    fn set_bool(&mut self, fldname: &str, val: bool) -> Result<()> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .set_bool(self.currentslot, fldname, val)
+    }
+    fn set_date(&mut self, fldname: &str, val: NaiveDate) -> Result<()> {
+        self.rp
+            .as_mut()
+            .unwrap()
+            .set_date(self.currentslot, fldname, val)
+    }
     fn set_val(&mut self, fldname: &str, val: Constant) -> Result<()> {
         match self.layout.schema().field_type(fldname) {
+            FieldType::WORD => {
+                self.set_i8(fldname, val.as_i8().unwrap())?;
+            }
+            FieldType::UWORD => {
+                self.set_u8(fldname, val.as_u8().unwrap())?;
+            }
+            FieldType::SHORT => {
+                self.set_i16(fldname, val.as_i16().unwrap())?;
+            }
+            FieldType::USHORT => {
+                self.set_u16(fldname, val.as_u16().unwrap())?;
+            }
             FieldType::INTEGER => {
                 self.set_i32(fldname, val.as_i32().unwrap())?;
             }
+            FieldType::UINTEGER => {
+                self.set_u32(fldname, val.as_u32().unwrap())?;
+            }
             FieldType::VARCHAR => {
                 self.set_string(fldname, val.as_string().unwrap().to_string())?;
+            }
+            FieldType::BOOL => {
+                self.set_bool(fldname, val.as_bool().unwrap())?;
+            }
+            FieldType::DATE => {
+                self.set_date(fldname, val.as_date().unwrap())?;
             }
         }
 

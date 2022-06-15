@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::{Datelike, NaiveDate, Utc};
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::sync::{Arc, Mutex};
@@ -25,25 +26,95 @@ impl RecordPage {
 
         Ok(Self { tx, blk, layout })
     }
+    pub fn get_i8(&mut self, slot: i32, fldname: &str) -> Result<i8> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.get_i8(&self.blk, fldpos)
+    }
+    pub fn get_u8(&mut self, slot: i32, fldname: &str) -> Result<u8> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.get_u8(&self.blk, fldpos)
+    }
+    pub fn get_i16(&mut self, slot: i32, fldname: &str) -> Result<i16> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.get_i16(&self.blk, fldpos)
+    }
+    pub fn get_u16(&mut self, slot: i32, fldname: &str) -> Result<u16> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.get_u16(&self.blk, fldpos)
+    }
     pub fn get_i32(&mut self, slot: i32, fldname: &str) -> Result<i32> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.get_i32(&self.blk, fldpos)
+    }
+    pub fn get_u32(&mut self, slot: i32, fldname: &str) -> Result<u32> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.get_u32(&self.blk, fldpos)
     }
     pub fn get_string(&mut self, slot: i32, fldname: &str) -> Result<String> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.get_string(&self.blk, fldpos)
     }
+    pub fn get_bool(&mut self, slot: i32, fldname: &str) -> Result<bool> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.get_bool(&self.blk, fldpos)
+    }
+    pub fn get_date(&mut self, slot: i32, fldname: &str) -> Result<NaiveDate> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.get_date(&self.blk, fldpos)
+    }
+    pub fn set_i8(&mut self, slot: i32, fldname: &str, val: i8) -> Result<()> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.set_i8(&self.blk, fldpos as i32, val, true)
+    }
+    pub fn set_u8(&mut self, slot: i32, fldname: &str, val: u8) -> Result<()> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.set_u8(&self.blk, fldpos as i32, val, true)
+    }
+    pub fn set_i16(&mut self, slot: i32, fldname: &str, val: i16) -> Result<()> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.set_i16(&self.blk, fldpos as i32, val, true)
+    }
+    pub fn set_u16(&mut self, slot: i32, fldname: &str, val: u16) -> Result<()> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.set_u16(&self.blk, fldpos as i32, val, true)
+    }
     pub fn set_i32(&mut self, slot: i32, fldname: &str, val: i32) -> Result<()> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.set_i32(&self.blk, fldpos as i32, val, true)
     }
+    pub fn set_u32(&mut self, slot: i32, fldname: &str, val: u32) -> Result<()> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.set_u32(&self.blk, fldpos as i32, val, true)
+    }
     pub fn set_string(&mut self, slot: i32, fldname: &str, val: String) -> Result<()> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.set_string(&self.blk, fldpos, &val, true)
+    }
+    pub fn set_bool(&mut self, slot: i32, fldname: &str, val: bool) -> Result<()> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.set_bool(&self.blk, fldpos as i32, val, true)
+    }
+    pub fn set_date(&mut self, slot: i32, fldname: &str, val: NaiveDate) -> Result<()> {
+        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
+        let mut tx = self.tx.lock().unwrap();
+        tx.set_date(&self.blk, fldpos as i32, val, true)
     }
     pub fn delete(&mut self, slot: i32) -> Result<()> {
         self.set_flag(slot, SlotFlag::EMPTY)
@@ -58,11 +129,38 @@ impl RecordPage {
             for fldname in sch.fields() {
                 let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
                 match sch.field_type(fldname) {
+                    FieldType::WORD => {
+                        tx.set_i8(&self.blk, fldpos, 0, false)?;
+                    }
+                    FieldType::UWORD => {
+                        tx.set_u8(&self.blk, fldpos, 0, false)?;
+                    }
+                    FieldType::SHORT => {
+                        tx.set_i16(&self.blk, fldpos, 0, false)?;
+                    }
+                    FieldType::USHORT => {
+                        tx.set_u16(&self.blk, fldpos, 0, false)?;
+                    }
                     FieldType::INTEGER => {
                         tx.set_i32(&self.blk, fldpos, 0, false)?;
                     }
+                    FieldType::UINTEGER => {
+                        tx.set_u32(&self.blk, fldpos, 0, false)?;
+                    }
                     FieldType::VARCHAR => {
                         tx.set_string(&self.blk, fldpos, "", false)?;
+                    }
+                    FieldType::BOOL => {
+                        tx.set_bool(&self.blk, fldpos, false, false)?;
+                    }
+                    FieldType::DATE => {
+                        let today = Utc::today();
+                        tx.set_date(
+                            &self.blk,
+                            fldpos,
+                            NaiveDate::from_ymd(today.year(), today.month(), today.day()),
+                            false,
+                        )?;
                     }
                 }
             }

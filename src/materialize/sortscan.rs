@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::NaiveDate;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -127,10 +128,45 @@ impl Scan for SortScan {
 
         true
     }
+    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
+        match self.currentscan {
+            ScanEither::Scan1 => self.s1.lock().unwrap().get_i8(fldname),
+            ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_i8(fldname),
+            ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
+        }
+    }
+    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
+        match self.currentscan {
+            ScanEither::Scan1 => self.s1.lock().unwrap().get_u8(fldname),
+            ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_u8(fldname),
+            ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
+        }
+    }
+    fn get_i16(&mut self, fldname: &str) -> Result<i16> {
+        match self.currentscan {
+            ScanEither::Scan1 => self.s1.lock().unwrap().get_i16(fldname),
+            ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_i16(fldname),
+            ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
+        }
+    }
+    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
+        match self.currentscan {
+            ScanEither::Scan1 => self.s1.lock().unwrap().get_u16(fldname),
+            ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_u16(fldname),
+            ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
+        }
+    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         match self.currentscan {
             ScanEither::Scan1 => self.s1.lock().unwrap().get_i32(fldname),
             ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_i32(fldname),
+            ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
+        }
+    }
+    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
+        match self.currentscan {
+            ScanEither::Scan1 => self.s1.lock().unwrap().get_u32(fldname),
+            ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_u32(fldname),
             ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
         }
     }
@@ -141,6 +177,20 @@ impl Scan for SortScan {
                 let mut s2 = self.s2.as_ref().unwrap().lock().unwrap();
                 s2.get_string(fldname)
             }
+            ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
+        }
+    }
+    fn get_bool(&mut self, fldname: &str) -> Result<bool> {
+        match self.currentscan {
+            ScanEither::Scan1 => self.s1.lock().unwrap().get_bool(fldname),
+            ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_bool(fldname),
+            ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
+        }
+    }
+    fn get_date(&mut self, fldname: &str) -> Result<NaiveDate> {
+        match self.currentscan {
+            ScanEither::Scan1 => self.s1.lock().unwrap().get_date(fldname),
+            ScanEither::Scan2 => self.s2.as_ref().unwrap().lock().unwrap().get_date(fldname),
             ScanEither::NoScan => Err(From::from(SortScanError::NoCurrentScan)),
         }
     }
