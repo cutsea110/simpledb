@@ -151,6 +151,26 @@ where
         .skip(spaces().silent())
 }
 
+fn kw_int32<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("INT32")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn kw_uint32<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("UINT32")
+        // lexeme
+        .skip(spaces().silent())
+}
+
 fn kw_varchar<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -161,12 +181,22 @@ where
         .skip(spaces().silent())
 }
 
-fn kw_int32<Input>() -> impl Parser<Input, Output = String>
+fn kw_bool<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    keyword("INT32")
+    keyword("BOOL")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn kw_date<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("DATE")
         // lexeme
         .skip(spaces().silent())
 }
