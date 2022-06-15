@@ -1,7 +1,7 @@
 use combine::{
     any, attempt,
     error::ParseError,
-    parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
+    parser::char::{alpha_num, char, digit, letter, spaces, string, string_cmp},
     stream::Stream,
     {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
@@ -303,6 +303,18 @@ where
     )
     // lexeme
     .skip(spaces().silent())
+}
+
+fn bool_tok<Input>() -> impl Parser<Input, Output = bool>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    string("false")
+        .map(|_| false)
+        .or(string("true").map(|_| true))
+        // lexeme
+        .skip(spaces().silent())
 }
 
 /// Methods for parsing predicates and their components
@@ -637,6 +649,15 @@ mod tests {
             parser.parse("'What\\'s up?'"),
             Ok(("What's up?".to_string(), ""))
         );
+    }
+
+    #[test]
+    fn bool_tok_test() {
+        let mut parser = bool_tok();
+        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
+        assert_eq!(parser.parse("42"), Err(StringStreamError::UnexpectedParse));
+        assert_eq!(parser.parse("false"), Ok((false, "")));
+        assert_eq!(parser.parse("true"), Ok((true, "")));
     }
 
     #[test]
