@@ -151,12 +151,22 @@ where
         .skip(spaces().silent())
 }
 
+fn kw_int16<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("SMALLINT")
+        // lexeme
+        .skip(spaces().silent())
+}
+
 fn kw_int32<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    keyword("INT32")
+    keyword("INTEGER")
         // lexeme
         .skip(spaces().silent())
 }
@@ -619,6 +629,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
+    let int16_def = kw_int16().map(|_| FieldInfo::new(FieldType::SMALLINT, 0));
     let int32_def = kw_int32().map(|_| FieldInfo::new(FieldType::INTEGER, 0));
     let varchar_def = kw_varchar()
         .with(between(delim_parenl(), delim_parenr(), i32_tok()))
@@ -626,7 +637,11 @@ where
     let bool_def = kw_bool().map(|_| FieldInfo::new(FieldType::BOOL, 0));
     let date_def = kw_date().map(|_| FieldInfo::new(FieldType::DATE, 0));
 
-    int32_def.or(varchar_def).or(bool_def).or(date_def)
+    int32_def
+        .or(int16_def)
+        .or(varchar_def)
+        .or(bool_def)
+        .or(date_def)
 }
 
 /// Method for parsing create view commands
@@ -734,17 +749,29 @@ mod tests {
     #[test]
     fn date_tok_test() {
         let mut parser = date_tok();
-        assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
+        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
         assert_eq!(
-            parser.parse("2022-06-14"),
+            parser.parse("date(aaa)"),
+            Err(StringStreamError::UnexpectedParse)
+        );
+        assert_eq!(
+            parser.parse("date(2022/06/14)"),
+            Err(StringStreamError::UnexpectedParse)
+        );
+        assert_eq!(
+            parser.parse("date(20220614)"),
+            Err(StringStreamError::UnexpectedParse)
+        );
+        assert_eq!(
+            parser.parse("date(2022-06-14)"),
             Ok((NaiveDate::from_ymd(2022, 6, 14), ""))
         );
         assert_eq!(
-            parser.parse("2022-6-9"),
+            parser.parse("DATE(2022-6-9)"),
             Ok((NaiveDate::from_ymd(2022, 6, 9), ""))
         );
         assert_eq!(
-            parser.parse("2024-02-29"),
+            parser.parse("Date(2024-02-29)"),
             Ok((NaiveDate::from_ymd(2024, 2, 29), ""))
         );
     }
@@ -1180,7 +1207,7 @@ mod tests {
         expected.add_i32_field("MajorId");
 
         assert_eq!(parser.parse(
-	    "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32)"
+	    "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer)"
 	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
     }
 
@@ -1269,7 +1296,7 @@ mod tests {
         expected.add_string_field("name", 10);
         expected.add_i32_field("age");
         assert_eq!(
-            parser.parse("create table student (name varchar(10), age int32)"),
+            parser.parse("create table student (name varchar(10), age integer)"),
             Ok((
                 SQL::DDL(DDL::Table(CreateTableData::new(
                     "student".to_string(),
