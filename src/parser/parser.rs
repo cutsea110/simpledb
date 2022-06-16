@@ -373,9 +373,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    field()
-        .map(|fldname| Expression::new_fldname(fldname))
-        .or(constant().map(|c| Expression::Val(c)))
+    // try constant first, because field can get bool value too.
+    constant()
+        .map(|c| Expression::Val(c))
+        .or(field().map(|fldname| Expression::new_fldname(fldname)))
 }
 
 pub fn term<Input>() -> impl Parser<Input, Output = Term>
@@ -709,6 +710,8 @@ mod tests {
             parser.parse("'joe'"),
             Ok((Constant::String("joe".to_string()), ""))
         );
+        assert_eq!(parser.parse("true"), Ok((Constant::Bool(true), "")));
+        assert_eq!(parser.parse("false"), Ok((Constant::Bool(false), "")));
     }
 
     #[test]
