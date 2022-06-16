@@ -18,7 +18,7 @@ impl fmt::Display for ConstantError {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Ord, PartialOrd, Hash)]
 pub enum Constant {
     I16(i16),
     I32(i32),
@@ -26,6 +26,37 @@ pub enum Constant {
     Bool(bool),
     Date(NaiveDate),
 }
+impl PartialEq for Constant {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Constant::I16(l) => match other {
+                Constant::I16(r) => *l == *r,
+                Constant::I32(r) => *l as i32 == *r,
+                _ => false,
+            },
+            Constant::I32(l) => match other {
+                Constant::I16(r) => *l == *r as i32,
+                Constant::I32(r) => *l == *r,
+                _ => false,
+            },
+            Constant::String(l) => match other {
+                Constant::String(r) => *l == *r,
+                Constant::Date(r) => *l == *r.format("%Y-%m-%d").to_string(),
+                _ => false,
+            },
+            Constant::Bool(l) => match other {
+                Constant::Bool(r) => *l == *r,
+                _ => false,
+            },
+            Constant::Date(l) => match other {
+                Constant::String(r) => *l.format("%Y-%m-%d").to_string() == *r,
+                Constant::Date(r) => *l == *r,
+                _ => false,
+            },
+        }
+    }
+}
+impl Eq for Constant {}
 
 impl fmt::Display for Constant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
