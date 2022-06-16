@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::NaiveDate;
 use core::fmt;
 use std::{
     mem,
@@ -147,11 +147,10 @@ impl BTPage {
                 }
                 FieldType::DATE => {
                     let mut tx = self.tx.lock().unwrap();
-                    let today = Utc::today();
                     tx.set_date(
                         blk,
                         (pos + offset) as i32,
-                        NaiveDate::from_ymd(today.year(), today.month(), today.day()),
+                        NaiveDate::from_ymd(0, 1, 1), // NOTE: default 0000-01-01
                         false,
                     )?;
                 }

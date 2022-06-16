@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::NaiveDate;
 use std::sync::{Arc, Mutex};
 
 use super::{btreedir::BTreeDir, btreeleaf::BTreeLeaf};
@@ -58,14 +58,7 @@ impl BTreeIndex {
                 FieldType::INTEGER => Constant::new_i32(i32::MIN),
                 FieldType::VARCHAR => Constant::new_string("".to_string()),
                 FieldType::BOOL => Constant::new_bool(false),
-                FieldType::DATE => {
-                    let today = Utc::today();
-                    Constant::new_date(NaiveDate::from_ymd(
-                        today.year(),
-                        today.month(),
-                        today.day(),
-                    ))
-                }
+                FieldType::DATE => Constant::new_date(NaiveDate::from_ymd(0, 1, 1)), // NOTE: default 0000-01-01
             };
             node.insert_dir(0, minval, 0)?;
             node.close()?;

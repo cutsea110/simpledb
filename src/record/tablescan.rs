@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::NaiveDate;
 use core::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -101,16 +101,10 @@ impl Scan for TableScan {
             FieldType::BOOL => Ok(Constant::new_bool(
                 self.get_bool(fldname).unwrap_or_default(),
             )),
-            FieldType::DATE => {
-                let today = Utc::today();
-                let year = today.year();
-                let month = today.month();
-                let day = today.day();
-                Ok(Constant::new_date(
-                    self.get_date(fldname)
-                        .unwrap_or(NaiveDate::from_ymd(year, month, day)),
-                ))
-            }
+            FieldType::DATE => Ok(Constant::new_date(
+                self.get_date(fldname)
+                    .unwrap_or(NaiveDate::from_ymd(0, 1, 1)), // NOTE: default 0000-01-01
+            )),
         };
     }
     fn has_field(&self, fldname: &str) -> bool {

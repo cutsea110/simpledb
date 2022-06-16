@@ -406,9 +406,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    field()
-        .map(|fldname| Expression::new_fldname(fldname))
-        .or(constant().map(|c| Expression::Val(c)))
+    // Try parse constant() first, because field() can parse the other literal.(ex. date)
+    constant()
+        .map(|c| Expression::Val(c))
+        .or(field().map(|fldname| Expression::new_fldname(fldname)))
 }
 
 pub fn term<Input>() -> impl Parser<Input, Output = Term>

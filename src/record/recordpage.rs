@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{Datelike, NaiveDate, Utc};
+use chrono::NaiveDate;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use std::sync::{Arc, Mutex};
@@ -102,11 +102,10 @@ impl RecordPage {
                         tx.set_bool(&self.blk, fldpos, false, false)?;
                     }
                     FieldType::DATE => {
-                        let today = Utc::today();
                         tx.set_date(
                             &self.blk,
                             fldpos,
-                            NaiveDate::from_ymd(today.year(), today.month(), today.day()),
+                            NaiveDate::from_ymd(0, 1, 1), // NOTE: default 0000-01-01
                             false,
                         )?;
                     }
