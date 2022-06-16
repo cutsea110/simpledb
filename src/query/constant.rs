@@ -2,6 +2,8 @@ use anyhow::Result;
 use chrono::NaiveDate;
 use core::fmt;
 
+use crate::record::schema::FieldType;
+
 #[derive(Debug)]
 pub enum ConstantError {
     TypeError,
@@ -120,6 +122,16 @@ impl Constant {
                 .map_err(|_| From::from(ConstantError::TypeError)),
             Constant::Date(dval) => Ok(*dval),
             _ => Err(From::from(ConstantError::TypeError)),
+        }
+    }
+    // extends by exercise 3.17
+    pub fn as_field_type(&self, fldtype: FieldType) -> Result<Self> {
+        match fldtype {
+            FieldType::SMALLINT => self.as_i16().map(|x| Constant::I16(x)),
+            FieldType::INTEGER => self.as_i32().map(|x| Constant::I32(x)),
+            FieldType::VARCHAR => self.as_string().map(|x| Constant::String(x.to_string())),
+            FieldType::BOOL => self.as_bool().map(|x| Constant::Bool(x)),
+            FieldType::DATE => self.as_date().map(|x| Constant::Date(x)),
         }
     }
 }

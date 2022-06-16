@@ -1,6 +1,6 @@
 use anyhow::Result;
 use core::fmt;
-use log::info;
+use log::debug;
 use std::sync::{Arc, Mutex};
 
 use crate::{
@@ -57,11 +57,15 @@ impl UpdatePlanner for IndexUpdatePlanner {
             let mut valiter = data.vals().iter();
             for fldname in data.fields() {
                 let val = valiter.next().unwrap();
-                info!("Modify field {} to val {}", fldname, &val);
+                debug!("Modify field {} to val {:?}", fldname, &val);
                 s.set_val(fldname, val.clone())?;
                 if let Some(ii) = indexes.get(fldname) {
+                    // convert type
+                    let fldtype = ii.table_schema().field_type(fldname);
+                    let val = val.as_field_type(fldtype)?;
+
                     let idx = ii.open();
-                    idx.lock().unwrap().insert(val.clone(), rid)?;
+                    idx.lock().unwrap().insert(val, rid)?;
                     idx.lock().unwrap().close()?;
                 }
             }
@@ -86,9 +90,15 @@ impl UpdatePlanner for IndexUpdatePlanner {
                 let rid = s.get_rid()?;
                 for fldname in indexes.keys() {
                     let val = s.get_val(fldname)?;
-                    let idx = indexes.get(fldname).unwrap().open();
-                    idx.lock().unwrap().delete(val, rid)?;
-                    idx.lock().unwrap().close()?;
+                    if let Some(ii) = indexes.get(fldname) {
+                        // convert type
+                        let fldtype = ii.table_schema().field_type(fldname);
+                        let val = val.as_field_type(fldtype)?;
+
+                        let idx = ii.open();
+                        idx.lock().unwrap().delete(val, rid)?;
+                        idx.lock().unwrap().close()?;
+                    }
                 }
                 // then delete the record
                 s.delete()?;
@@ -108,10 +118,9 @@ impl UpdatePlanner for IndexUpdatePlanner {
         let p = SelectPlan::new(Arc::new(tp), data.pred().clone());
         let mut md = self.mdm.lock().unwrap();
         let indexes = md.get_index_info(tblname, Arc::clone(&tx))?;
-        let idx = match indexes.get(fldname) {
-            Some(ii) => Some(ii.open()),
-            None => None,
-        };
+        let ii = indexes.get(fldname);
+        let idx = ii.map(|ii| ii.open());
+
         if let Ok(s) = p.open()?.lock().unwrap().to_update_scan() {
             let mut count = 0;
             while s.next() {
@@ -122,9 +131,14 @@ impl UpdatePlanner for IndexUpdatePlanner {
                 s.set_val(data.target_field(), newval.clone())?;
                 // then update the appropriate index, if it exists
                 if let Some(idx) = idx.as_ref() {
+                    // convert type
+                    let fldtype = ii.unwrap().table_schema().field_type(fldname);
+                    let oldval = oldval.as_field_type(fldtype)?;
+                    let newval = newval.as_field_type(fldtype)?;
+
                     let rid = s.get_rid()?;
                     idx.lock().unwrap().delete(oldval, rid)?;
-                    idx.lock().unwrap().insert(newval.clone(), rid)?;
+                    idx.lock().unwrap().insert(newval, rid)?;
                 }
                 count += 1;
             }
