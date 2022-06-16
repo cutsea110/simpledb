@@ -58,23 +58,11 @@ impl Scan for IndexSelectScan {
 
         ok
     }
-    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
-        self.ts.lock().unwrap().get_i8(fldname)
-    }
-    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
-        self.ts.lock().unwrap().get_u8(fldname)
-    }
     fn get_i16(&mut self, fldname: &str) -> Result<i16> {
         self.ts.lock().unwrap().get_i16(fldname)
     }
-    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
-        self.ts.lock().unwrap().get_u16(fldname)
-    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.ts.lock().unwrap().get_i32(fldname)
-    }
-    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
-        self.ts.lock().unwrap().get_u32(fldname)
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.ts.lock().unwrap().get_string(fldname)

@@ -54,12 +54,8 @@ impl BTreeIndex {
             // insert initial directory entry
             let fldtype = dirsch.field_type("dataval");
             let minval = match fldtype {
-                FieldType::WORD => Constant::new_i8(i8::MIN),
-                FieldType::UWORD => Constant::new_u8(u8::MIN),
-                FieldType::SHORT => Constant::new_i16(i16::MIN),
-                FieldType::USHORT => Constant::new_u16(u16::MIN),
+                FieldType::SMALLINT => Constant::new_i16(i16::MIN),
                 FieldType::INTEGER => Constant::new_i32(i32::MIN),
-                FieldType::UINTEGER => Constant::new_u32(u32::MIN),
                 FieldType::VARCHAR => Constant::new_string("".to_string()),
                 FieldType::BOOL => Constant::new_bool(false),
                 FieldType::DATE => {

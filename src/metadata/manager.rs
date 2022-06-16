@@ -121,12 +121,8 @@ mod tests {
         println!("Its fields are:");
         for fldname in sch2.fields() {
             let fld_type = match sch2.field_type(fldname) {
-                FieldType::WORD => "int8".to_string(),
-                FieldType::UWORD => "uint8".to_string(),
-                FieldType::SHORT => "int16".to_string(),
-                FieldType::USHORT => "uint16".to_string(),
-                FieldType::INTEGER => "int32".to_string(),
-                FieldType::UINTEGER => "uint32".to_string(),
+                FieldType::SMALLINT => "smallint".to_string(),
+                FieldType::INTEGER => "integer".to_string(),
                 FieldType::VARCHAR => {
                     let strlen = sch2.length(fldname);
                     format!("varchar({})", strlen)

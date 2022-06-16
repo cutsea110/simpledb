@@ -26,35 +26,15 @@ impl RecordPage {
 
         Ok(Self { tx, blk, layout })
     }
-    pub fn get_i8(&mut self, slot: i32, fldname: &str) -> Result<i8> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.get_i8(&self.blk, fldpos)
-    }
-    pub fn get_u8(&mut self, slot: i32, fldname: &str) -> Result<u8> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.get_u8(&self.blk, fldpos)
-    }
     pub fn get_i16(&mut self, slot: i32, fldname: &str) -> Result<i16> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.get_i16(&self.blk, fldpos)
     }
-    pub fn get_u16(&mut self, slot: i32, fldname: &str) -> Result<u16> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.get_u16(&self.blk, fldpos)
-    }
     pub fn get_i32(&mut self, slot: i32, fldname: &str) -> Result<i32> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.get_i32(&self.blk, fldpos)
-    }
-    pub fn get_u32(&mut self, slot: i32, fldname: &str) -> Result<u32> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.get_u32(&self.blk, fldpos)
     }
     pub fn get_string(&mut self, slot: i32, fldname: &str) -> Result<String> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
@@ -71,35 +51,15 @@ impl RecordPage {
         let mut tx = self.tx.lock().unwrap();
         tx.get_date(&self.blk, fldpos)
     }
-    pub fn set_i8(&mut self, slot: i32, fldname: &str, val: i8) -> Result<()> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.set_i8(&self.blk, fldpos as i32, val, true)
-    }
-    pub fn set_u8(&mut self, slot: i32, fldname: &str, val: u8) -> Result<()> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.set_u8(&self.blk, fldpos as i32, val, true)
-    }
     pub fn set_i16(&mut self, slot: i32, fldname: &str, val: i16) -> Result<()> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.set_i16(&self.blk, fldpos as i32, val, true)
     }
-    pub fn set_u16(&mut self, slot: i32, fldname: &str, val: u16) -> Result<()> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.set_u16(&self.blk, fldpos as i32, val, true)
-    }
     pub fn set_i32(&mut self, slot: i32, fldname: &str, val: i32) -> Result<()> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
         let mut tx = self.tx.lock().unwrap();
         tx.set_i32(&self.blk, fldpos as i32, val, true)
-    }
-    pub fn set_u32(&mut self, slot: i32, fldname: &str, val: u32) -> Result<()> {
-        let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
-        let mut tx = self.tx.lock().unwrap();
-        tx.set_u32(&self.blk, fldpos as i32, val, true)
     }
     pub fn set_string(&mut self, slot: i32, fldname: &str, val: String) -> Result<()> {
         let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
@@ -129,23 +89,11 @@ impl RecordPage {
             for fldname in sch.fields() {
                 let fldpos = self.offset(slot) + self.layout.offset(fldname) as i32;
                 match sch.field_type(fldname) {
-                    FieldType::WORD => {
-                        tx.set_i8(&self.blk, fldpos, 0, false)?;
-                    }
-                    FieldType::UWORD => {
-                        tx.set_u8(&self.blk, fldpos, 0, false)?;
-                    }
-                    FieldType::SHORT => {
+                    FieldType::SMALLINT => {
                         tx.set_i16(&self.blk, fldpos, 0, false)?;
-                    }
-                    FieldType::USHORT => {
-                        tx.set_u16(&self.blk, fldpos, 0, false)?;
                     }
                     FieldType::INTEGER => {
                         tx.set_i32(&self.blk, fldpos, 0, false)?;
-                    }
-                    FieldType::UINTEGER => {
-                        tx.set_u32(&self.blk, fldpos, 0, false)?;
                     }
                     FieldType::VARCHAR => {
                         tx.set_string(&self.blk, fldpos, "", false)?;

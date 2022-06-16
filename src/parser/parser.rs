@@ -161,16 +161,6 @@ where
         .skip(spaces().silent())
 }
 
-fn kw_uint32<Input>() -> impl Parser<Input, Output = String>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    keyword("UINT32")
-        // lexeme
-        .skip(spaces().silent())
-}
-
 fn kw_varchar<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -396,7 +386,6 @@ where
 {
     str_tok()
         .map(|sval| Constant::new_string(sval))
-        .or(u32_tok().map(|ival| Constant::new_u32(ival))) // pick up in largest integer
         .or(i32_tok().map(|ival| Constant::new_i32(ival))) // pick it up as the largest signed integer
         .or(bool_tok().map(|bval| Constant::new_bool(bval)))
         .or(date_tok().map(|dval| Constant::new_date(dval)))
@@ -631,18 +620,13 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     let int32_def = kw_int32().map(|_| FieldInfo::new(FieldType::INTEGER, 0));
-    let uint32_def = kw_uint32().map(|_| FieldInfo::new(FieldType::UINTEGER, 0));
     let varchar_def = kw_varchar()
         .with(between(delim_parenl(), delim_parenr(), i32_tok()))
         .map(|n| FieldInfo::new(FieldType::VARCHAR, n as usize));
     let bool_def = kw_bool().map(|_| FieldInfo::new(FieldType::BOOL, 0));
     let date_def = kw_date().map(|_| FieldInfo::new(FieldType::DATE, 0));
 
-    uint32_def
-        .or(int32_def)
-        .or(varchar_def)
-        .or(bool_def)
-        .or(date_def)
+    int32_def.or(varchar_def).or(bool_def).or(date_def)
 }
 
 /// Method for parsing create view commands

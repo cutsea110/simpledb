@@ -7,12 +7,8 @@ use crate::{materialize::sortscan::SortScan, record::tablescan::TableScan};
 pub trait Scan {
     fn before_first(&mut self) -> Result<()>;
     fn next(&mut self) -> bool;
-    fn get_i8(&mut self, fldname: &str) -> Result<i8>;
-    fn get_u8(&mut self, fldname: &str) -> Result<u8>;
     fn get_i16(&mut self, fldname: &str) -> Result<i16>;
-    fn get_u16(&mut self, fldname: &str) -> Result<u16>;
     fn get_i32(&mut self, fldname: &str) -> Result<i32>;
-    fn get_u32(&mut self, fldname: &str) -> Result<u32>;
     fn get_string(&mut self, fldname: &str) -> Result<String>;
     fn get_bool(&mut self, fldname: &str) -> Result<bool>;
     fn get_date(&mut self, fldname: &str) -> Result<NaiveDate>;

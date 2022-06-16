@@ -40,24 +40,6 @@ impl Scan for ProjectScan {
     fn next(&mut self) -> bool {
         self.s.lock().unwrap().next()
     }
-    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
-        if self.has_field(fldname) {
-            self.s.lock().unwrap().get_i8(fldname)
-        } else {
-            Err(From::from(ProjectScanError::FieldNotFoundError(
-                fldname.to_string(),
-            )))
-        }
-    }
-    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
-        if self.has_field(fldname) {
-            self.s.lock().unwrap().get_u8(fldname)
-        } else {
-            Err(From::from(ProjectScanError::FieldNotFoundError(
-                fldname.to_string(),
-            )))
-        }
-    }
     fn get_i16(&mut self, fldname: &str) -> Result<i16> {
         if self.has_field(fldname) {
             self.s.lock().unwrap().get_i16(fldname)
@@ -67,27 +49,9 @@ impl Scan for ProjectScan {
             )))
         }
     }
-    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
-        if self.has_field(fldname) {
-            self.s.lock().unwrap().get_u16(fldname)
-        } else {
-            Err(From::from(ProjectScanError::FieldNotFoundError(
-                fldname.to_string(),
-            )))
-        }
-    }
     fn get_i32(&mut self, fldname: &str) -> anyhow::Result<i32> {
         if self.has_field(fldname) {
             self.s.lock().unwrap().get_i32(fldname)
-        } else {
-            Err(From::from(ProjectScanError::FieldNotFoundError(
-                fldname.to_string(),
-            )))
-        }
-    }
-    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
-        if self.has_field(fldname) {
-            self.s.lock().unwrap().get_u32(fldname)
         } else {
             Err(From::from(ProjectScanError::FieldNotFoundError(
                 fldname.to_string(),

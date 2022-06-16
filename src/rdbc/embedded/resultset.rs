@@ -33,12 +33,8 @@ impl<'a> EmbeddedResultSet<'a> {
 impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
     type Meta = EmbeddedMetaData;
     type Next = bool;
-    type Int8Value = i8;
-    type UInt8Value = u8;
     type Int16Value = i16;
-    type UInt16Value = u16;
     type Int32Value = i32;
-    type UInt32Value = u32;
     type StringValue = String;
     type BoolValue = bool;
     type DateValue = NaiveDate;
@@ -46,24 +42,6 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
 
     fn next(&self) -> Self::Next {
         self.s.lock().unwrap().next()
-    }
-    fn get_i8(&mut self, fldname: &str) -> Result<Self::Int8Value> {
-        self.s.lock().unwrap().get_i8(fldname).or_else(|_| {
-            self.conn.rollback().and_then(|_| {
-                Err(From::from(ResultSetError::UnknownField(
-                    fldname.to_string(),
-                )))
-            })
-        })
-    }
-    fn get_u8(&mut self, fldname: &str) -> Result<Self::UInt8Value> {
-        self.s.lock().unwrap().get_u8(fldname).or_else(|_| {
-            self.conn.rollback().and_then(|_| {
-                Err(From::from(ResultSetError::UnknownField(
-                    fldname.to_string(),
-                )))
-            })
-        })
     }
     fn get_i16(&mut self, fldname: &str) -> Result<Self::Int16Value> {
         self.s.lock().unwrap().get_i16(fldname).or_else(|_| {
@@ -74,26 +52,8 @@ impl<'a> ResultSetAdapter for EmbeddedResultSet<'a> {
             })
         })
     }
-    fn get_u16(&mut self, fldname: &str) -> Result<Self::UInt16Value> {
-        self.s.lock().unwrap().get_u16(fldname).or_else(|_| {
-            self.conn.rollback().and_then(|_| {
-                Err(From::from(ResultSetError::UnknownField(
-                    fldname.to_string(),
-                )))
-            })
-        })
-    }
     fn get_i32(&mut self, fldname: &str) -> Result<Self::Int32Value> {
         self.s.lock().unwrap().get_i32(fldname).or_else(|_| {
-            self.conn.rollback().and_then(|_| {
-                Err(From::from(ResultSetError::UnknownField(
-                    fldname.to_string(),
-                )))
-            })
-        })
-    }
-    fn get_u32(&mut self, fldname: &str) -> Result<Self::UInt32Value> {
-        self.s.lock().unwrap().get_u32(fldname).or_else(|_| {
             self.conn.rollback().and_then(|_| {
                 Err(From::from(ResultSetError::UnknownField(
                     fldname.to_string(),

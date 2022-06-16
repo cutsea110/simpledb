@@ -8,10 +8,7 @@ use crate::{
     rdbc::{
         resultsetadapter::ResultSetAdapter, resultsetmetadataadapter::ResultSetMetaDataAdapter,
     },
-    remote_capnp::{
-        bool_box, date_box, int16_box, int32_box, int8_box, remote_result_set, string_box,
-        u_int16_box, u_int32_box, u_int8_box,
-    },
+    remote_capnp::{bool_box, date_box, int16_box, int32_box, remote_result_set, string_box},
 };
 
 pub struct NextImpl {
@@ -22,32 +19,6 @@ impl NextImpl {
         Self { client }
     }
     pub async fn has_next(&self) -> Result<bool> {
-        let reply = self.client.read_request().send().promise.await?;
-        Ok(reply.get()?.get_val())
-    }
-}
-
-pub struct Int8ValueImpl {
-    client: int8_box::Client,
-}
-impl Int8ValueImpl {
-    pub fn new(client: int8_box::Client) -> Self {
-        Self { client }
-    }
-    pub async fn get_value(&self) -> Result<i8> {
-        let reply = self.client.read_request().send().promise.await?;
-        Ok(reply.get()?.get_val())
-    }
-}
-
-pub struct UInt8ValueImpl {
-    client: u_int8_box::Client,
-}
-impl UInt8ValueImpl {
-    pub fn new(client: u_int8_box::Client) -> Self {
-        Self { client }
-    }
-    pub async fn get_value(&self) -> Result<u8> {
         let reply = self.client.read_request().send().promise.await?;
         Ok(reply.get()?.get_val())
     }
@@ -66,19 +37,6 @@ impl Int16ValueImpl {
     }
 }
 
-pub struct UInt16ValueImpl {
-    client: u_int16_box::Client,
-}
-impl UInt16ValueImpl {
-    pub fn new(client: u_int16_box::Client) -> Self {
-        Self { client }
-    }
-    pub async fn get_value(&self) -> Result<u16> {
-        let reply = self.client.read_request().send().promise.await?;
-        Ok(reply.get()?.get_val())
-    }
-}
-
 pub struct Int32ValueImpl {
     client: int32_box::Client,
 }
@@ -87,19 +45,6 @@ impl Int32ValueImpl {
         Self { client }
     }
     pub async fn get_value(&self) -> Result<i32> {
-        let reply = self.client.read_request().send().promise.await?;
-        Ok(reply.get()?.get_val())
-    }
-}
-
-pub struct UInt32ValueImpl {
-    client: u_int32_box::Client,
-}
-impl UInt32ValueImpl {
-    pub fn new(client: u_int32_box::Client) -> Self {
-        Self { client }
-    }
-    pub async fn get_value(&self) -> Result<u32> {
         let reply = self.client.read_request().send().promise.await?;
         Ok(reply.get()?.get_val())
     }
@@ -151,12 +96,8 @@ impl DateValueImpl {
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Value {
-    Int8(i8),
-    UInt8(u8),
     Int16(i16),
-    UInt16(u16),
     Int32(i32),
-    UInt32(u32),
     String(String),
     Bool(bool),
     Date(NaiveDate),
@@ -185,23 +126,11 @@ impl NetworkResultSet {
                 .expect("get column name")
                 .as_str();
             match entry.get(fldname) {
-                Some(Value::Int8(v)) => {
-                    result.insert(fldname, Value::Int8(*v));
-                }
-                Some(Value::UInt8(v)) => {
-                    result.insert(fldname, Value::UInt8(*v));
-                }
                 Some(Value::Int16(v)) => {
                     result.insert(fldname, Value::Int16(*v));
                 }
-                Some(Value::UInt16(v)) => {
-                    result.insert(fldname, Value::UInt16(*v));
-                }
                 Some(Value::Int32(v)) => {
                     result.insert(fldname, Value::Int32(*v));
-                }
-                Some(Value::UInt32(v)) => {
-                    result.insert(fldname, Value::UInt32(*v));
                 }
                 Some(Value::String(s)) => {
                     result.insert(fldname, Value::String(s.clone()));
@@ -245,23 +174,11 @@ impl NetworkResultSet {
                     .expect("get column name")
                     .as_str();
                 match entry.get(fldname) {
-                    Some(Value::Int8(v)) => {
-                        result.insert(fldname, Value::Int8(*v));
-                    }
-                    Some(Value::UInt8(v)) => {
-                        result.insert(fldname, Value::UInt8(*v));
-                    }
                     Some(Value::Int16(v)) => {
                         result.insert(fldname, Value::Int16(*v));
                     }
-                    Some(Value::UInt16(v)) => {
-                        result.insert(fldname, Value::UInt16(*v));
-                    }
                     Some(Value::Int32(v)) => {
                         result.insert(fldname, Value::Int32(*v));
-                    }
-                    Some(Value::UInt32(v)) => {
-                        result.insert(fldname, Value::UInt32(*v));
                     }
                     Some(Value::String(s)) => {
                         result.insert(fldname, Value::String(s.clone()));
@@ -294,12 +211,8 @@ impl NetworkResultSet {
         for kv in entries.into_iter() {
             let key = kv.get_key().expect("get key");
             let val = match kv.get_value().unwrap().which().expect("match value type") {
-                remote_result_set::value::Int8(v) => Value::Int8(v),
-                remote_result_set::value::Uint8(v) => Value::UInt8(v),
                 remote_result_set::value::Int16(v) => Value::Int16(v),
-                remote_result_set::value::Uint16(v) => Value::UInt16(v),
                 remote_result_set::value::Int32(v) => Value::Int32(v),
-                remote_result_set::value::Uint32(v) => Value::UInt32(v),
                 remote_result_set::value::String(s) => Value::String(s.unwrap().to_string()),
                 remote_result_set::value::Bool(v) => Value::Bool(v),
                 remote_result_set::value::Date(v) => {
@@ -320,12 +233,8 @@ impl NetworkResultSet {
 impl ResultSetAdapter for NetworkResultSet {
     type Meta = NetworkResultSetMetaData;
     type Next = NextImpl;
-    type Int8Value = Int8ValueImpl;
-    type UInt8Value = UInt8ValueImpl;
     type Int16Value = Int16ValueImpl;
-    type UInt16Value = UInt16ValueImpl;
     type Int32Value = Int32ValueImpl;
-    type UInt32Value = UInt32ValueImpl;
     type StringValue = StringValueImpl;
     type BoolValue = BoolValueImpl;
     type DateValue = DateValueImpl;
@@ -336,20 +245,6 @@ impl ResultSetAdapter for NetworkResultSet {
 
         Self::Next::new(exists)
     }
-    fn get_i8(&mut self, fldname: &str) -> Result<Self::Int8Value> {
-        let mut request = self.resultset.get_int8_request();
-        request.get().set_fldname(fldname.into());
-        let val = request.send().pipeline.get_val();
-
-        Ok(Self::Int8Value::new(val))
-    }
-    fn get_u8(&mut self, fldname: &str) -> Result<Self::UInt8Value> {
-        let mut request = self.resultset.get_u_int8_request();
-        request.get().set_fldname(fldname.into());
-        let val = request.send().pipeline.get_val();
-
-        Ok(Self::UInt8Value::new(val))
-    }
     fn get_i16(&mut self, fldname: &str) -> Result<Self::Int16Value> {
         let mut request = self.resultset.get_int16_request();
         request.get().set_fldname(fldname.into());
@@ -357,27 +252,12 @@ impl ResultSetAdapter for NetworkResultSet {
 
         Ok(Self::Int16Value::new(val))
     }
-    fn get_u16(&mut self, fldname: &str) -> Result<Self::UInt16Value> {
-        let mut request = self.resultset.get_u_int16_request();
-        request.get().set_fldname(fldname.into());
-        let val = request.send().pipeline.get_val();
-
-        Ok(Self::UInt16Value::new(val))
-    }
-
     fn get_i32(&mut self, fldname: &str) -> Result<Self::Int32Value> {
         let mut request = self.resultset.get_int32_request();
         request.get().set_fldname(fldname.into());
         let val = request.send().pipeline.get_val();
 
         Ok(Self::Int32Value::new(val))
-    }
-    fn get_u32(&mut self, fldname: &str) -> Result<Self::UInt32Value> {
-        let mut request = self.resultset.get_u_int32_request();
-        request.get().set_fldname(fldname.into());
-        let val = request.send().pipeline.get_val();
-
-        Ok(Self::UInt32Value::new(val))
     }
     fn get_string(&mut self, fldname: &str) -> Result<Self::StringValue> {
         let mut request = self.resultset.get_string_request();

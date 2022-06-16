@@ -67,23 +67,11 @@ impl Scan for TableScan {
 
         true
     }
-    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
-        self.rp.as_mut().unwrap().get_i8(self.currentslot, fldname)
-    }
-    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
-        self.rp.as_mut().unwrap().get_u8(self.currentslot, fldname)
-    }
     fn get_i16(&mut self, fldname: &str) -> Result<i16> {
         self.rp.as_mut().unwrap().get_i16(self.currentslot, fldname)
     }
-    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
-        self.rp.as_mut().unwrap().get_u16(self.currentslot, fldname)
-    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.rp.as_mut().unwrap().get_i32(self.currentslot, fldname)
-    }
-    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
-        self.rp.as_mut().unwrap().get_u32(self.currentslot, fldname)
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.rp
@@ -105,12 +93,8 @@ impl Scan for TableScan {
     }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
         return match self.layout.schema().field_type(fldname) {
-            FieldType::WORD => Ok(Constant::new_i8(self.get_i8(fldname).unwrap_or(0))),
-            FieldType::UWORD => Ok(Constant::new_u8(self.get_u8(fldname).unwrap_or(0))),
-            FieldType::SHORT => Ok(Constant::new_i16(self.get_i16(fldname).unwrap_or(0))),
-            FieldType::USHORT => Ok(Constant::new_u16(self.get_u16(fldname).unwrap_or(0))),
+            FieldType::SMALLINT => Ok(Constant::new_i16(self.get_i16(fldname).unwrap_or(0))),
             FieldType::INTEGER => Ok(Constant::new_i32(self.get_i32(fldname).unwrap_or(0))),
-            FieldType::UINTEGER => Ok(Constant::new_u32(self.get_u32(fldname).unwrap_or(0))),
             FieldType::VARCHAR => Ok(Constant::new_string(
                 self.get_string(fldname).unwrap_or("".to_string()),
             )),
@@ -155,41 +139,17 @@ impl Scan for TableScan {
 }
 
 impl UpdateScan for TableScan {
-    fn set_i8(&mut self, fldname: &str, val: i8) -> Result<()> {
-        self.rp
-            .as_mut()
-            .unwrap()
-            .set_i8(self.currentslot, fldname, val)
-    }
-    fn set_u8(&mut self, fldname: &str, val: u8) -> Result<()> {
-        self.rp
-            .as_mut()
-            .unwrap()
-            .set_u8(self.currentslot, fldname, val)
-    }
     fn set_i16(&mut self, fldname: &str, val: i16) -> Result<()> {
         self.rp
             .as_mut()
             .unwrap()
             .set_i16(self.currentslot, fldname, val)
     }
-    fn set_u16(&mut self, fldname: &str, val: u16) -> Result<()> {
-        self.rp
-            .as_mut()
-            .unwrap()
-            .set_u16(self.currentslot, fldname, val)
-    }
     fn set_i32(&mut self, fldname: &str, val: i32) -> Result<()> {
         self.rp
             .as_mut()
             .unwrap()
             .set_i32(self.currentslot, fldname, val)
-    }
-    fn set_u32(&mut self, fldname: &str, val: u32) -> Result<()> {
-        self.rp
-            .as_mut()
-            .unwrap()
-            .set_u32(self.currentslot, fldname, val)
     }
     fn set_string(&mut self, fldname: &str, val: String) -> Result<()> {
         self.rp
@@ -211,23 +171,11 @@ impl UpdateScan for TableScan {
     }
     fn set_val(&mut self, fldname: &str, val: Constant) -> Result<()> {
         match self.layout.schema().field_type(fldname) {
-            FieldType::WORD => {
-                self.set_i8(fldname, val.as_i8().unwrap())?;
-            }
-            FieldType::UWORD => {
-                self.set_u8(fldname, val.as_u8().unwrap())?;
-            }
-            FieldType::SHORT => {
+            FieldType::SMALLINT => {
                 self.set_i16(fldname, val.as_i16().unwrap())?;
-            }
-            FieldType::USHORT => {
-                self.set_u16(fldname, val.as_u16().unwrap())?;
             }
             FieldType::INTEGER => {
                 self.set_i32(fldname, val.as_i32().unwrap())?;
-            }
-            FieldType::UINTEGER => {
-                self.set_u32(fldname, val.as_u32().unwrap())?;
             }
             FieldType::VARCHAR => {
                 self.set_string(fldname, val.as_string().unwrap().to_string())?;
