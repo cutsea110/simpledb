@@ -1,10 +1,9 @@
-use chrono::NaiveDate;
 use combine::{
     any, attempt,
     error::ParseError,
     parser::char::{alpha_num, char, digit, letter, spaces, string, string_cmp},
     stream::Stream,
-    token, {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
+    {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
 use std::usize;
 
@@ -317,18 +316,6 @@ where
         .skip(spaces().silent())
 }
 
-fn u32_tok<Input>() -> impl Parser<Input, Output = u32>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    optional(char('+'))
-        .and(many1(digit()).map(|s: String| s.parse::<u32>()))
-        .map(|(_s, v)| v.unwrap_or_default())
-        // lexeme
-        .skip(spaces().silent())
-}
-
 fn str_tok<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -360,25 +347,6 @@ where
         .skip(spaces().silent())
 }
 
-fn date_tok<Input>() -> impl Parser<Input, Output = NaiveDate>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    let date = i32_tok()
-        .skip(char('-'))
-        .and(u32_tok().skip(char('-')))
-        .and(u32_tok())
-        .map(|((y, m), d)| NaiveDate::from_ymd(y, m, d));
-
-    keyword("DATE")
-        .with(token('('))
-        .with(date)
-        .skip(token(')'))
-        // lexeme
-        .skip(spaces().silent())
-}
-
 /// Methods for parsing predicates and their components
 
 pub fn field<Input>() -> impl Parser<Input, Output = String>
@@ -398,7 +366,6 @@ where
         .map(|sval| Constant::new_string(sval))
         .or(i32_tok().map(|ival| Constant::new_i32(ival))) // pick it up as the largest signed integer
         .or(bool_tok().map(|bval| Constant::new_bool(bval)))
-        .or(date_tok().map(|dval| Constant::new_date(dval)))
 }
 
 pub fn expression<Input>() -> impl Parser<Input, Output = Expression>
@@ -406,10 +373,9 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    // Try parse constant() first, because field() can parse the other literal.(ex. date)
-    constant()
-        .map(|c| Expression::Val(c))
-        .or(field().map(|fldname| Expression::new_fldname(fldname)))
+    field()
+        .map(|fldname| Expression::new_fldname(fldname))
+        .or(constant().map(|c| Expression::Val(c)))
 }
 
 pub fn term<Input>() -> impl Parser<Input, Output = Term>
@@ -705,19 +671,6 @@ mod tests {
     }
 
     #[test]
-    fn u32_tok_test() {
-        let mut parser = u32_tok();
-        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
-        assert_eq!(parser.parse("42"), Ok((42, "")));
-        assert_eq!(parser.parse("42 "), Ok((42, "")));
-        assert_eq!(parser.parse("+42"), Ok((42, "")));
-        assert_eq!(
-            parser.parse("-42 "),
-            Err(StringStreamError::UnexpectedParse)
-        );
-    }
-
-    #[test]
     fn str_tok_test() {
         let mut parser = str_tok();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
@@ -745,36 +698,6 @@ mod tests {
         assert_eq!(parser.parse("false123"), Ok((false, "123")));
         assert_eq!(parser.parse("true"), Ok((true, "")));
         assert_eq!(parser.parse("trueabc"), Ok((true, "abc")));
-    }
-
-    #[test]
-    fn date_tok_test() {
-        let mut parser = date_tok();
-        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
-        assert_eq!(
-            parser.parse("date(aaa)"),
-            Err(StringStreamError::UnexpectedParse)
-        );
-        assert_eq!(
-            parser.parse("date(2022/06/14)"),
-            Err(StringStreamError::UnexpectedParse)
-        );
-        assert_eq!(
-            parser.parse("date(20220614)"),
-            Err(StringStreamError::UnexpectedParse)
-        );
-        assert_eq!(
-            parser.parse("date(2022-06-14)"),
-            Ok((NaiveDate::from_ymd(2022, 6, 14), ""))
-        );
-        assert_eq!(
-            parser.parse("DATE(2022-6-9)"),
-            Ok((NaiveDate::from_ymd(2022, 6, 9), ""))
-        );
-        assert_eq!(
-            parser.parse("Date(2024-02-29)"),
-            Ok((NaiveDate::from_ymd(2024, 2, 29), ""))
-        );
     }
 
     #[test]
