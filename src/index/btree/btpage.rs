@@ -128,25 +128,21 @@ impl BTPage {
     pub fn make_default_record(&self, blk: &BlockId, pos: usize) -> Result<()> {
         for fldname in self.layout.schema().fields() {
             let offset = self.layout.offset(fldname);
+            let mut tx = self.tx.lock().unwrap();
             match self.layout.schema().field_type(fldname) {
                 FieldType::SMALLINT => {
-                    let mut tx = self.tx.lock().unwrap();
                     tx.set_i16(blk, (pos + offset) as i32, 0, false)?;
                 }
                 FieldType::INTEGER => {
-                    let mut tx = self.tx.lock().unwrap();
                     tx.set_i32(blk, (pos + offset) as i32, 0, false)?;
                 }
                 FieldType::VARCHAR => {
-                    let mut tx = self.tx.lock().unwrap();
                     tx.set_string(blk, (pos + offset) as i32, "", false)?;
                 }
                 FieldType::BOOL => {
-                    let mut tx = self.tx.lock().unwrap();
                     tx.set_bool(blk, (pos + offset) as i32, false, false)?;
                 }
                 FieldType::DATE => {
-                    let mut tx = self.tx.lock().unwrap();
                     tx.set_date(
                         blk,
                         (pos + offset) as i32,
