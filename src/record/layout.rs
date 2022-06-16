@@ -47,12 +47,8 @@ impl Layout {
 fn lengthin_bytes(schema: &Schema, fldname: String) -> usize {
     let fldtype = schema.field_type(&fldname);
     match fldtype {
-        FieldType::WORD => mem::size_of::<i8>(),
-        FieldType::UWORD => mem::size_of::<u8>(),
-        FieldType::SHORT => mem::size_of::<i16>(),
-        FieldType::USHORT => mem::size_of::<u16>(),
+        FieldType::SMALLINT => mem::size_of::<i16>(),
         FieldType::INTEGER => mem::size_of::<i32>(),
-        FieldType::UINTEGER => mem::size_of::<u32>(),
         FieldType::VARCHAR => Page::max_length(schema.length(&fldname)),
         FieldType::BOOL => mem::size_of::<bool>(),
         FieldType::DATE => mem::size_of::<u32>(), // NOTE: u16(year) + u8(month) + u8(day)

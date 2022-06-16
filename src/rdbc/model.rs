@@ -56,12 +56,8 @@ impl From<Schema> for record::schema::Schema {
         let mut result = Self::new();
         for (fldname, FieldInfo { fld_type, length }) in sch.info.into_iter() {
             match fld_type {
-                FieldType::WORD => result.add_i8_field(&fldname),
-                FieldType::UWORD => result.add_u8_field(&fldname),
-                FieldType::SHORT => result.add_i16_field(&fldname),
-                FieldType::USHORT => result.add_u16_field(&fldname),
+                FieldType::SMALLINT => result.add_i16_field(&fldname),
                 FieldType::INTEGER => result.add_i32_field(&fldname),
-                FieldType::UINTEGER => result.add_u32_field(&fldname),
                 FieldType::VARCHAR => result.add_string_field(&fldname, length),
                 FieldType::BOOL => result.add_bool_field(&fldname),
                 FieldType::DATE => result.add_date_field(&fldname),
@@ -109,12 +105,8 @@ impl From<FieldInfo> for record::schema::FieldInfo {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum FieldType {
-    WORD,
-    UWORD,
-    SHORT,
-    USHORT,
+    SMALLINT,
     INTEGER,
-    UINTEGER,
     VARCHAR,
     BOOL,
     DATE,
@@ -122,12 +114,8 @@ pub enum FieldType {
 impl<'a> From<remote_capnp::FieldType> for FieldType {
     fn from(ft: remote_capnp::FieldType) -> Self {
         match ft {
-            remote_capnp::FieldType::Word => Self::WORD,
-            remote_capnp::FieldType::UWord => Self::UWORD,
-            remote_capnp::FieldType::Short => Self::SHORT,
-            remote_capnp::FieldType::UShort => Self::USHORT,
+            remote_capnp::FieldType::SmallInt => Self::SMALLINT,
             remote_capnp::FieldType::Integer => Self::INTEGER,
-            remote_capnp::FieldType::UInteger => Self::UINTEGER,
             remote_capnp::FieldType::Varchar => Self::VARCHAR,
             remote_capnp::FieldType::Bool => Self::BOOL,
             remote_capnp::FieldType::Date => Self::DATE,
@@ -137,12 +125,8 @@ impl<'a> From<remote_capnp::FieldType> for FieldType {
 impl From<FieldType> for record::schema::FieldType {
     fn from(ft: FieldType) -> Self {
         match ft {
-            FieldType::WORD => Self::WORD,
-            FieldType::UWORD => Self::UWORD,
-            FieldType::SHORT => Self::SHORT,
-            FieldType::USHORT => Self::USHORT,
+            FieldType::SMALLINT => Self::SMALLINT,
             FieldType::INTEGER => Self::INTEGER,
-            FieldType::UINTEGER => Self::UINTEGER,
             FieldType::VARCHAR => Self::VARCHAR,
             FieldType::BOOL => Self::BOOL,
             FieldType::DATE => Self::DATE,

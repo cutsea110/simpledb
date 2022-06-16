@@ -43,12 +43,8 @@ impl ResultSetMetaDataAdapter for NetworkResultSetMetaData {
     fn get_column_type(&self, column: usize) -> Option<DataType> {
         if let Some(fldname) = self.get_column_name(column) {
             match self.sch.field_type(fldname) {
-                FieldType::WORD => return Some(DataType::Int8),
-                FieldType::UWORD => return Some(DataType::UInt8),
-                FieldType::SHORT => return Some(DataType::Int16),
-                FieldType::USHORT => return Some(DataType::UInt16),
+                FieldType::SMALLINT => return Some(DataType::Int16),
                 FieldType::INTEGER => return Some(DataType::Int32),
-                FieldType::UINTEGER => return Some(DataType::UInt32),
                 FieldType::VARCHAR => return Some(DataType::Varchar),
                 FieldType::BOOL => return Some(DataType::Bool),
                 FieldType::DATE => return Some(DataType::Date),
@@ -60,12 +56,8 @@ impl ResultSetMetaDataAdapter for NetworkResultSetMetaData {
     fn get_column_display_size(&self, column: usize) -> Option<usize> {
         if let Some(fldname) = self.get_column_name(column) {
             let fldlength = match self.sch.field_type(fldname) {
-                FieldType::WORD => 3,
-                FieldType::UWORD => 4,
-                FieldType::SHORT => 6,    // WANTFIX
-                FieldType::USHORT => 6,   // WANTFIX
+                FieldType::SMALLINT => 6, // WANTFIX
                 FieldType::INTEGER => 6,  // WANTFIX
-                FieldType::UINTEGER => 6, // WANTFIX
                 FieldType::VARCHAR => self.sch.length(fldname),
                 FieldType::BOOL => 5,  // length of false
                 FieldType::DATE => 10, // length of YYYY-MM-DD

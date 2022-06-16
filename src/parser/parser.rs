@@ -1,7 +1,7 @@
 use combine::{
     any, attempt,
     error::ParseError,
-    parser::char::{alpha_num, char, digit, letter, spaces, string_cmp},
+    parser::char::{alpha_num, char, digit, letter, spaces, string, string_cmp},
     stream::Stream,
     {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
@@ -150,6 +150,26 @@ where
         .skip(spaces().silent())
 }
 
+fn kw_int16<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("SMALLINT")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn kw_int32<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("INTEGER")
+        // lexeme
+        .skip(spaces().silent())
+}
+
 fn kw_varchar<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
@@ -160,12 +180,22 @@ where
         .skip(spaces().silent())
 }
 
-fn kw_int32<Input>() -> impl Parser<Input, Output = String>
+fn kw_bool<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    keyword("INT32")
+    keyword("BOOL")
+        // lexeme
+        .skip(spaces().silent())
+}
+
+fn kw_date<Input>() -> impl Parser<Input, Output = String>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    keyword("DATE")
         // lexeme
         .skip(spaces().silent())
 }
@@ -305,6 +335,18 @@ where
     .skip(spaces().silent())
 }
 
+fn bool_tok<Input>() -> impl Parser<Input, Output = bool>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    string("false")
+        .map(|_| false)
+        .or(string("true").map(|_| true))
+        // lexeme
+        .skip(spaces().silent())
+}
+
 /// Methods for parsing predicates and their components
 
 pub fn field<Input>() -> impl Parser<Input, Output = String>
@@ -322,7 +364,8 @@ where
 {
     str_tok()
         .map(|sval| Constant::new_string(sval))
-        .or(i32_tok().map(|ival| Constant::new_i32(ival)))
+        .or(i32_tok().map(|ival| Constant::new_i32(ival))) // pick it up as the largest signed integer
+        .or(bool_tok().map(|bval| Constant::new_bool(bval)))
 }
 
 pub fn expression<Input>() -> impl Parser<Input, Output = Expression>
@@ -330,9 +373,10 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    field()
-        .map(|fldname| Expression::new_fldname(fldname))
-        .or(constant().map(|c| Expression::Val(c)))
+    // try constant first, because field can get bool value too.
+    constant()
+        .map(|c| Expression::Val(c))
+        .or(field().map(|fldname| Expression::new_fldname(fldname)))
 }
 
 pub fn term<Input>() -> impl Parser<Input, Output = Term>
@@ -553,12 +597,19 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
+    let int16_def = kw_int16().map(|_| FieldInfo::new(FieldType::SMALLINT, 0));
     let int32_def = kw_int32().map(|_| FieldInfo::new(FieldType::INTEGER, 0));
     let varchar_def = kw_varchar()
         .with(between(delim_parenl(), delim_parenr(), i32_tok()))
         .map(|n| FieldInfo::new(FieldType::VARCHAR, n as usize));
+    let bool_def = kw_bool().map(|_| FieldInfo::new(FieldType::BOOL, 0));
+    let date_def = kw_date().map(|_| FieldInfo::new(FieldType::DATE, 0));
 
-    int32_def.or(varchar_def)
+    int32_def
+        .or(int16_def)
+        .or(varchar_def)
+        .or(bool_def)
+        .or(date_def)
 }
 
 /// Method for parsing create view commands
@@ -640,6 +691,17 @@ mod tests {
     }
 
     #[test]
+    fn bool_tok_test() {
+        let mut parser = bool_tok();
+        assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
+        assert_eq!(parser.parse("42"), Err(StringStreamError::UnexpectedParse));
+        assert_eq!(parser.parse("false"), Ok((false, "")));
+        assert_eq!(parser.parse("false123"), Ok((false, "123")));
+        assert_eq!(parser.parse("true"), Ok((true, "")));
+        assert_eq!(parser.parse("trueabc"), Ok((true, "abc")));
+    }
+
+    #[test]
     fn constant_test() {
         let mut parser = constant();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
@@ -648,6 +710,8 @@ mod tests {
             parser.parse("'joe'"),
             Ok((Constant::String("joe".to_string()), ""))
         );
+        assert_eq!(parser.parse("true"), Ok((Constant::Bool(true), "")));
+        assert_eq!(parser.parse("false"), Ok((Constant::Bool(false), "")));
     }
 
     #[test]
@@ -1070,7 +1134,7 @@ mod tests {
         expected.add_i32_field("MajorId");
 
         assert_eq!(parser.parse(
-	    "CREATE TABLE STUDENT (SId int32, SName varchar(10), GradYear int32, MajorId int32)"
+	    "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer)"
 	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
     }
 
@@ -1159,7 +1223,7 @@ mod tests {
         expected.add_string_field("name", 10);
         expected.add_i32_field("age");
         assert_eq!(
-            parser.parse("create table student (name varchar(10), age int32)"),
+            parser.parse("create table student (name varchar(10), age integer)"),
             Ok((
                 SQL::DDL(DDL::Table(CreateTableData::new(
                     "student".to_string(),

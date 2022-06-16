@@ -44,23 +44,11 @@ impl Scan for SelectScan {
         }
         false
     }
-    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
-        self.s.lock().unwrap().get_i8(fldname)
-    }
-    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
-        self.s.lock().unwrap().get_u8(fldname)
-    }
     fn get_i16(&mut self, fldname: &str) -> Result<i16> {
         self.s.lock().unwrap().get_i16(fldname)
     }
-    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
-        self.s.lock().unwrap().get_u16(fldname)
-    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         self.s.lock().unwrap().get_i32(fldname)
-    }
-    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
-        self.s.lock().unwrap().get_u32(fldname)
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         self.s.lock().unwrap().get_string(fldname)
@@ -93,29 +81,13 @@ impl Scan for SelectScan {
 }
 
 impl UpdateScan for SelectScan {
-    fn set_i8(&mut self, fldname: &str, val: i8) -> Result<()> {
-        let mut us = self.s.lock().unwrap();
-        us.to_update_scan()?.set_i8(fldname, val)
-    }
-    fn set_u8(&mut self, fldname: &str, val: u8) -> Result<()> {
-        let mut us = self.s.lock().unwrap();
-        us.to_update_scan()?.set_u8(fldname, val)
-    }
     fn set_i16(&mut self, fldname: &str, val: i16) -> Result<()> {
         let mut us = self.s.lock().unwrap();
         us.to_update_scan()?.set_i16(fldname, val)
     }
-    fn set_u16(&mut self, fldname: &str, val: u16) -> Result<()> {
-        let mut us = self.s.lock().unwrap();
-        us.to_update_scan()?.set_u16(fldname, val)
-    }
     fn set_i32(&mut self, fldname: &str, val: i32) -> Result<()> {
         let mut us = self.s.lock().unwrap();
         us.to_update_scan()?.set_i32(fldname, val)
-    }
-    fn set_u32(&mut self, fldname: &str, val: u32) -> Result<()> {
-        let mut us = self.s.lock().unwrap();
-        us.to_update_scan()?.set_u32(fldname, val)
     }
     fn set_string(&mut self, fldname: &str, val: String) -> Result<()> {
         let mut us = self.s.lock().unwrap();

@@ -100,44 +100,6 @@ impl Transaction {
     pub fn unpin(&mut self, blk: &BlockId) -> Result<()> {
         self.mybuffers.unpin(blk)
     }
-    pub fn get_i8(&mut self, blk: &BlockId, offset: i32) -> Result<i8> {
-        self.concur_mgr.s_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        buff.contents().get_i8(offset as usize)
-    }
-    pub fn set_i8(&mut self, blk: &BlockId, offset: i32, val: i8, ok_to_log: bool) -> Result<()> {
-        self.concur_mgr.x_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        let mut lsn: i32 = -1;
-        if ok_to_log {
-            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
-            lsn = rm.set_i8(&mut buff, offset, val)?.try_into().unwrap();
-        }
-        let p = buff.contents();
-        p.set_i8(offset as usize, val)?;
-        buff.set_modified(self.txnum, lsn);
-
-        Ok(())
-    }
-    pub fn get_u8(&mut self, blk: &BlockId, offset: i32) -> Result<u8> {
-        self.concur_mgr.s_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        buff.contents().get_u8(offset as usize)
-    }
-    pub fn set_u8(&mut self, blk: &BlockId, offset: i32, val: u8, ok_to_log: bool) -> Result<()> {
-        self.concur_mgr.x_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        let mut lsn: i32 = -1;
-        if ok_to_log {
-            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
-            lsn = rm.set_u8(&mut buff, offset, val)?.try_into().unwrap();
-        }
-        let p = buff.contents();
-        p.set_u8(offset as usize, val)?;
-        buff.set_modified(self.txnum, lsn);
-
-        Ok(())
-    }
     pub fn get_i16(&mut self, blk: &BlockId, offset: i32) -> Result<i16> {
         self.concur_mgr.s_lock(blk)?;
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
@@ -157,25 +119,6 @@ impl Transaction {
 
         Ok(())
     }
-    pub fn get_u16(&mut self, blk: &BlockId, offset: i32) -> Result<u16> {
-        self.concur_mgr.s_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        buff.contents().get_u16(offset as usize)
-    }
-    pub fn set_u16(&mut self, blk: &BlockId, offset: i32, val: u16, ok_to_log: bool) -> Result<()> {
-        self.concur_mgr.x_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        let mut lsn: i32 = -1;
-        if ok_to_log {
-            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
-            lsn = rm.set_u16(&mut buff, offset, val)?.try_into().unwrap();
-        }
-        let p = buff.contents();
-        p.set_u16(offset as usize, val)?;
-        buff.set_modified(self.txnum, lsn);
-
-        Ok(())
-    }
     pub fn get_i32(&mut self, blk: &BlockId, offset: i32) -> Result<i32> {
         self.concur_mgr.s_lock(blk)?;
         let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
@@ -191,25 +134,6 @@ impl Transaction {
         }
         let p = buff.contents();
         p.set_i32(offset as usize, val)?;
-        buff.set_modified(self.txnum, lsn);
-
-        Ok(())
-    }
-    pub fn get_u32(&mut self, blk: &BlockId, offset: i32) -> Result<u32> {
-        self.concur_mgr.s_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        buff.contents().get_u32(offset as usize)
-    }
-    pub fn set_u32(&mut self, blk: &BlockId, offset: i32, val: u32, ok_to_log: bool) -> Result<()> {
-        self.concur_mgr.x_lock(blk)?;
-        let mut buff = self.mybuffers.get_bufer(blk).unwrap().lock().unwrap();
-        let mut lsn: i32 = -1;
-        if ok_to_log {
-            let mut rm = self.recovery_mgr.as_ref().unwrap().lock().unwrap();
-            lsn = rm.set_u32(&mut buff, offset, val)?.try_into().unwrap();
-        }
-        let p = buff.contents();
-        p.set_u32(offset as usize, val)?;
         buff.set_modified(self.txnum, lsn);
 
         Ok(())
@@ -390,12 +314,8 @@ mod tests {
         let blk = BlockId::new("testfile", 1);
         tx1.pin(&blk)?;
         // Don't log initial block values.
-        tx1.set_i8(&blk, 10, 108, false)?;
-        tx1.set_u8(&blk, 20, 225, false)?;
         tx1.set_i16(&blk, 30, 12345, false)?;
-        tx1.set_u16(&blk, 40, 54321, false)?;
         tx1.set_i32(&blk, 50, 1234567890, false)?;
-        tx1.set_u32(&blk, 60, 3141592653, false)?;
         tx1.set_bool(&blk, 70, true, false)?;
         tx1.set_bool(&blk, 80, false, false)?;
         tx1.set_date(&blk, 90, NaiveDate::from_ymd(2022, 6, 14), false)?;
@@ -403,12 +323,8 @@ mod tests {
 
         let mut tx2 = simpledb.new_tx()?;
         tx2.pin(&blk)?;
-        assert_eq!(108, tx2.get_i8(&blk, 10)?);
-        assert_eq!(225, tx2.get_u8(&blk, 20)?);
         assert_eq!(12345, tx2.get_i16(&blk, 30)?);
-        assert_eq!(54321, tx2.get_u16(&blk, 40)?);
         assert_eq!(1234567890, tx2.get_i32(&blk, 50)?);
-        assert_eq!(3141592653, tx2.get_u32(&blk, 60)?);
         assert_eq!(true, tx2.get_bool(&blk, 70)?);
         assert_eq!(false, tx2.get_bool(&blk, 80)?);
         assert_eq!(NaiveDate::from_ymd(2022, 6, 14), tx2.get_date(&blk, 90)?);

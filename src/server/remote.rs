@@ -175,12 +175,8 @@ fn set_schema(schema: Arc<Schema>, sch: &mut schema::Builder) {
         let mut val = entries.reborrow().get(i as u32).init_value();
         val.reborrow().set_length(fi.length as i32);
         let t = match fi.fld_type {
-            FieldType::WORD => remote_capnp::FieldType::Word,
-            FieldType::UWORD => remote_capnp::FieldType::UWord,
-            FieldType::SHORT => remote_capnp::FieldType::Short,
-            FieldType::USHORT => remote_capnp::FieldType::UShort,
+            FieldType::SMALLINT => remote_capnp::FieldType::SmallInt,
             FieldType::INTEGER => remote_capnp::FieldType::Integer,
-            FieldType::UINTEGER => remote_capnp::FieldType::UInteger,
             FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
             FieldType::BOOL => remote_capnp::FieldType::Bool,
             FieldType::DATE => remote_capnp::FieldType::Date,
@@ -190,23 +186,11 @@ fn set_schema(schema: Arc<Schema>, sch: &mut schema::Builder) {
 }
 fn set_constant(cnst: &Constant, c: &mut remote_statement::constant::Builder) {
     match cnst {
-        Constant::I8(v) => {
-            c.set_int8(*v);
-        }
-        Constant::U8(v) => {
-            c.set_uint8(*v);
-        }
         Constant::I16(v) => {
             c.set_int16(*v);
         }
-        Constant::U16(v) => {
-            c.set_uint16(*v);
-        }
         Constant::I32(v) => {
             c.set_int32(*v);
-        }
-        Constant::U32(v) => {
-            c.set_uint32(*v);
         }
         Constant::String(s) => {
             c.set_string(s.as_str().into());
@@ -743,34 +727,14 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                 .unwrap();
             let mut val = entries.reborrow().get(i as u32).init_value();
             match fi.fld_type {
-                FieldType::WORD => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_i8(k) {
-                        val.reborrow().set_int8(v);
-                    }
-                }
-                FieldType::UWORD => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_u8(k) {
-                        val.reborrow().set_uint8(v);
-                    }
-                }
-                FieldType::SHORT => {
+                FieldType::SMALLINT => {
                     if let Ok(v) = self.scan.lock().unwrap().get_i16(k) {
                         val.reborrow().set_int16(v);
-                    }
-                }
-                FieldType::USHORT => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_u16(k) {
-                        val.reborrow().set_uint16(v);
                     }
                 }
                 FieldType::INTEGER => {
                     if let Ok(v) = self.scan.lock().unwrap().get_i32(k) {
                         val.reborrow().set_int32(v);
-                    }
-                }
-                FieldType::UINTEGER => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_u32(k) {
-                        val.reborrow().set_uint32(v);
                     }
                 }
                 FieldType::VARCHAR => {
@@ -819,34 +783,14 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                         .unwrap();
                     let mut val = entries.reborrow().get(i as u32).init_value();
                     match fi.fld_type {
-                        FieldType::WORD => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_i8(k) {
-                                val.reborrow().set_int8(v);
-                            }
-                        }
-                        FieldType::UWORD => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_u8(k) {
-                                val.reborrow().set_uint8(v);
-                            }
-                        }
-                        FieldType::SHORT => {
+                        FieldType::SMALLINT => {
                             if let Ok(v) = self.scan.lock().unwrap().get_i16(k) {
                                 val.reborrow().set_int16(v);
-                            }
-                        }
-                        FieldType::USHORT => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_u16(k) {
-                                val.reborrow().set_uint16(v);
                             }
                         }
                         FieldType::INTEGER => {
                             if let Ok(v) = self.scan.lock().unwrap().get_i32(k) {
                                 val.reborrow().set_int32(v);
-                            }
-                        }
-                        FieldType::UINTEGER => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_u32(k) {
-                                val.reborrow().set_uint32(v);
                             }
                         }
                         FieldType::VARCHAR => {

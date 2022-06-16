@@ -6,12 +6,8 @@ use crate::{query, remote_capnp::remote_statement, repr, repr::planrepr::PlanRep
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Constant {
-    I8(i8),
-    U8(u8),
     I16(i16),
-    U16(u16),
     I32(i32),
-    U32(u32),
     String(String),
     Bool(bool),
     Date(NaiveDate),
@@ -19,12 +15,8 @@ pub enum Constant {
 impl<'a> From<remote_statement::constant::Reader<'a>> for Constant {
     fn from(c: remote_statement::constant::Reader<'a>) -> Self {
         match c.which().unwrap() {
-            remote_statement::constant::Int8(v) => Self::I8(v),
-            remote_statement::constant::Uint8(v) => Self::U8(v),
             remote_statement::constant::Int16(v) => Self::I16(v),
-            remote_statement::constant::Uint16(v) => Self::U16(v),
             remote_statement::constant::Int32(v) => Self::I32(v),
-            remote_statement::constant::Uint32(v) => Self::U32(v),
             remote_statement::constant::String(s) => Self::String(s.unwrap().to_string()),
             remote_statement::constant::Bool(v) => Self::Bool(v),
             remote_statement::constant::Date(v) => {
@@ -40,12 +32,8 @@ impl<'a> From<remote_statement::constant::Reader<'a>> for Constant {
 impl From<Constant> for query::constant::Constant {
     fn from(c: Constant) -> Self {
         match c {
-            Constant::I8(v) => Self::I8(v),
-            Constant::U8(v) => Self::U8(v),
             Constant::I16(v) => Self::I16(v),
-            Constant::U16(v) => Self::U16(v),
             Constant::I32(v) => Self::I32(v),
-            Constant::U32(v) => Self::U32(v),
             Constant::String(s) => Self::String(s),
             Constant::Bool(v) => Self::Bool(v),
             Constant::Date(v) => Self::Date(v),

@@ -50,22 +50,6 @@ impl Scan for ProductScan {
             s2.next() && self.s1.lock().unwrap().next()
         }
     }
-    fn get_i8(&mut self, fldname: &str) -> Result<i8> {
-        let mut s1 = self.s1.lock().unwrap();
-        if s1.has_field(fldname) {
-            s1.get_i8(fldname)
-        } else {
-            self.s2.lock().unwrap().get_i8(fldname)
-        }
-    }
-    fn get_u8(&mut self, fldname: &str) -> Result<u8> {
-        let mut s1 = self.s1.lock().unwrap();
-        if s1.has_field(fldname) {
-            s1.get_u8(fldname)
-        } else {
-            self.s2.lock().unwrap().get_u8(fldname)
-        }
-    }
     fn get_i16(&mut self, fldname: &str) -> Result<i16> {
         let mut s1 = self.s1.lock().unwrap();
         if s1.has_field(fldname) {
@@ -74,28 +58,12 @@ impl Scan for ProductScan {
             self.s2.lock().unwrap().get_i16(fldname)
         }
     }
-    fn get_u16(&mut self, fldname: &str) -> Result<u16> {
-        let mut s1 = self.s1.lock().unwrap();
-        if s1.has_field(fldname) {
-            s1.get_u16(fldname)
-        } else {
-            self.s2.lock().unwrap().get_u16(fldname)
-        }
-    }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         let mut s1 = self.s1.lock().unwrap();
         if s1.has_field(fldname) {
             s1.get_i32(fldname)
         } else {
             self.s2.lock().unwrap().get_i32(fldname)
-        }
-    }
-    fn get_u32(&mut self, fldname: &str) -> Result<u32> {
-        let mut s1 = self.s1.lock().unwrap();
-        if s1.has_field(fldname) {
-            s1.get_u32(fldname)
-        } else {
-            self.s2.lock().unwrap().get_u32(fldname)
         }
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
