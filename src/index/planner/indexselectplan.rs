@@ -42,6 +42,7 @@ impl Plan for IndexSelectPlan {
     fn open(&self) -> Result<Arc<Mutex<dyn Scan>>> {
         // throws an exception if p is not a table plan.
         if let Ok(ts) = self.p.open()?.lock().unwrap().as_table_scan() {
+            // NOTE: need to convert val to the correct type.
             let fldname = self.ii.field_name();
             let fldtype = self.ii.table_schema().field_type(fldname);
             let val = self.val.as_field_type(fldtype)?;

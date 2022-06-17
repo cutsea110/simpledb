@@ -1,6 +1,7 @@
 use anyhow::Result;
 use chrono::NaiveDate;
 use core::fmt;
+use log::debug;
 
 use crate::record::schema::FieldType;
 
@@ -92,6 +93,7 @@ impl Constant {
         match self {
             Constant::I16(ival) => Ok(*ival),
             Constant::I32(ival) => {
+                debug!("try to convert from i32 to i16: {}", *ival);
                 i16::try_from(*ival).map_err(|_| From::from(ConstantError::TypeError))
             }
             _ => Err(From::from(ConstantError::TypeError)),
@@ -99,7 +101,10 @@ impl Constant {
     }
     pub fn as_i32(&self) -> Result<i32> {
         match self {
-            Constant::I16(ival) => Ok(*ival as i32),
+            Constant::I16(ival) => {
+                debug!("convert from i16 to i32: {}", *ival);
+                Ok(*ival as i32)
+            }
             Constant::I32(ival) => Ok(*ival),
             _ => Err(From::from(ConstantError::TypeError)),
         }
@@ -118,8 +123,11 @@ impl Constant {
     }
     pub fn as_date(&self) -> Result<NaiveDate> {
         match self {
-            Constant::String(sval) => NaiveDate::parse_from_str(sval, "%Y-%m-%d")
-                .map_err(|_| From::from(ConstantError::TypeError)),
+            Constant::String(sval) => {
+                debug!("try to convert from string to date: {}", sval);
+                NaiveDate::parse_from_str(sval, "%Y-%m-%d")
+                    .map_err(|_| From::from(ConstantError::TypeError))
+            }
             Constant::Date(dval) => Ok(*dval),
             _ => Err(From::from(ConstantError::TypeError)),
         }
