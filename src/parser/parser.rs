@@ -710,6 +710,10 @@ mod tests {
             parser.parse("'joe'"),
             Ok((Constant::String("joe".to_string()), ""))
         );
+        assert_eq!(
+            parser.parse("'2022-06-16'"),
+            Ok((Constant::String("2022-06-16".to_string()), ""))
+        );
         assert_eq!(parser.parse("true"), Ok((Constant::Bool(true), "")));
         assert_eq!(parser.parse("false"), Ok((Constant::Bool(false), "")));
     }
@@ -856,6 +860,66 @@ mod tests {
                 Term::new(
                     Expression::Val(Constant::String("joe".to_string())),
                     Expression::Fldname("name".to_string())
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("is_deleted=true"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("is_deleted".to_string()),
+                    Expression::Val(Constant::Bool(true))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("is_deleted =true"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("is_deleted".to_string()),
+                    Expression::Val(Constant::Bool(true))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("is_deleted= true"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("is_deleted".to_string()),
+                    Expression::Val(Constant::Bool(true))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("is_deleted = true"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("is_deleted".to_string()),
+                    Expression::Val(Constant::Bool(true))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("is_deleted    =    true"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("is_deleted".to_string()),
+                    Expression::Val(Constant::Bool(true))
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("true = is_deleted"),
+            Ok((
+                Term::new(
+                    Expression::Val(Constant::Bool(true)),
+                    Expression::Fldname("is_deleted".to_string()),
                 ),
                 ""
             ))
