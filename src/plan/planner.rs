@@ -1,6 +1,7 @@
 use anyhow::Result;
 use combine::Parser;
 use core::fmt;
+use log::warn;
 use std::sync::{Arc, Mutex};
 
 use super::{plan::Plan, queryplanner::QueryPlanner, updateplanner::UpdatePlanner};
@@ -45,13 +46,19 @@ impl Planner {
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<Arc<dyn Plan>> {
         let mut parser = query();
-        let (data, _) = parser.parse(cmd)?;
+        let (data, rest) = parser.parse(cmd)?;
+        if !rest.trim().is_empty() {
+            warn!("parser cant parse full text: {}", rest);
+        }
         // TODO: code to verify the query should be here...
         self.qplanner.lock().unwrap().create_plan(data, tx)
     }
     pub fn execute_update(&mut self, cmd: &str, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
         let mut parser = update_cmd();
-        let (data, _) = parser.parse(cmd)?;
+        let (data, rest) = parser.parse(cmd)?;
+        if !rest.trim().is_empty() {
+            warn!("parser cant parse full text: {}", rest);
+        }
         match data {
             SQL::DML(dml) => match dml {
                 DML::Insert(idata) => {
@@ -157,7 +164,7 @@ mod tests {
         }
 
         // SELECT Table
-        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -176,7 +183,8 @@ mod tests {
         println!("Rows = {}", rows);
 
         // SELECT View
-        let query = "SELECT SName, DName FROM name_dep WHERE GradYear = 2020";
+
+        let query = "SELECT SName, DName FROM name_dep WHERE GradYear = 2020;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -194,7 +202,7 @@ mod tests {
         println!("Rows = {}", rows);
 
         // SELECT View + Table
-        let query = "SELECT SName, DName, Title FROM name_dep, COURSE WHERE MajorId = DeptId";
+        let query = "SELECT SName, DName, Title FROM name_dep, COURSE WHERE MajorId = DeptId;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -218,7 +226,7 @@ mod tests {
         let c = planner.execute_update(update, Arc::clone(&tx))?;
         println!("Affected rows = {}", c);
         // SELECT After UPDATE
-        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId ;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -242,7 +250,7 @@ mod tests {
         let c = planner.execute_update(update, Arc::clone(&tx))?;
         println!("Affected rows = {}", c);
         // SELECT After DELETE
-        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId ; ";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;

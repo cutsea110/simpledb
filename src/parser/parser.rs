@@ -430,6 +430,7 @@ where
     fields
         .and(tables)
         .and(optional(where_clause))
+        .skip(terminate())
         .map(|((fs, ts), op)| {
             let pred = op.unwrap_or(Predicate::new_empty());
             QueryData::new(fs, ts, pred)
@@ -638,7 +639,6 @@ where
     prelude
         .with(id_tok())
         .and(kw_as().with(query()))
-        .skip(terminate())
         .map(|(v, vq)| CreateViewData::new(v, vq))
 }
 
@@ -1044,7 +1044,7 @@ mod tests {
         let mut parser = query();
         assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
         assert_eq!(
-            parser.parse("SELECT name, age FROM student"),
+            parser.parse("SELECT name, age FROM student;"),
             Ok((
                 QueryData::new(
                     vec!["name".to_string(), "age".to_string()],
@@ -1084,7 +1084,8 @@ mod tests {
                 "SELECT name, age \
                    FROM student, dept \
                   WHERE age = 18 AND name = 'joe' \
-                    AND sex = 'male' AND dev_id = major_id"
+                    AND sex = 'male' AND dev_id = major_id \
+                 ;"
             ),
             Ok((
                 QueryData::new(

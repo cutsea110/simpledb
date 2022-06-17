@@ -36,7 +36,7 @@ mod tests {
             "CREATE TABLE SECTION (SectId integer, CourseId integer, Prof varchar(10), YearOffered integer);",
             "CREATE TABLE ENROLL (EId integer, StudentId integer, SectionId integer, Grade varchar(2));",
 	    "CREATE VIEW name_dep AS SELECT SName, DName, GradYear, MajorId FROM STUDENT, DEPT WHERE MajorId = DId",
-            "CREATE INDEX idx_grad_year ON STUDENT (GradYear)",
+            "CREATE INDEX idx_grad_year ON STUDENT (GradYear);",
             // STUDENT
             "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (1, 'joe', 2021, 10);",
             "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (2, 'amy', 2020, 20);",
@@ -89,7 +89,7 @@ mod tests {
 
         // new connect
         let mut conn = d.connect("_test/rdbc")?;
-        let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId";
+        let qry = "select SId, SName, DId, DName, GradYear from STUDENT, DEPT where MajorId = DId;";
         println!("> {}", qry);
         // statement
         let mut stmt = conn.create_statement(qry)?;
