@@ -124,7 +124,7 @@ impl Constant {
     pub fn as_date(&self) -> Result<NaiveDate> {
         match self {
             Constant::String(sval) => {
-                debug!("convert from string to date: {}", sval);
+                debug!("try to convert from string to date: {}", sval);
                 NaiveDate::parse_from_str(sval, "%Y-%m-%d")
                     .map_err(|_| From::from(ConstantError::TypeError))
             }
