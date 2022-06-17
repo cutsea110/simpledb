@@ -3,6 +3,7 @@ extern crate simpledb;
 
 use anyhow::Result;
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
+use core::fmt;
 use env_logger::Env;
 use futures::{AsyncReadExt, FutureExt};
 use log::debug;
@@ -28,6 +29,19 @@ pub mod metacmd;
 pub mod tableschema;
 pub mod updatecmd;
 pub mod viewdef;
+
+#[derive(Debug, Clone)]
+pub enum ClientError {
+    Remote(String),
+}
+impl std::error::Error for ClientError {}
+impl fmt::Display for ClientError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ClientError::Remote(msg) => write!(f, "remote server failed: {}", msg),
+        }
+    }
+}
 
 const VERSION: &str = "0.1.0";
 
