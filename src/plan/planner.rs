@@ -213,7 +213,7 @@ mod tests {
         println!("Rows = {}", rows);
 
         // UPDATE
-        let update = "UPDATE STUDENT SET MajorId = 30 WHERE GradYear = 2020";
+        let update = "UPDATE STUDENT SET MajorId = 30 WHERE GradYear = 2020;";
         print!("Execute: {} ... ", update);
         let c = planner.execute_update(update, Arc::clone(&tx))?;
         println!("Affected rows = {}", c);

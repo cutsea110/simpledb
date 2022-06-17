@@ -560,6 +560,7 @@ where
         .with(id_tok())
         .and(sets)
         .and(optional(where_clause))
+        .skip(terminate())
         .map(|((t, (f, e)), op)| {
             let pred = op.unwrap_or(Predicate::new_empty());
             ModifyData::new(t, f, e, pred)
@@ -1143,7 +1144,7 @@ mod tests {
     fn modify_test() {
         let mut parser = modify();
         assert_eq!(
-            parser.parse("UPDATE STUDENT SET age = 22"),
+            parser.parse("UPDATE STUDENT SET age = 22;"),
             Ok((
                 ModifyData::new(
                     "STUDENT".to_string(),
@@ -1155,7 +1156,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("UPDATE STUDENT SET age = 22 WHERE age = 21"),
+            parser.parse("UPDATE STUDENT SET age = 22 WHERE age = 21;"),
             Ok((
                 ModifyData::new(
                     "STUDENT".to_string(),
@@ -1187,7 +1188,7 @@ mod tests {
             },
         );
         assert_eq!(
-            parser.parse("UPDATE STUDENT SET grade = 'A+' WHERE dep = 'math' AND score = 100"),
+            parser.parse("UPDATE STUDENT SET grade = 'A+' WHERE dep = 'math' AND score = 100 ;"),
             Ok((
                 ModifyData::new(
                     "STUDENT".to_string(),
@@ -1284,7 +1285,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("update student set age = 10"),
+            parser.parse("update student set age = 10;"),
             Ok((
                 SQL::DML(DML::Modify(ModifyData::new(
                     "student".to_string(),
