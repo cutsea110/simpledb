@@ -58,9 +58,10 @@ impl UpdatePlanner for IndexUpdatePlanner {
             for fldname in data.fields() {
                 let val = valiter.next().unwrap();
                 debug!("Modify field {} to val {:?}", fldname, &val);
+                // NOTE: UpdateScan can convert val to the correct type.
                 s.set_val(fldname, val.clone())?;
                 if let Some(ii) = indexes.get(fldname) {
-                    // convert type
+                    // NOTE: convert the type here, because Index doesn't convert val.
                     let fldtype = ii.table_schema().field_type(fldname);
                     let val = val.as_field_type(fldtype)?;
 
@@ -89,9 +90,10 @@ impl UpdatePlanner for IndexUpdatePlanner {
                 // first, delete the record's RID from every index
                 let rid = s.get_rid()?;
                 for fldname in indexes.keys() {
+                    // NOTE: UpdateScan can convert val to the correct type.
                     let val = s.get_val(fldname)?;
                     if let Some(ii) = indexes.get(fldname) {
-                        // convert type
+                        // NOTE: convert the type here, because Index doesn't convert val.
                         let fldtype = ii.table_schema().field_type(fldname);
                         let val = val.as_field_type(fldtype)?;
 
@@ -128,10 +130,11 @@ impl UpdatePlanner for IndexUpdatePlanner {
                 let scan = s.to_scan()?;
                 let newval = data.new_value().evaluate(scan)?;
                 let oldval = s.get_val(fldname)?;
+                // NOTE: UpdateScan can convert val to the correct type.
                 s.set_val(data.target_field(), newval.clone())?;
                 // then update the appropriate index, if it exists
                 if let Some(idx) = idx.as_ref() {
-                    // convert type
+                    // NOTE: convert the type here, because Index doesn't convert val.
                     let fldtype = ii.unwrap().table_schema().field_type(fldname);
                     let oldval = oldval.as_field_type(fldtype)?;
                     let newval = newval.as_field_type(fldtype)?;
