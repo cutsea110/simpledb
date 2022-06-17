@@ -280,6 +280,16 @@ where
         .skip(spaces().silent())
 }
 
+fn terminate<Input>() -> impl Parser<Input, Output = char>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    char(';')
+        // lexeme
+        .skip(spaces().silent())
+}
+
 /// token
 
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
@@ -349,7 +359,7 @@ where
 
 /// Methods for parsing predicates and their components
 
-pub fn field<Input>() -> impl Parser<Input, Output = String>
+fn field<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -357,7 +367,7 @@ where
     id_tok()
 }
 
-pub fn constant<Input>() -> impl Parser<Input, Output = Constant>
+fn constant<Input>() -> impl Parser<Input, Output = Constant>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -368,7 +378,7 @@ where
         .or(bool_tok().map(|bval| Constant::new_bool(bval)))
 }
 
-pub fn expression<Input>() -> impl Parser<Input, Output = Expression>
+fn expression<Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -379,7 +389,7 @@ where
         .or(field().map(|fldname| Expression::new_fldname(fldname)))
 }
 
-pub fn term<Input>() -> impl Parser<Input, Output = Term>
+fn term<Input>() -> impl Parser<Input, Output = Term>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -390,7 +400,7 @@ where
         .map(|(lhs, rhs)| Term::new(lhs, rhs))
 }
 
-pub fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
+fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -420,6 +430,7 @@ where
     fields
         .and(tables)
         .and(optional(where_clause))
+        .skip(terminate())
         .map(|((fs, ts), op)| {
             let pred = op.unwrap_or(Predicate::new_empty());
             QueryData::new(fs, ts, pred)
@@ -494,6 +505,7 @@ where
     prelude
         .with(id_tok())
         .and(optional(where_clause))
+        .skip(terminate())
         .map(|(tblname, opred)| {
             let pred = opred.unwrap_or(Predicate::new_empty());
             DeleteData::new(tblname, pred)
@@ -515,6 +527,7 @@ where
         .with(id_tok())
         .and(fields)
         .and(vals)
+        .skip(terminate())
         .map(|((t, fs), vs)| InsertData::new(t, fs, vs))
 }
 
@@ -548,6 +561,7 @@ where
         .with(id_tok())
         .and(sets)
         .and(optional(where_clause))
+        .skip(terminate())
         .map(|((t, (f, e)), op)| {
             let pred = op.unwrap_or(Predicate::new_empty());
             ModifyData::new(t, f, e, pred)
@@ -567,6 +581,7 @@ where
     prelude
         .with(id_tok())
         .and(field_defs)
+        .skip(terminate())
         .map(|(tblname, fdefs)| {
             let mut sch = Schema::new();
             for (fldname, fi) in fdefs.iter() {
@@ -640,6 +655,7 @@ where
         .with(id_tok())
         .and(kw_on().with(id_tok()))
         .and(between(delim_parenl(), delim_parenr(), field()))
+        .skip(terminate())
         .map(|((idxname, tblname), fldname)| CreateIndexData::new(idxname, tblname, fldname))
 }
 
@@ -1028,12 +1044,34 @@ mod tests {
         let mut parser = query();
         assert_eq!(parser.parse(""), Err(StringStreamError::UnexpectedParse));
         assert_eq!(
-            parser.parse("SELECT name, age FROM student"),
+            parser.parse("SELECT name, age FROM student;"),
             Ok((
                 QueryData::new(
                     vec!["name".to_string(), "age".to_string()],
                     vec!["student".to_string()],
                     Predicate::new_empty(),
+                ),
+                ""
+            ))
+        );
+        let terms = vec![Term::new(
+            Expression::Fldname("age".to_string()),
+            Expression::Val(Constant::I32(20)),
+        )];
+        let expected = terms.iter().map(|t| Predicate::new(t.clone())).fold(
+            Predicate::new_empty(),
+            |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            },
+        );
+        assert_eq!(
+            parser.parse("SELECT name FROM student WHERE age = 20;"),
+            Ok((
+                QueryData::new(
+                    vec!["name".to_string()],
+                    vec!["student".to_string()],
+                    expected.clone(),
                 ),
                 ""
             ))
@@ -1068,7 +1106,8 @@ mod tests {
                 "SELECT name, age \
                    FROM student, dept \
                   WHERE age = 18 AND name = 'joe' \
-                    AND sex = 'male' AND dev_id = major_id"
+                    AND sex = 'male' AND dev_id = major_id \
+                 ;"
             ),
             Ok((
                 QueryData::new(
@@ -1085,7 +1124,7 @@ mod tests {
     fn delete_test() {
         let mut parser = delete();
         assert_eq!(
-            parser.parse("DELETE FROM STUDENT"),
+            parser.parse("DELETE FROM STUDENT;"),
             Ok((
                 DeleteData::new("STUDENT".to_string(), Predicate::new_empty()),
                 ""
@@ -1093,7 +1132,7 @@ mod tests {
         );
         let mut parser = delete();
         assert_eq!(
-            parser.parse("DELETE FROM STUDENT WHERE name = 'joe'"),
+            parser.parse("DELETE FROM STUDENT WHERE name = 'joe' ;"),
             Ok((
                 DeleteData::new(
                     "STUDENT".to_string(),
@@ -1111,7 +1150,7 @@ mod tests {
     fn insert_test() {
         let mut parser = insert();
         assert_eq!(
-            parser.parse("INSERT INTO STUDENT (name, age, sex) VALUES ('Darci', 20, 'female')"),
+            parser.parse("INSERT INTO STUDENT (name, age, sex) VALUES ('Darci', 20, 'female');"),
             Ok((
                 InsertData::new(
                     "STUDENT".to_string(),
@@ -1131,7 +1170,7 @@ mod tests {
     fn modify_test() {
         let mut parser = modify();
         assert_eq!(
-            parser.parse("UPDATE STUDENT SET age = 22"),
+            parser.parse("UPDATE STUDENT SET age = 22;"),
             Ok((
                 ModifyData::new(
                     "STUDENT".to_string(),
@@ -1143,7 +1182,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("UPDATE STUDENT SET age = 22 WHERE age = 21"),
+            parser.parse("UPDATE STUDENT SET age = 22 WHERE age = 21;"),
             Ok((
                 ModifyData::new(
                     "STUDENT".to_string(),
@@ -1175,7 +1214,7 @@ mod tests {
             },
         );
         assert_eq!(
-            parser.parse("UPDATE STUDENT SET grade = 'A+' WHERE dep = 'math' AND score = 100"),
+            parser.parse("UPDATE STUDENT SET grade = 'A+' WHERE dep = 'math' AND score = 100 ;"),
             Ok((
                 ModifyData::new(
                     "STUDENT".to_string(),
@@ -1198,7 +1237,7 @@ mod tests {
         expected.add_i32_field("MajorId");
 
         assert_eq!(parser.parse(
-	    "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer)"
+	    "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer);"
 	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
     }
 
@@ -1207,7 +1246,7 @@ mod tests {
         let mut parser = create_view();
         assert_eq!(
             parser
-                .parse("CREATE VIEW name_dep AS SELECT SName, DName FROM STUDENT, DEPT WHERE MajorId = DId"),
+                .parse("CREATE VIEW name_dep AS SELECT SName, DName FROM STUDENT, DEPT WHERE MajorId = DId;"),
             Ok((
                 CreateViewData::new(
                     "name_dep".to_string(),
@@ -1229,7 +1268,7 @@ mod tests {
     fn create_index_test() {
         let mut parser = create_index();
         assert_eq!(
-            parser.parse("CREATE INDEX idx_grad_year ON STUDENT (GradYear)"),
+            parser.parse("CREATE INDEX idx_grad_year ON STUDENT (GradYear);"),
             Ok((
                 CreateIndexData::new(
                     "idx_grad_year".to_string(),
@@ -1248,7 +1287,7 @@ mod tests {
             Err(StringStreamError::UnexpectedParse),
         );
         assert_eq!(
-            parser.parse("insert into student (name, age) values ('Calvin', 9)"),
+            parser.parse("insert into student (name, age) values ('Calvin', 9);"),
             Ok((
                 SQL::DML(DML::Insert(InsertData::new(
                     "student".to_string(),
@@ -1259,7 +1298,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("delete from student where name = 'joe'"),
+            parser.parse("delete from student where name = 'joe';"),
             Ok((
                 SQL::DML(DML::Delete(DeleteData::new(
                     "student".to_string(),
@@ -1272,7 +1311,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("update student set age = 10"),
+            parser.parse("update student set age = 10;"),
             Ok((
                 SQL::DML(DML::Modify(ModifyData::new(
                     "student".to_string(),
@@ -1287,7 +1326,7 @@ mod tests {
         expected.add_string_field("name", 10);
         expected.add_i32_field("age");
         assert_eq!(
-            parser.parse("create table student (name varchar(10), age integer)"),
+            parser.parse("create table student (name varchar(10), age integer);"),
             Ok((
                 SQL::DDL(DDL::Table(CreateTableData::new(
                     "student".to_string(),
@@ -1298,7 +1337,7 @@ mod tests {
         );
         assert_eq!(
             parser.parse(
-                "create view name_dep AS select name, dep_name from student, dept where mid = did"
+                "create view name_dep AS select name, dep_name from student, dept where mid = did;"
             ),
             Ok((
                 SQL::DDL(DDL::View(CreateViewData::new(
@@ -1316,7 +1355,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("create index idx_age on student (age)"),
+            parser.parse("create index idx_age on student (age);"),
             Ok((
                 SQL::DDL(DDL::Index(CreateIndexData::new(
                     "idx_age".to_string(),

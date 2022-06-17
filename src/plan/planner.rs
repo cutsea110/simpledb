@@ -1,6 +1,7 @@
 use anyhow::Result;
 use combine::Parser;
 use core::fmt;
+use log::warn;
 use std::sync::{Arc, Mutex};
 
 use super::{plan::Plan, queryplanner::QueryPlanner, updateplanner::UpdatePlanner};
@@ -45,13 +46,19 @@ impl Planner {
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<Arc<dyn Plan>> {
         let mut parser = query();
-        let (data, _) = parser.parse(cmd)?;
+        let (data, rest) = parser.parse(cmd)?;
+        if !rest.trim().is_empty() {
+            warn!("parser cant parse full text: {}", rest);
+        }
         // TODO: code to verify the query should be here...
         self.qplanner.lock().unwrap().create_plan(data, tx)
     }
     pub fn execute_update(&mut self, cmd: &str, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
         let mut parser = update_cmd();
-        let (data, _) = parser.parse(cmd)?;
+        let (data, rest) = parser.parse(cmd)?;
+        if !rest.trim().is_empty() {
+            warn!("parser cant parse full text: {}", rest);
+        }
         match data {
             SQL::DML(dml) => match dml {
                 DML::Insert(idata) => {
@@ -108,47 +115,47 @@ mod tests {
         // Setting Schema and Insert Init data
         let sqls = vec![
             // DDL
-            "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer)",
-            "CREATE TABLE DEPT (DId integer, DName varchar(10))",
-            "CREATE TABLE COURSE (CId integer, Title varchar(16), DeptId integer)",
-            "CREATE TABLE SECTION (SectId integer, CourseId integer, Prof varchar(10), YearOffered integer)",
-            "CREATE TABLE ENROLL (EId integer, StudentId integer, SectionId integer, Grade varchar(2))",
-	    "CREATE VIEW name_dep AS SELECT SName, DName, GradYear, MajorId FROM STUDENT, DEPT WHERE MajorId = DId",
-            "CREATE INDEX idx_grad_year ON STUDENT (GradYear)",
+            "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer);",
+            "CREATE TABLE DEPT (DId integer, DName varchar(10));",
+            "CREATE TABLE COURSE (CId integer, Title varchar(16), DeptId integer);",
+            "CREATE TABLE SECTION (SectId integer, CourseId integer, Prof varchar(10), YearOffered integer);",
+            "CREATE TABLE ENROLL (EId integer, StudentId integer, SectionId integer, Grade varchar(2));",
+	    "CREATE VIEW name_dep AS SELECT SName, DName, GradYear, MajorId FROM STUDENT, DEPT WHERE MajorId = DId;",
+            "CREATE INDEX idx_grad_year ON STUDENT (GradYear);",
             // STUDENT
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (1, 'joe', 2021, 10)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (2, 'amy', 2020, 20)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (3, 'max', 2022, 10)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (4, 'sue', 2022, 20)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (5, 'bob', 2020, 30)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (6, 'kim', 2020, 20)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (7, 'art', 2021, 30)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (8, 'pat', 2019, 20)",
-            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (9, 'lee', 2021, 10)",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (1, 'joe', 2021, 10);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (2, 'amy', 2020, 20);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (3, 'max', 2022, 10);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (4, 'sue', 2022, 20);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (5, 'bob', 2020, 30);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (6, 'kim', 2020, 20);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (7, 'art', 2021, 30);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (8, 'pat', 2019, 20);",
+            "INSERT INTO STUDENT (SId, SName, GradYear, MajorId) VALUES (9, 'lee', 2021, 10);",
             // DEPT
-            "INSERT INTO DEPT (DId, DName) VALUES (10, 'compsci')",
-            "INSERT INTO DEPT (DId, DName) VALUES (20, 'math')",
-            "INSERT INTO DEPT (DId, DName) VALUES (30, 'drama')",
+            "INSERT INTO DEPT (DId, DName) VALUES (10, 'compsci');",
+            "INSERT INTO DEPT (DId, DName) VALUES (20, 'math');",
+            "INSERT INTO DEPT (DId, DName) VALUES (30, 'drama');",
             // COURSE
-            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (12, 'db systems', 10)",
-            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (22, 'compilers', 10)",
-            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (32, 'calculus', 20)",
-            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (42, 'algebra', 20)",
-            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (52, 'acting', 30)",
-            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (62, 'elocution', 30)",
+            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (12, 'db systems', 10);",
+            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (22, 'compilers', 10);",
+            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (32, 'calculus', 20);",
+            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (42, 'algebra', 20);",
+            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (52, 'acting', 30);",
+            "INSERT INTO COURSE (CId, Title, DeptId) VALUES (62, 'elocution', 30);",
             // SECTION
-            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (13, 12, 'turing', 2018)",
-            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (23, 12, 'turing', 2016)",
-            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (33, 32, 'newton', 2017)",
-            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (43, 32, 'einstein', 2018)",
-            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (53, 62, 'brando', 2017)",
+            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (13, 12, 'turing', 2018);",
+            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (23, 12, 'turing', 2016);",
+            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (33, 32, 'newton', 2017);",
+            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (43, 32, 'einstein', 2018);",
+            "INSERT INTO SECTION (SectId, CourseId, Prof, YearOffered) VALUES (53, 62, 'brando', 2017);",
 	    // ENROLL
-            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (14, 1, 13, 'A')",
-            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (24, 1, 43, 'C')",
-            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (34, 2, 43, 'B+')",
-            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (44, 4, 33, 'B')",
-            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (54, 4, 53, 'A')",
-            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (64, 6, 53, 'A')",
+            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (14, 1, 13, 'A');",
+            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (24, 1, 43, 'C');",
+            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (34, 2, 43, 'B+');",
+            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (44, 4, 33, 'B');",
+            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (54, 4, 53, 'A');",
+            "INSERT INTO ENROLL (EId, StudentId, SectionId, Grade) VALUES (64, 6, 53, 'A');",
         ];
         for sql in sqls {
             print!("Execute: {} ... ", sql);
@@ -157,7 +164,7 @@ mod tests {
         }
 
         // SELECT Table
-        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -176,7 +183,8 @@ mod tests {
         println!("Rows = {}", rows);
 
         // SELECT View
-        let query = "SELECT SName, DName FROM name_dep WHERE GradYear = 2020";
+
+        let query = "SELECT SName, DName FROM name_dep WHERE GradYear = 2020;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -194,7 +202,7 @@ mod tests {
         println!("Rows = {}", rows);
 
         // SELECT View + Table
-        let query = "SELECT SName, DName, Title FROM name_dep, COURSE WHERE MajorId = DeptId";
+        let query = "SELECT SName, DName, Title FROM name_dep, COURSE WHERE MajorId = DeptId;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -213,12 +221,12 @@ mod tests {
         println!("Rows = {}", rows);
 
         // UPDATE
-        let update = "UPDATE STUDENT SET MajorId = 30 WHERE GradYear = 2020";
+        let update = "UPDATE STUDENT SET MajorId = 30 WHERE GradYear = 2020;";
         print!("Execute: {} ... ", update);
         let c = planner.execute_update(update, Arc::clone(&tx))?;
         println!("Affected rows = {}", c);
         // SELECT After UPDATE
-        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId ;";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;
@@ -237,12 +245,12 @@ mod tests {
         println!("Rows = {}", rows);
 
         // DELETE
-        let update = "DELETE FROM STUDENT WHERE MajorId = 30";
+        let update = "DELETE FROM STUDENT WHERE MajorId = 30;";
         print!("Execute: {} ... ", update);
         let c = planner.execute_update(update, Arc::clone(&tx))?;
         println!("Affected rows = {}", c);
         // SELECT After DELETE
-        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId";
+        let query = "SELECT SName, DName, GradYear FROM STUDENT, DEPT WHERE MajorId = DId ; ";
         println!("Query: {}", query);
         let plan = planner.create_query_plan(query, Arc::clone(&tx))?;
         let scan = plan.open()?;

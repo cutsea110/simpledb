@@ -30,6 +30,9 @@ impl fmt::Display for QueryData {
         let pred_str = self.pred.to_string();
         result.push(&pred_str.as_str());
 
+        // MEMO: I don't append a terminater, because we'll be able to use this
+        // as sub-query at a future.
+        // Please see basicqueryplanner or heuristicqueryplanner.
         write!(f, "{}", result.join(" "))
     }
 }
