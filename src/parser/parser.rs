@@ -280,6 +280,16 @@ where
         .skip(spaces().silent())
 }
 
+fn terminate<Input>() -> impl Parser<Input, Output = char>
+where
+    Input: Stream<Token = char>,
+    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
+{
+    char(';')
+        // lexeme
+        .skip(spaces().silent())
+}
+
 /// token
 
 fn id_tok<Input>() -> impl Parser<Input, Output = String>
@@ -515,6 +525,7 @@ where
         .with(id_tok())
         .and(fields)
         .and(vals)
+        .skip(terminate())
         .map(|((t, fs), vs)| InsertData::new(t, fs, vs))
 }
 
@@ -1111,7 +1122,7 @@ mod tests {
     fn insert_test() {
         let mut parser = insert();
         assert_eq!(
-            parser.parse("INSERT INTO STUDENT (name, age, sex) VALUES ('Darci', 20, 'female')"),
+            parser.parse("INSERT INTO STUDENT (name, age, sex) VALUES ('Darci', 20, 'female');"),
             Ok((
                 InsertData::new(
                     "STUDENT".to_string(),
@@ -1248,7 +1259,7 @@ mod tests {
             Err(StringStreamError::UnexpectedParse),
         );
         assert_eq!(
-            parser.parse("insert into student (name, age) values ('Calvin', 9)"),
+            parser.parse("insert into student (name, age) values ('Calvin', 9);"),
             Ok((
                 SQL::DML(DML::Insert(InsertData::new(
                     "student".to_string(),
