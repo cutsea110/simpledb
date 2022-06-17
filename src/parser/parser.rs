@@ -655,6 +655,7 @@ where
         .with(id_tok())
         .and(kw_on().with(id_tok()))
         .and(between(delim_parenl(), delim_parenr(), field()))
+        .skip(terminate())
         .map(|((idxname, tblname), fldname)| CreateIndexData::new(idxname, tblname, fldname))
 }
 
@@ -1244,7 +1245,7 @@ mod tests {
     fn create_index_test() {
         let mut parser = create_index();
         assert_eq!(
-            parser.parse("CREATE INDEX idx_grad_year ON STUDENT (GradYear)"),
+            parser.parse("CREATE INDEX idx_grad_year ON STUDENT (GradYear);"),
             Ok((
                 CreateIndexData::new(
                     "idx_grad_year".to_string(),
@@ -1331,7 +1332,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("create index idx_age on student (age)"),
+            parser.parse("create index idx_age on student (age);"),
             Ok((
                 SQL::DDL(DDL::Index(CreateIndexData::new(
                     "idx_age".to_string(),
