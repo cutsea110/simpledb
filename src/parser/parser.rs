@@ -638,6 +638,7 @@ where
     prelude
         .with(id_tok())
         .and(kw_as().with(query()))
+        .skip(terminate())
         .map(|(v, vq)| CreateViewData::new(v, vq))
 }
 
@@ -1221,7 +1222,7 @@ mod tests {
         let mut parser = create_view();
         assert_eq!(
             parser
-                .parse("CREATE VIEW name_dep AS SELECT SName, DName FROM STUDENT, DEPT WHERE MajorId = DId"),
+                .parse("CREATE VIEW name_dep AS SELECT SName, DName FROM STUDENT, DEPT WHERE MajorId = DId;"),
             Ok((
                 CreateViewData::new(
                     "name_dep".to_string(),
@@ -1312,7 +1313,7 @@ mod tests {
         );
         assert_eq!(
             parser.parse(
-                "create view name_dep AS select name, dep_name from student, dept where mid = did"
+                "create view name_dep AS select name, dep_name from student, dept where mid = did;"
             ),
             Ok((
                 SQL::DDL(DDL::View(CreateViewData::new(
