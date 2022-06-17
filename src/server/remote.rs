@@ -640,16 +640,25 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::ExecuteQueryResults,
     ) -> Promise<(), capnp::Error> {
         trace!("execute query: {}", self.sql);
-        let plan = self
+        match self
             .planner
             .create_query_plan(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
-            .expect("create query plan");
-        trace!("planned");
-        let resultset: remote_result_set::Client =
-            capnp_rpc::new_client(RemoteResultSetImpl::new(plan, Rc::clone(&self.conn)));
-        results.get().set_result(resultset);
+        {
+            Ok(plan) => {
+                trace!("planned");
+                let resultset: remote_result_set::Client =
+                    capnp_rpc::new_client(RemoteResultSetImpl::new(plan, Rc::clone(&self.conn)));
+                results.get().set_result(resultset);
 
-        Promise::ok(())
+                return Promise::ok(());
+            }
+            Err(e) => {
+                return Promise::err(capnp::Error::failed(format!(
+                    "failed to create query plan: {}",
+                    e
+                )));
+            }
+        }
     }
     fn execute_update(
         &mut self,

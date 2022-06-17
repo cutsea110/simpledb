@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::warn;
 use std::{collections::HashMap, time::Instant};
 
 use simpledb::rdbc::{
@@ -10,6 +11,8 @@ use simpledb::rdbc::{
     resultsetmetadataadapter::ResultSetMetaDataAdapter,
     statementadapter::StatementAdapter,
 };
+
+use crate::ClientError;
 
 const MAX_ROWS: u32 = 80;
 
@@ -43,7 +46,10 @@ fn print_record(row: HashMap<&str, resultset::Value>, meta: &NetworkResultSetMet
 async fn print_result_set(mut results: NetworkResultSet) -> Result<(i32, i32)> {
     // resultset metadata
     let mut meta = results.get_meta_data()?;
-    meta.load_schema().await.expect("load schema");
+    if let Err(e) = meta.load_schema().await {
+        return Err(From::from(ClientError::Remote(format!("{}", e))));
+    }
+
     // print header
     for i in 0..meta.get_column_count() {
         let name = meta.get_column_name(i).expect("get column name");
@@ -85,16 +91,21 @@ pub async fn exec_query(stmt: &mut NetworkStatement) {
     let start = Instant::now();
     match stmt.execute_query() {
         Err(_) => println!("invalid query"),
-        Ok(result) => {
-            let (cnt, tx_num) = print_result_set(result).await.expect("print result set");
-            let end = start.elapsed();
-            println!(
-                "Rows {} ({}.{:03}s)",
-                cnt,
-                end.as_secs(),
-                end.subsec_nanos() / 1_000_000
-            );
-            println!("transaction {} committed", tx_num);
-        }
+        Ok(result) => match print_result_set(result).await {
+            Ok((cnt, tx_num)) => {
+                let end = start.elapsed();
+                println!(
+                    "Rows {} ({}.{:03}s)",
+                    cnt,
+                    end.as_secs(),
+                    end.subsec_nanos() / 1_000_000
+                );
+                println!("transaction {} committed", tx_num);
+            }
+            Err(e) => {
+                warn!("failed to exec query: {}", e);
+                return;
+            }
+        },
     }
 }
