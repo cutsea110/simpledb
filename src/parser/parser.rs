@@ -504,6 +504,7 @@ where
     prelude
         .with(id_tok())
         .and(optional(where_clause))
+        .skip(terminate())
         .map(|(tblname, opred)| {
             let pred = opred.unwrap_or(Predicate::new_empty());
             DeleteData::new(tblname, pred)
@@ -1096,7 +1097,7 @@ mod tests {
     fn delete_test() {
         let mut parser = delete();
         assert_eq!(
-            parser.parse("DELETE FROM STUDENT"),
+            parser.parse("DELETE FROM STUDENT;"),
             Ok((
                 DeleteData::new("STUDENT".to_string(), Predicate::new_empty()),
                 ""
@@ -1104,7 +1105,7 @@ mod tests {
         );
         let mut parser = delete();
         assert_eq!(
-            parser.parse("DELETE FROM STUDENT WHERE name = 'joe'"),
+            parser.parse("DELETE FROM STUDENT WHERE name = 'joe' ;"),
             Ok((
                 DeleteData::new(
                     "STUDENT".to_string(),
@@ -1270,7 +1271,7 @@ mod tests {
             ))
         );
         assert_eq!(
-            parser.parse("delete from student where name = 'joe'"),
+            parser.parse("delete from student where name = 'joe';"),
             Ok((
                 SQL::DML(DML::Delete(DeleteData::new(
                     "student".to_string(),

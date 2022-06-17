@@ -237,7 +237,7 @@ mod tests {
         println!("Rows = {}", rows);
 
         // DELETE
-        let update = "DELETE FROM STUDENT WHERE MajorId = 30";
+        let update = "DELETE FROM STUDENT WHERE MajorId = 30;";
         print!("Execute: {} ... ", update);
         let c = planner.execute_update(update, Arc::clone(&tx))?;
         println!("Affected rows = {}", c);
