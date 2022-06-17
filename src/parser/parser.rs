@@ -349,7 +349,7 @@ where
 
 /// Methods for parsing predicates and their components
 
-pub fn field<Input>() -> impl Parser<Input, Output = String>
+fn field<Input>() -> impl Parser<Input, Output = String>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -357,7 +357,7 @@ where
     id_tok()
 }
 
-pub fn constant<Input>() -> impl Parser<Input, Output = Constant>
+fn constant<Input>() -> impl Parser<Input, Output = Constant>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -368,7 +368,7 @@ where
         .or(bool_tok().map(|bval| Constant::new_bool(bval)))
 }
 
-pub fn expression<Input>() -> impl Parser<Input, Output = Expression>
+fn expression<Input>() -> impl Parser<Input, Output = Expression>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -379,7 +379,7 @@ where
         .or(field().map(|fldname| Expression::new_fldname(fldname)))
 }
 
-pub fn term<Input>() -> impl Parser<Input, Output = Term>
+fn term<Input>() -> impl Parser<Input, Output = Term>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
@@ -390,7 +390,7 @@ where
         .map(|(lhs, rhs)| Term::new(lhs, rhs))
 }
 
-pub fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
+fn predicate<Input>() -> impl Parser<Input, Output = Predicate>
 where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
