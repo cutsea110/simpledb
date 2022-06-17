@@ -1054,6 +1054,28 @@ mod tests {
                 ""
             ))
         );
+        let terms = vec![Term::new(
+            Expression::Fldname("age".to_string()),
+            Expression::Val(Constant::I32(20)),
+        )];
+        let expected = terms.iter().map(|t| Predicate::new(t.clone())).fold(
+            Predicate::new_empty(),
+            |mut p1, mut p2| {
+                p1.conjoin_with(&mut p2);
+                p1
+            },
+        );
+        assert_eq!(
+            parser.parse("SELECT name FROM student WHERE age = 20;"),
+            Ok((
+                QueryData::new(
+                    vec!["name".to_string()],
+                    vec!["student".to_string()],
+                    expected.clone(),
+                ),
+                ""
+            ))
+        );
         let terms = vec![
             Term::new(
                 Expression::Fldname("age".to_string()),

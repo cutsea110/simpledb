@@ -116,13 +116,15 @@ impl HeuristicQueryPlanner {
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<()> {
         for tblname in data.tables().iter() {
-            let viewdef = self
+            let mut viewdef = self
                 .mdm
                 .lock()
                 .unwrap()
                 .get_view_def(tblname, Arc::clone(&tx))?;
             if !viewdef.is_empty() {
                 let mut parser = query();
+                // NOTE: query parser expect terminater.
+                viewdef = format!("{};", viewdef);
                 let (viewdata, _) = parser.parse(viewdef.as_str())?;
                 self.create_tableplanners_rec(&viewdata, Arc::clone(&tx))?;
                 continue;

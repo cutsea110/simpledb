@@ -27,7 +27,7 @@ impl QueryPlanner for BasicQueryPlanner {
         // Step 1: Create a plan for each mentioned table or view
         let mut plans: Vec<Arc<dyn Plan>> = vec![];
         for tblname in data.tables() {
-            let viewdef = self
+            let mut viewdef = self
                 .mdm
                 .lock()
                 .unwrap()
@@ -35,6 +35,8 @@ impl QueryPlanner for BasicQueryPlanner {
             if !viewdef.is_empty() {
                 // Recursively plan the view.
                 let mut parser = query();
+                // NOTE: query parser expect terminater.
+                viewdef = format!("{};", viewdef);
                 let (viewdata, _) = parser.parse(viewdef.as_str())?;
                 plans.push(self.create_plan(viewdata, Arc::clone(&tx))?);
             } else {
