@@ -30,11 +30,11 @@ mod tests {
         // Setting Schema and Insert Init data
         let sqls = vec![
             // DDL
-            "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer)",
-            "CREATE TABLE DEPT (DId integer, DName varchar(10))",
-            "CREATE TABLE COURSE (CId integer, Title varchar(16), DeptId integer)",
-            "CREATE TABLE SECTION (SectId integer, CourseId integer, Prof varchar(10), YearOffered integer)",
-            "CREATE TABLE ENROLL (EId integer, StudentId integer, SectionId integer, Grade varchar(2))",
+            "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer);",
+            "CREATE TABLE DEPT (DId integer, DName varchar(10));",
+            "CREATE TABLE COURSE (CId integer, Title varchar(16), DeptId integer);",
+            "CREATE TABLE SECTION (SectId integer, CourseId integer, Prof varchar(10), YearOffered integer);",
+            "CREATE TABLE ENROLL (EId integer, StudentId integer, SectionId integer, Grade varchar(2));",
 	    "CREATE VIEW name_dep AS SELECT SName, DName, GradYear, MajorId FROM STUDENT, DEPT WHERE MajorId = DId",
             "CREATE INDEX idx_grad_year ON STUDENT (GradYear)",
             // STUDENT

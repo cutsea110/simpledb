@@ -580,6 +580,7 @@ where
     prelude
         .with(id_tok())
         .and(field_defs)
+        .skip(terminate())
         .map(|(tblname, fdefs)| {
             let mut sch = Schema::new();
             for (fldname, fi) in fdefs.iter() {
@@ -1211,7 +1212,7 @@ mod tests {
         expected.add_i32_field("MajorId");
 
         assert_eq!(parser.parse(
-	    "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer)"
+	    "CREATE TABLE STUDENT (SId integer, SName varchar(10), GradYear integer, MajorId integer);"
 	), Ok((CreateTableData::new("STUDENT".to_string(), expected), "")));
     }
 
@@ -1300,7 +1301,7 @@ mod tests {
         expected.add_string_field("name", 10);
         expected.add_i32_field("age");
         assert_eq!(
-            parser.parse("create table student (name varchar(10), age integer)"),
+            parser.parse("create table student (name varchar(10), age integer);"),
             Ok((
                 SQL::DDL(DDL::Table(CreateTableData::new(
                     "student".to_string(),
