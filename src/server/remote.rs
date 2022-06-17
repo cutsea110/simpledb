@@ -1,6 +1,6 @@
 use capnp::capability::Promise;
 use capnp_rpc::pry;
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 use log::{debug, info, trace};
 use std::{
     cell::RefCell,
@@ -14,8 +14,8 @@ use crate::{
     query::{constant::Constant, expression::Expression, scan::Scan},
     record::schema::{FieldType, Schema},
     remote_capnp::{
-        self, affected, bool_box, int32_box, remote_connection, remote_driver, remote_meta_data,
-        remote_result_set, remote_statement, schema, string_box, tx_box,
+        self, affected, bool_box, date_box, int16_box, int32_box, remote_connection, remote_driver,
+        remote_meta_data, remote_result_set, remote_statement, schema, string_box, tx_box,
     },
     repr,
     repr::planrepr::PlanRepr,
@@ -518,21 +518,21 @@ impl affected::Server for AffectedImpl {
     }
 }
 
-pub struct NextImpl {
-    exists: bool,
+pub struct Int16BoxImpl {
+    val: i16,
 }
-impl NextImpl {
-    pub fn new(exists: bool) -> Self {
-        Self { exists }
+impl Int16BoxImpl {
+    pub fn new(val: i16) -> Self {
+        Self { val }
     }
 }
-impl bool_box::Server for NextImpl {
+impl int16_box::Server for Int16BoxImpl {
     fn read(
         &mut self,
-        _: bool_box::ReadParams,
-        mut results: bool_box::ReadResults,
+        _: int16_box::ReadParams,
+        mut results: int16_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
-        results.get().set_val(self.exists);
+        results.get().set_val(self.val);
         Promise::ok(())
     }
 }
@@ -573,6 +573,47 @@ impl string_box::Server for StringBoxImpl {
         mut results: string_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
         results.get().set_val(self.val.as_str().into());
+        Promise::ok(())
+    }
+}
+
+pub struct BoolBoxImpl {
+    exists: bool,
+}
+impl BoolBoxImpl {
+    pub fn new(exists: bool) -> Self {
+        Self { exists }
+    }
+}
+impl bool_box::Server for BoolBoxImpl {
+    fn read(
+        &mut self,
+        _: bool_box::ReadParams,
+        mut results: bool_box::ReadResults,
+    ) -> Promise<(), capnp::Error> {
+        results.get().set_val(self.exists);
+        Promise::ok(())
+    }
+}
+
+pub struct DateBoxImpl {
+    date: NaiveDate,
+}
+impl DateBoxImpl {
+    pub fn new(date: NaiveDate) -> Self {
+        Self { date }
+    }
+}
+impl date_box::Server for DateBoxImpl {
+    fn read(
+        &mut self,
+        _: date_box::ReadParams,
+        mut results: date_box::ReadResults,
+    ) -> Promise<(), capnp::Error> {
+        let mut val = results.get().init_val();
+        val.set_year(self.date.year() as i16);
+        val.set_month(self.date.month() as u8);
+        val.set_day(self.date.day() as u8);
         Promise::ok(())
     }
 }
@@ -680,7 +721,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> Promise<(), capnp::Error> {
         let has_next = self.scan.lock().unwrap().next();
         trace!("next: {}", has_next);
-        let next: bool_box::Client = capnp_rpc::new_client(NextImpl::new(has_next));
+        let next: bool_box::Client = capnp_rpc::new_client(BoolBoxImpl::new(has_next));
         results.get().set_val(next);
 
         Promise::ok(())
@@ -826,6 +867,24 @@ impl remote_result_set::Server for RemoteResultSetImpl {
 
         Promise::ok(())
     }
+    fn get_int16(
+        &mut self,
+        params: remote_result_set::GetInt16Params,
+        mut results: remote_result_set::GetInt16Results,
+    ) -> Promise<(), capnp::Error> {
+        let fldname = pry!(pry!(params.get()).get_fldname());
+        debug!("get int16 value: {}", fldname);
+        let val = self
+            .scan
+            .lock()
+            .unwrap()
+            .get_i16(fldname)
+            .expect("get int16");
+        let val: int16_box::Client = capnp_rpc::new_client(Int16BoxImpl::new(val));
+        results.get().set_val(val);
+
+        Promise::ok(())
+    }
     fn get_int32(
         &mut self,
         params: remote_result_set::GetInt32Params,
@@ -858,6 +917,42 @@ impl remote_result_set::Server for RemoteResultSetImpl {
             .get_string(fldname)
             .expect("get string");
         let val: string_box::Client = capnp_rpc::new_client(StringBoxImpl::new(val));
+        results.get().set_val(val);
+
+        Promise::ok(())
+    }
+    fn get_bool(
+        &mut self,
+        params: remote_result_set::GetBoolParams,
+        mut results: remote_result_set::GetBoolResults,
+    ) -> Promise<(), capnp::Error> {
+        let fldname = pry!(pry!(params.get()).get_fldname());
+        debug!("get bool value: {}", fldname);
+        let val = self
+            .scan
+            .lock()
+            .unwrap()
+            .get_bool(fldname)
+            .expect("get bool");
+        let val: bool_box::Client = capnp_rpc::new_client(BoolBoxImpl::new(val));
+        results.get().set_val(val);
+
+        Promise::ok(())
+    }
+    fn get_date(
+        &mut self,
+        params: remote_result_set::GetDateParams,
+        mut results: remote_result_set::GetDateResults,
+    ) -> Promise<(), capnp::Error> {
+        let fldname = pry!(pry!(params.get()).get_fldname());
+        debug!("get date value: {}", fldname);
+        let val = self
+            .scan
+            .lock()
+            .unwrap()
+            .get_date(fldname)
+            .expect("get date");
+        let val: date_box::Client = capnp_rpc::new_client(DateBoxImpl::new(val));
         results.get().set_val(val);
 
         Promise::ok(())
