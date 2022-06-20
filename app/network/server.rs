@@ -84,6 +84,13 @@ pub async fn main() -> Result<(), Box<dyn Error>> {
 
 async fn try_main(cfg: Config) -> Result<(), Box<dyn Error>> {
     info!("start server");
+    info!("    _            _        _ _    ");
+    info!(" __(_)_ __  _ __| |___ __| | |__ ");
+    info!("(_-< | '  \\| '_ \\ / -_) _` | '_ \\");
+    info!("/__/_|_|_|_| .__/_\\___\\__,_|_.__/");
+    info!("           |_|                   ");
+    info!("");
+
     let srv = ServerImpl::new();
 
     let listener = tokio::net::TcpListener::bind(&cfg.addr).await?;
