@@ -234,7 +234,7 @@ mod tests {
 
         let blk = BlockId::new("testfile", 2);
         let mut p1 = Page::new_from_size(fm.lock().unwrap().block_size() as usize);
-        let pos1 = 0; // 88;
+        let pos1 = 0;
         let size = p1.set_u8(pos1, 225).expect("set u8");
 
         let pos2 = pos1 + size;
@@ -253,9 +253,14 @@ mod tests {
         let size = p1.set_bool(pos6, false).expect("set bool");
 
         let pos7 = pos6 + size;
-        let _size = p1
+        let size = p1
             .set_date(pos7, NaiveDate::from_ymd(2022, 6, 14))
             .expect("set date");
+
+        let pos8 = pos7 + size;
+        let _size = p1
+            .set_string(pos8, "こんにちわ、世界！".to_string())
+            .expect("set string (UTF8)");
 
         fm.lock()
             .unwrap()
@@ -277,6 +282,10 @@ mod tests {
         assert_eq!(
             NaiveDate::from_ymd(2022, 6, 14),
             p2.get_date(pos7).expect("get bool")
+        );
+        assert_eq!(
+            "こんにちわ、世界！".to_string(),
+            p2.get_string(pos8).expect("get string (UTF8)")
         );
     }
 }
