@@ -109,6 +109,7 @@ impl FileMgr {
                 let mut f = file.lock().unwrap();
                 f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
                 f.write_all(p.contents())?;
+                f.flush()?;
             }
             // for statistics
             self.num_of_written_blocks += 1;
@@ -131,6 +132,7 @@ impl FileMgr {
                 let mut f = file.lock().unwrap();
                 f.seek(SeekFrom::Start(offset.try_into().unwrap()))?;
                 f.write_all(&b)?;
+                f.flush()?;
             }
             // for statistics
             self.num_of_written_blocks += 1;
