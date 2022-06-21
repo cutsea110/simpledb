@@ -82,7 +82,7 @@ impl LogMgr {
         self.logpage.set_i32(0, recpos as i32)?;
         self.latest_lsn += 1;
 
-        return Ok(self.last_saved_lsn);
+        return Ok(self.latest_lsn);
     }
     fn append_new_block(&mut self) -> Result<BlockId> {
         let mut filemgr = self.fm.lock().unwrap();
@@ -149,7 +149,7 @@ mod tests {
         for i in start..=end {
             let mut rec = create_log_record(format!("record: {}", i), i + 100);
             let lsn = lm.append(&mut rec).expect("LogMgr append");
-            print!("{} ", format!("{}", lsn));
+            print!("{} ", lsn);
         }
         println!();
     }
