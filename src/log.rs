@@ -1,2 +1,2 @@
-pub mod iterator;
+mod iterator;
 pub mod manager;
