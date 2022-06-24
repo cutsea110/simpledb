@@ -35,7 +35,7 @@ impl fmt::Display for RecoveryMgrError {
 #[derive(Debug, Clone)]
 pub struct RecoveryMgr {
     lm: Arc<Mutex<LogMgr>>,
-    bm: Arc<Mutex<BufferMgr>>,
+    bm: Arc<Mutex<dyn BufferMgr>>,
     tx: Arc<Mutex<Transaction>>,
     txnum: i32,
 }
@@ -45,7 +45,7 @@ impl RecoveryMgr {
         tx: Arc<Mutex<Transaction>>,
         txnum: i32,
         lm: Arc<Mutex<LogMgr>>,
-        bm: Arc<Mutex<BufferMgr>>,
+        bm: Arc<Mutex<dyn BufferMgr>>,
     ) -> Result<Self> {
         StartRecord::write_to_log(Arc::clone(&lm), txnum)?;
 

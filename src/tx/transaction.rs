@@ -25,7 +25,7 @@ pub struct Transaction {
 
     recovery_mgr: Option<Arc<Mutex<RecoveryMgr>>>,
     concur_mgr: ConcurrencyMgr,
-    bm: Arc<Mutex<BufferMgr>>,
+    bm: Arc<Mutex<dyn BufferMgr>>,
     fm: Arc<Mutex<FileMgr>>,
     txnum: i32,
     mybuffers: BufferList,
@@ -38,7 +38,7 @@ impl Transaction {
 
         fm: Arc<Mutex<FileMgr>>,
         lm: Arc<Mutex<LogMgr>>,
-        bm: Arc<Mutex<BufferMgr>>,
+        bm: Arc<Mutex<dyn BufferMgr>>,
     ) -> Result<Self> {
         let mut tran = Self {
             next_tx_num,

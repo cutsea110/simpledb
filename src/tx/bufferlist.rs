@@ -13,11 +13,11 @@ use crate::{
 pub struct BufferList {
     buffers: HashMap<BlockId, Arc<Mutex<Buffer>>>,
     pins: Vec<BlockId>,
-    bm: Arc<Mutex<BufferMgr>>,
+    bm: Arc<Mutex<dyn BufferMgr>>,
 }
 
 impl BufferList {
-    pub fn new(bm: Arc<Mutex<BufferMgr>>) -> Self {
+    pub fn new(bm: Arc<Mutex<dyn BufferMgr>>) -> Self {
         Self {
             buffers: HashMap::new(),
             pins: vec![],

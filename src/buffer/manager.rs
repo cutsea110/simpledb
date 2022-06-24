@@ -1,6 +1,7 @@
 use anyhow::Result;
 use core::fmt;
 use std::{
+    fmt::Debug,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -30,13 +31,26 @@ impl fmt::Display for BufferMgrError {
     }
 }
 
+pub trait BufferMgr {
+    fn available(&self) -> usize;
+    fn flush_all(&mut self, txnum: i32) -> Result<()>;
+    fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()>;
+    fn pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>>;
+}
+
+impl Debug for dyn BufferMgr {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "BufferMgr")
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct BufferMgr {
+pub struct NaiveBufferMgr {
     bufferpool: Vec<Arc<Mutex<Buffer>>>,
     num_available: Arc<Mutex<usize>>,
 }
 
-impl BufferMgr {
+impl NaiveBufferMgr {
     pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, numbuffs: usize) -> Self {
         let bufferpool = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
@@ -46,46 +60,6 @@ impl BufferMgr {
             bufferpool,
             num_available: Arc::new(Mutex::new(numbuffs)),
         }
-    }
-    // synchronized
-    pub fn available(&self) -> usize {
-        *(self.num_available.lock().unwrap())
-    }
-    // synchronized
-    pub fn flush_all(&mut self, txnum: i32) -> Result<()> {
-        for i in 0..self.bufferpool.len() {
-            let mut buff = self.bufferpool[i].lock().unwrap();
-            if buff.modifying_tx() == txnum {
-                buff.flush()?;
-            }
-        }
-
-        Ok(())
-    }
-    // synchronized
-    pub fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
-        let mut b = buff.lock().unwrap();
-
-        b.unpin();
-
-        if !b.is_pinned() {
-            *(self.num_available.lock().unwrap()) += 1;
-        }
-
-        Ok(())
-    }
-    // synchronized
-    pub fn pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
-        let timestamp = SystemTime::now();
-
-        while !waiting_too_long(timestamp) {
-            if let Ok(buff) = self.try_to_pin(blk) {
-                return Ok(buff);
-            }
-            thread::sleep(Duration::new(1, 0))
-        }
-
-        return Err(From::from(BufferMgrError::BufferAbort));
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
@@ -132,6 +106,48 @@ impl BufferMgr {
         }
 
         None
+    }
+}
+impl BufferMgr for NaiveBufferMgr {
+    // synchronized
+    fn available(&self) -> usize {
+        *(self.num_available.lock().unwrap())
+    }
+    // synchronized
+    fn flush_all(&mut self, txnum: i32) -> Result<()> {
+        for i in 0..self.bufferpool.len() {
+            let mut buff = self.bufferpool[i].lock().unwrap();
+            if buff.modifying_tx() == txnum {
+                buff.flush()?;
+            }
+        }
+
+        Ok(())
+    }
+    // synchronized
+    fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
+        let mut b = buff.lock().unwrap();
+
+        b.unpin();
+
+        if !b.is_pinned() {
+            *(self.num_available.lock().unwrap()) += 1;
+        }
+
+        Ok(())
+    }
+    // synchronized
+    fn pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
+        let timestamp = SystemTime::now();
+
+        while !waiting_too_long(timestamp) {
+            if let Ok(buff) = self.try_to_pin(blk) {
+                return Ok(buff);
+            }
+            thread::sleep(Duration::new(1, 0))
+        }
+
+        return Err(From::from(BufferMgrError::BufferAbort));
     }
 }
 
