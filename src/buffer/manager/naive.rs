@@ -127,3 +127,59 @@ fn waiting_too_long(starttime: SystemTime) -> bool {
 
     diff.as_millis() as i64 > MAX_TIME
 }
+
+#[cfg(test)]
+mod tests {
+    use anyhow::Result;
+    use std::fs;
+    use std::path::Path;
+
+    use super::*;
+
+    #[test]
+    fn unit_test() -> Result<()> {
+        if Path::new("_test/buffermgrtest").exists() {
+            fs::remove_dir_all("_test/buffermgrtest")?;
+        }
+
+        let fm = Arc::new(Mutex::new(FileMgr::new("_test/buffermgrtest", 400)?));
+        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
+
+        let mut bm = NaiveBufferMgr::new(fm, lm, 3);
+
+        let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 6];
+        buff[0] = bm.pin(&BlockId::new("testfile", 0))?.into();
+        buff[1] = bm.pin(&BlockId::new("testfile", 1))?.into();
+        buff[2] = bm.pin(&BlockId::new("testfile", 2))?.into();
+        bm.unpin(Arc::clone(&buff[1].clone().unwrap()))?;
+        buff[1] = None;
+
+        buff[3] = bm.pin(&BlockId::new("testfile", 0))?.into();
+        buff[4] = bm.pin(&BlockId::new("testfile", 1))?.into();
+        println!("Available buffers: {:?}", bm.available());
+
+        println!("Attempting to pin block 3...");
+        if let Ok(_) = bm.pin(&BlockId::new("testfile", 3)) {
+            // couldn't come here!
+            println!("Succeed!");
+        } else {
+            println!("Failed!");
+        }
+        bm.unpin(Arc::clone(&buff[2].clone().unwrap()))?;
+        buff[2] = None;
+        buff[5] = bm.pin(&BlockId::new("testfile", 3))?.into(); // now this works
+
+        println!("Final buffer Allocation:");
+        for i in 0..buff.len() {
+            if let Some(b) = buff[i].clone() {
+                println!(
+                    "buff[{:?}] pinned to block {:?}",
+                    i,
+                    b.lock().unwrap().block()
+                );
+            }
+        }
+
+        Ok(())
+    }
+}
