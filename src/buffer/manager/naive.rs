@@ -18,6 +18,11 @@ use super::{BufferMgr, BufferMgrError, MAX_TIME};
 pub struct NaiveBufferMgr {
     bufferpool: Vec<Arc<Mutex<Buffer>>>,
     num_available: Arc<Mutex<usize>>,
+    // extends statistics by exercise 4.18
+    num_of_total_pinned: u32,
+    num_of_total_unpinned: u32,
+    num_of_cache_hits: u32,
+    num_of_buffer_assigned: u32,
 }
 
 impl NaiveBufferMgr {
@@ -29,18 +34,30 @@ impl NaiveBufferMgr {
         Self {
             bufferpool,
             num_available: Arc::new(Mutex::new(numbuffs)),
+            num_of_total_pinned: 0,
+            num_of_total_unpinned: 0,
+            num_of_cache_hits: 0,
+            num_of_buffer_assigned: 0,
         }
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         let mut buff = self.find_existing_buffer(blk);
-        if buff.is_none() {
-            buff = self.choose_unpinned_buffer();
-            if buff.is_none() {
-                return Err(From::from(BufferMgrError::BufferAbort));
+        match buff {
+            Some(_) => {
+                // for statistics
+                self.num_of_cache_hits += 1;
             }
-            let mut b = buff.as_ref().unwrap().lock().unwrap();
-            b.assign_to_block(blk.clone())?;
+            None => {
+                buff = self.choose_unpinned_buffer();
+                if buff.is_none() {
+                    return Err(From::from(BufferMgrError::BufferAbort));
+                }
+                let mut b = buff.as_ref().unwrap().lock().unwrap();
+                b.assign_to_block(blk.clone())?;
+                // for statistics
+                self.num_of_buffer_assigned += 1;
+            }
         }
 
         let mut b = buff.as_ref().unwrap().lock().unwrap();
@@ -99,6 +116,8 @@ impl BufferMgr for NaiveBufferMgr {
         let mut b = buff.lock().unwrap();
 
         b.unpin();
+        // for statistics
+        self.num_of_total_unpinned += 1;
 
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) += 1;
@@ -112,12 +131,24 @@ impl BufferMgr for NaiveBufferMgr {
 
         while !waiting_too_long(timestamp) {
             if let Ok(buff) = self.try_to_pin(blk) {
+                // for statistics
+                self.num_of_total_pinned += 1;
+
                 return Ok(buff);
             }
             thread::sleep(Duration::new(1, 0))
         }
 
         return Err(From::from(BufferMgrError::BufferAbort));
+    }
+    // extends by exercise 4.18
+    fn get_statistics(&self) -> (u32, u32, u32, u32) {
+        (
+            self.num_of_total_pinned,
+            self.num_of_total_unpinned,
+            self.num_of_cache_hits,
+            self.num_of_buffer_assigned,
+        )
     }
 }
 
