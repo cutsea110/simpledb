@@ -156,35 +156,58 @@ mod tests {
 
         buff[3] = bm.pin(&BlockId::new("testfile", 0))?.into();
         buff[4] = bm.pin(&BlockId::new("testfile", 1))?.into();
-        println!("Available buffers: {:?}", bm.available());
+
+        assert_eq!(bm.available(), 0);
 
         println!("Attempting to pin block 3...");
-        if let Ok(_) = bm.pin(&BlockId::new("testfile", 3)) {
-            // couldn't come here!
-            println!("Succeed!");
-        } else {
-            println!("Failed!");
-        }
+        let result = bm.pin(&BlockId::new("testfile", 3));
+        assert!(result.is_err());
+
         bm.unpin(Arc::clone(&buff[2].clone().unwrap()))?;
         buff[2] = None;
         buff[5] = bm.pin(&BlockId::new("testfile", 3))?.into(); // now this works
 
+        println!("Check buff");
+        // 0
+        assert!(buff[0].is_some());
+        {
+            let result = buff[0].as_ref().unwrap().lock().unwrap();
+            assert_eq!(result.block(), Some(&BlockId::new("testfile", 0)));
+        }
+        // 1
+        assert!(buff[1].is_none());
+        // 2
+        assert!(buff[2].is_none());
+        // 3
+        assert!(buff[3].is_some());
+        {
+            let result = buff[3].as_ref().unwrap().lock().unwrap();
+            assert_eq!(result.block(), Some(&BlockId::new("testfile", 0)));
+        }
+        // 4
+        assert!(buff[4].is_some());
+        {
+            let result = buff[4].as_ref().unwrap().lock().unwrap();
+            assert_eq!(result.block(), Some(&BlockId::new("testfile", 1)));
+        }
+        // 5
+        assert!(buff[5].is_some());
+        {
+            let result = buff[5].as_ref().unwrap().lock().unwrap();
+            assert_eq!(result.block(), Some(&BlockId::new("testfile", 3)));
+        }
+
         println!("Final buffer Allocation:");
-        for i in 0..buff.len() {
-            if let Some(b) = buff[i].clone() {
-                println!(
-                    "buff[{:?}] pinned to block {:?}",
-                    i,
-                    b.lock().unwrap().block()
-                );
-            }
-        }
-        for (i, b) in bm.bufferpool.into_iter().enumerate() {
-            let b = b.lock().unwrap();
-            let blk = b.block();
-            let is_pinned = b.is_pinned();
-            println!("bufferpool[{}] : {:?} (pinned: {})", i, blk, is_pinned);
-        }
+        // bufferpool
+        let b = bm.bufferpool[0].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 0)));
+        assert_eq!(b.is_pinned(), true);
+        let b = bm.bufferpool[1].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 1)));
+        assert_eq!(b.is_pinned(), true);
+        let b = bm.bufferpool[2].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 3)));
+        assert_eq!(b.is_pinned(), true);
 
         Ok(())
     }
@@ -227,14 +250,21 @@ mod tests {
         buff[5] = bm.pin(&BlockId::new("testfile", 60))?.into();
         buff[6] = bm.pin(&BlockId::new("testfile", 70))?.into();
 
-        println!("Available buffers: {:?}", bm.available());
+        assert_eq!(bm.available(), 2);
         println!("Final buffer Allocation:");
-        for (i, b) in bm.bufferpool.into_iter().enumerate() {
-            let b = b.lock().unwrap();
-            let blk = b.block();
-            let is_pinned = b.is_pinned();
-            println!("bufferpool[{}] : {:?} (pinned: {})", i, blk, is_pinned);
-        }
+        // bufferpool
+        let b = bm.bufferpool[0].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
+        assert_eq!(b.is_pinned(), true);
+        let b = bm.bufferpool[1].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
+        assert_eq!(b.is_pinned(), true);
+        let b = bm.bufferpool[2].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 30)));
+        assert_eq!(b.is_pinned(), false);
+        let b = bm.bufferpool[3].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 40)));
+        assert_eq!(b.is_pinned(), false);
 
         Ok(())
     }
