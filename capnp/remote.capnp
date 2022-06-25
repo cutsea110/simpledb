@@ -94,7 +94,12 @@ interface RemoteConnection {
   getViewDefinition @5 (viewname :Text) -> (vwdef :ViewDef);
   getIndexInfo      @6 (tblname :Text) -> (ii :Map(Text, IndexInfo));
 
-  numsOfReadWrittenBlocks @7 () -> (r: UInt32, w: UInt32); # extends for statistics by exercise 3.15
+  numsOfReadWrittenBlocks   @7 () -> (r: UInt32, w: UInt32);
+  # extends for statistics by exercise 3.15
+  numsOfTotalPinnedUnpinned @8 () -> (pinned: UInt32, unpinned: UInt32);
+  # extends for statistics by exercise 4.18
+  bufferCacheHitAssigned    @9 () -> (hit: UInt32, assigned: UInt32);
+  # extends for statistics by exercise 4.18
 }
 
 interface RemoteStatement {

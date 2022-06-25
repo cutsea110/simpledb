@@ -32,8 +32,7 @@ impl EmbeddedConnection {
         if self.current_tx.lock().unwrap().commit().is_err() {
             return Err(From::from(ConnectionError::CommitFailed));
         }
-        // just statistic dump
-        self.nums_of_read_written_blocks();
+        self.dump_statistics();
 
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
@@ -46,8 +45,7 @@ impl EmbeddedConnection {
         if self.current_tx.lock().unwrap().rollback().is_err() {
             return Err(From::from(ConnectionError::RollbackFailed));
         }
-        // just statistic dump
-        self.nums_of_read_written_blocks();
+        self.dump_statistics();
 
         if let Ok(tx) = self.db.new_tx() {
             self.current_tx = Arc::new(Mutex::new(tx));
@@ -73,6 +71,13 @@ impl EmbeddedConnection {
             .get_index_info(tblname, Arc::clone(&self.current_tx))
     }
 
+    fn dump_statistics(&self) {
+        self.nums_of_read_written_blocks();
+        self.nums_of_available_buffers();
+        self.nums_of_total_pinned_unpinned();
+        self.buffer_cache_hit_assigned();
+    }
+
     // extends for statistic by exercise 3.15
     fn nums_of_read_written_blocks(&self) {
         let (r, w) = self
@@ -82,6 +87,33 @@ impl EmbeddedConnection {
             .unwrap()
             .nums_of_read_written_blocks();
         info!("numbers of read/written blocks: {}/{}", r, w);
+    }
+    // extends for statistic by exercise 4.18
+    fn nums_of_available_buffers(&self) {
+        let available = self.db.buffer_mgr().lock().unwrap().available();
+        info!("numbers of available buffers: {}", available);
+    }
+    fn nums_of_total_pinned_unpinned(&self) {
+        let (p, u) = self
+            .db
+            .buffer_mgr()
+            .lock()
+            .unwrap()
+            .nums_total_pinned_unpinned();
+        info!("numbers of total pinned/unpinned buffers: {}/{}", p, u);
+    }
+    fn buffer_cache_hit_assigned(&self) {
+        let (hit, assigned) = self
+            .db
+            .buffer_mgr()
+            .lock()
+            .unwrap()
+            .buffer_cache_hit_assigned();
+        let ratio = (hit as f32 / assigned as f32) * 100.0;
+        info!(
+            "buffer cache hit/assigned(ratio): {}/{}({:.3}%)",
+            hit, assigned, ratio
+        );
     }
 }
 
