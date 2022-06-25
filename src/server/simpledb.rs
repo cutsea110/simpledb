@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    buffer::manager::BufferMgr,
+    buffer::manager::{naive::NaiveBufferMgr, BufferMgr},
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
     log::manager::LogMgr,
@@ -63,7 +63,7 @@ pub struct SimpleDB {
     // managers
     fm: Arc<Mutex<FileMgr>>,
     lm: Arc<Mutex<LogMgr>>,
-    bm: Arc<Mutex<BufferMgr>>,
+    bm: Arc<Mutex<dyn BufferMgr>>,
     mdm: Option<Arc<Mutex<MetadataMgr>>>,
     qp: Option<Arc<Mutex<dyn QueryPlanner>>>,
     up: Option<Arc<Mutex<dyn UpdatePlanner>>>,
@@ -99,7 +99,7 @@ impl SimpleDB {
             FileMgr::new(&db_directory.clone(), blocksize).unwrap(),
         ));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), LOG_FILE).unwrap()));
-        let bm = Arc::new(Mutex::new(BufferMgr::new(
+        let bm = Arc::new(Mutex::new(NaiveBufferMgr::new(
             Arc::clone(&fm),
             Arc::clone(&lm),
             numbuffs,
@@ -125,7 +125,7 @@ impl SimpleDB {
     pub fn log_mgr(&self) -> Arc<Mutex<LogMgr>> {
         Arc::clone(&self.lm)
     }
-    pub fn buffer_mgr(&self) -> Arc<Mutex<BufferMgr>> {
+    pub fn buffer_mgr(&self) -> Arc<Mutex<dyn BufferMgr>> {
         Arc::clone(&self.bm)
     }
     pub fn metadata_mgr(&self) -> Option<Arc<Mutex<MetadataMgr>>> {
