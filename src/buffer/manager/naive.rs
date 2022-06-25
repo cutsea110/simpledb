@@ -138,11 +138,11 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_test/buffermgrtest").exists() {
-            fs::remove_dir_all("_test/buffermgrtest")?;
+        if Path::new("_test/buffermgrtest/naive").exists() {
+            fs::remove_dir_all("_test/buffermgrtest/naive")?;
         }
 
-        let fm = Arc::new(Mutex::new(FileMgr::new("_test/buffermgrtest", 400)?));
+        let fm = Arc::new(Mutex::new(FileMgr::new("_test/buffermgrtest/naive", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
 
         let mut bm = NaiveBufferMgr::new(fm, lm, 3);
@@ -178,6 +178,62 @@ mod tests {
                     b.lock().unwrap().block()
                 );
             }
+        }
+        for (i, b) in bm.bufferpool.into_iter().enumerate() {
+            let b = b.lock().unwrap();
+            let blk = b.block();
+            let is_pinned = b.is_pinned();
+            println!("bufferpool[{}] : {:?} (pinned: {})", i, blk, is_pinned);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn replace_strategy_test() -> Result<()> {
+        if Path::new("_test/buffermgrtest/naivestrategy").exists() {
+            fs::remove_dir_all("_test/buffermgrtest/naivestrategy")?;
+        }
+
+        let fm = Arc::new(Mutex::new(FileMgr::new(
+            "_test/buffermgrtest/naivestrategy",
+            400,
+        )?));
+        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
+
+        let mut bm = NaiveBufferMgr::new(fm, lm, 4);
+
+        // p91 senario
+        // pin(10); pin(20); pin(30); pin(40); unpin(20);
+        // pin(50); unpin(40); unpin(10); unpin(30); unpin(50);
+        let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 7];
+        buff[0] = bm.pin(&BlockId::new("testfile", 10))?.into();
+        buff[1] = bm.pin(&BlockId::new("testfile", 20))?.into();
+        buff[2] = bm.pin(&BlockId::new("testfile", 30))?.into();
+        buff[3] = bm.pin(&BlockId::new("testfile", 40))?.into();
+        bm.unpin(Arc::clone(&buff[1].clone().unwrap()))?; // unpin 20
+        buff[1] = None;
+        buff[4] = bm.pin(&BlockId::new("testfile", 50))?.into();
+        bm.unpin(Arc::clone(&buff[3].clone().unwrap()))?; // unpin 40
+        buff[3] = None;
+        bm.unpin(Arc::clone(&buff[0].clone().unwrap()))?; // unpin 10
+        buff[0] = None;
+        bm.unpin(Arc::clone(&buff[2].clone().unwrap()))?; // unpin 30
+        buff[2] = None;
+        bm.unpin(Arc::clone(&buff[4].clone().unwrap()))?; // unpin 50
+        buff[4] = None;
+        // p91 senario
+        // pin(60); pin(70);
+        buff[5] = bm.pin(&BlockId::new("testfile", 60))?.into();
+        buff[6] = bm.pin(&BlockId::new("testfile", 70))?.into();
+
+        println!("Available buffers: {:?}", bm.available());
+        println!("Final buffer Allocation:");
+        for (i, b) in bm.bufferpool.into_iter().enumerate() {
+            let b = b.lock().unwrap();
+            let blk = b.block();
+            let is_pinned = b.is_pinned();
+            println!("bufferpool[{}] : {:?} (pinned: {})", i, blk, is_pinned);
         }
 
         Ok(())
