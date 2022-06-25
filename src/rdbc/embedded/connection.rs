@@ -73,6 +73,7 @@ impl EmbeddedConnection {
 
     fn dump_statistics(&self) {
         self.nums_of_read_written_blocks();
+        self.nums_of_available_buffers();
         self.nums_of_total_pinned_unpinned();
         self.buffer_cache_hit_ratio();
     }
@@ -88,6 +89,10 @@ impl EmbeddedConnection {
         info!("numbers of read/written blocks: {}/{}", r, w);
     }
     // extends for statistic by exercise 4.18
+    fn nums_of_available_buffers(&self) {
+        let available = self.db.buffer_mgr().lock().unwrap().available();
+        info!("numbers of available buffers: {}", available);
+    }
     fn nums_of_total_pinned_unpinned(&self) {
         let (p, u) = self
             .db

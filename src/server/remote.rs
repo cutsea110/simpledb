@@ -121,6 +121,8 @@ impl ConnectionInternal {
     fn dump_statistics(&self) {
         let (r, w) = self.numbers_of_read_written_blocks();
         info!("numbers of read/written blocks: {}/{}", r, w);
+        let available = self.numbers_of_available_buffers();
+        info!("numbers of available buffers: {}", available);
         let (pinned, unpinned) = self.numbers_of_total_pinned_unpinned();
         info!(
             "numbers of pinned/unpinned buffers: {}/{}",
@@ -141,6 +143,15 @@ impl ConnectionInternal {
             .nums_of_read_written_blocks()
     }
     // extends for statistics by exercise 4.18
+    fn numbers_of_available_buffers(&self) -> usize {
+        self.db
+            .lock()
+            .unwrap()
+            .buffer_mgr()
+            .lock()
+            .unwrap()
+            .available()
+    }
     fn numbers_of_total_pinned_unpinned(&self) -> (u32, u32) {
         self.db
             .lock()
