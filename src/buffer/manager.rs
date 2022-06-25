@@ -35,12 +35,8 @@ pub trait BufferMgr {
     fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()>;
     fn pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>>;
     // extends for statistics by exercise 4.18
-    // return values are
-    // num of total pinned
-    // num of total unpinned
-    // num of cache hits
-    // num of buffer assigned
-    fn get_statistics(&self) -> (u32, u32, u32, u32);
+    fn nums_total_pinned_unpinned(&self) -> (u32, u32);
+    fn buffer_cache_hit_ratio(&self) -> f32;
 }
 
 impl Debug for dyn BufferMgr {

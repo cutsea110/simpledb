@@ -82,9 +82,7 @@ pub struct ConnectionInternal {
 }
 impl ConnectionInternal {
     pub fn close(&mut self) -> anyhow::Result<()> {
-        // for statistics by exercise 3.15
-        let (r, w) = self.numbers_of_read_written_blocks();
-        info!("numbers of read/written blocks: {}/{}", r, w);
+        self.dump_statistics();
 
         // Essential body
         let tx_num = self.current_tx.lock().unwrap().tx_num();
@@ -93,9 +91,7 @@ impl ConnectionInternal {
         self.renew_tx()
     }
     pub fn commit(&mut self) -> anyhow::Result<()> {
-        // for statistics by exercise 3.15
-        let (r, w) = self.numbers_of_read_written_blocks();
-        info!("numbers of read/written blocks: {}/{}", r, w);
+        self.dump_statistics();
 
         // Essential body
         let tx_num = self.current_tx.lock().unwrap().tx_num();
@@ -103,9 +99,7 @@ impl ConnectionInternal {
         self.current_tx.lock().unwrap().commit()
     }
     pub fn rollback(&mut self) -> anyhow::Result<()> {
-        // for statistics by exercise 3.15
-        let (r, w) = self.numbers_of_read_written_blocks();
-        info!("numbers of read/written blocks: {}/{}", r, w);
+        self.dump_statistics();
 
         // Essential body
         let tx_num = self.current_tx.lock().unwrap().tx_num();
@@ -124,8 +118,20 @@ impl ConnectionInternal {
         self.current_tx.lock().unwrap().tx_num()
     }
 
+    fn dump_statistics(&self) {
+        let (r, w) = self.numbers_of_read_written_blocks();
+        info!("numbers of read/written blocks: {}/{}", r, w);
+        let (pinned, unpinned) = self.numbers_of_total_pinned_unpinned();
+        info!(
+            "numbers of pinned/unpinned buffers: {}/{}",
+            pinned, unpinned
+        );
+        let ratio = self.buffer_cache_hit_ratio();
+        info!("buffer cache hit ratio: {:.3}%", ratio * 100.0);
+    }
+
     // extends for statistics by exercise 3.15
-    pub fn numbers_of_read_written_blocks(&self) -> (u32, u32) {
+    fn numbers_of_read_written_blocks(&self) -> (u32, u32) {
         self.db
             .lock()
             .unwrap()
@@ -133,6 +139,25 @@ impl ConnectionInternal {
             .lock()
             .unwrap()
             .nums_of_read_written_blocks()
+    }
+    // extends for statistics by exercise 4.18
+    fn numbers_of_total_pinned_unpinned(&self) -> (u32, u32) {
+        self.db
+            .lock()
+            .unwrap()
+            .buffer_mgr()
+            .lock()
+            .unwrap()
+            .nums_total_pinned_unpinned()
+    }
+    fn buffer_cache_hit_ratio(&self) -> f32 {
+        self.db
+            .lock()
+            .unwrap()
+            .buffer_mgr()
+            .lock()
+            .unwrap()
+            .buffer_cache_hit_ratio()
     }
 }
 
@@ -482,6 +507,31 @@ impl remote_connection::Server for RemoteConnectionImpl {
         let (r, w) = self.conn.borrow().numbers_of_read_written_blocks();
         results.get().set_r(r);
         results.get().set_w(w);
+
+        Promise::ok(())
+    }
+    // extends for statistics by exercise 4.18
+    fn nums_of_total_pinned_unpinned(
+        &mut self,
+        _: remote_connection::NumsOfTotalPinnedUnpinnedParams,
+        mut results: remote_connection::NumsOfTotalPinnedUnpinnedResults,
+    ) -> Promise<(), capnp::Error> {
+        trace!("nums of total pinned/unpinned buffers");
+        let (pinned, unpinned) = self.conn.borrow().numbers_of_total_pinned_unpinned();
+        results.get().set_pinned(pinned);
+        results.get().set_unpinned(unpinned);
+
+        Promise::ok(())
+    }
+    // extends for statistics by exercise 4.18
+    fn buffer_cache_hit_ratio(
+        &mut self,
+        _: remote_connection::BufferCacheHitRatioParams,
+        mut results: remote_connection::BufferCacheHitRatioResults,
+    ) -> Promise<(), capnp::Error> {
+        trace!("buffer cache hit ratio");
+        let ratio = self.conn.borrow().buffer_cache_hit_ratio();
+        results.get().set_ratio(ratio);
 
         Promise::ok(())
     }

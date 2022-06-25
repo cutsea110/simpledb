@@ -111,6 +111,24 @@ impl NetworkConnection {
 
         Ok((r, w))
     }
+    // extends for statistics by exercise 4.18
+    pub async fn numbers_of_total_pinned_unpinned(&self) -> Result<(u32, u32)> {
+        // for statistics
+        let request = self.conn.nums_of_total_pinned_unpinned_request();
+        let reply = request.send().promise.await?;
+        let pinned = reply.get()?.get_pinned();
+        let unpinned = reply.get()?.get_unpinned();
+
+        Ok((pinned, unpinned))
+    }
+    // extends for statistics by exercise 4.18
+    pub async fn buffer_cache_hit_ratio(&self) -> Result<f32> {
+        let request = self.conn.buffer_cache_hit_ratio_request();
+        let reply = request.send().promise.await?;
+        let ratio = reply.get()?.get_ratio();
+
+        Ok(ratio)
+    }
 }
 
 pub struct ResponseImpl {

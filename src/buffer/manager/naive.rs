@@ -142,13 +142,12 @@ impl BufferMgr for NaiveBufferMgr {
         return Err(From::from(BufferMgrError::BufferAbort));
     }
     // extends by exercise 4.18
-    fn get_statistics(&self) -> (u32, u32, u32, u32) {
-        (
-            self.num_of_total_pinned,
-            self.num_of_total_unpinned,
-            self.num_of_cache_hits,
-            self.num_of_buffer_assigned,
-        )
+    fn nums_total_pinned_unpinned(&self) -> (u32, u32) {
+        (self.num_of_total_pinned, self.num_of_total_unpinned)
+    }
+    // extends by exercise 4.18
+    fn buffer_cache_hit_ratio(&self) -> f32 {
+        self.num_of_cache_hits as f32 / self.num_of_buffer_assigned as f32
     }
 }
 
