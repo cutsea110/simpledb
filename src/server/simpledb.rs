@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    buffer::manager::{BufferMgr, NaiveBufferMgr},
+    buffer::manager::{naive::NaiveBufferMgr, BufferMgr},
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
     log::manager::LogMgr,
