@@ -122,12 +122,13 @@ impl NetworkConnection {
         Ok((pinned, unpinned))
     }
     // extends for statistics by exercise 4.18
-    pub async fn buffer_cache_hit_ratio(&self) -> Result<f32> {
-        let request = self.conn.buffer_cache_hit_ratio_request();
+    pub async fn buffer_cache_hit_assigned(&self) -> Result<(u32, u32)> {
+        let request = self.conn.buffer_cache_hit_assigned_request();
         let reply = request.send().promise.await?;
-        let ratio = reply.get()?.get_ratio();
+        let hit = reply.get()?.get_hit();
+        let assigned = reply.get()?.get_assigned();
 
-        Ok(ratio)
+        Ok((hit, assigned))
     }
 }
 

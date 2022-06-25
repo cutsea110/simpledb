@@ -36,7 +36,7 @@ pub trait BufferMgr {
     fn pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>>;
     // extends for statistics by exercise 4.18
     fn nums_total_pinned_unpinned(&self) -> (u32, u32);
-    fn buffer_cache_hit_ratio(&self) -> f32;
+    fn buffer_cache_hit_assigned(&self) -> (u32, u32);
 }
 
 impl Debug for dyn BufferMgr {

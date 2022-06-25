@@ -128,8 +128,12 @@ impl ConnectionInternal {
             "numbers of pinned/unpinned buffers: {}/{}",
             pinned, unpinned
         );
-        let ratio = self.buffer_cache_hit_ratio();
-        info!("buffer cache hit ratio: {:.3}%", ratio * 100.0);
+        let (hit, assigned) = self.buffer_cache_hit_assigned();
+        let ratio = (hit as f32 / assigned as f32) * 100.0;
+        info!(
+            "buffer cache hit/assigned(ratio): {}/{}({:.3}%)",
+            hit, assigned, ratio
+        );
     }
 
     // extends for statistics by exercise 3.15
@@ -161,14 +165,14 @@ impl ConnectionInternal {
             .unwrap()
             .nums_total_pinned_unpinned()
     }
-    fn buffer_cache_hit_ratio(&self) -> f32 {
+    fn buffer_cache_hit_assigned(&self) -> (u32, u32) {
         self.db
             .lock()
             .unwrap()
             .buffer_mgr()
             .lock()
             .unwrap()
-            .buffer_cache_hit_ratio()
+            .buffer_cache_hit_assigned()
     }
 }
 
@@ -535,14 +539,15 @@ impl remote_connection::Server for RemoteConnectionImpl {
         Promise::ok(())
     }
     // extends for statistics by exercise 4.18
-    fn buffer_cache_hit_ratio(
+    fn buffer_cache_hit_assigned(
         &mut self,
-        _: remote_connection::BufferCacheHitRatioParams,
-        mut results: remote_connection::BufferCacheHitRatioResults,
+        _: remote_connection::BufferCacheHitAssignedParams,
+        mut results: remote_connection::BufferCacheHitAssignedResults,
     ) -> Promise<(), capnp::Error> {
-        trace!("buffer cache hit ratio");
-        let ratio = self.conn.borrow().buffer_cache_hit_ratio();
-        results.get().set_ratio(ratio);
+        trace!("buffer cache hit/assigned");
+        let (hit, assigned) = self.conn.borrow().buffer_cache_hit_assigned();
+        results.get().set_hit(hit);
+        results.get().set_assigned(assigned);
 
         Promise::ok(())
     }

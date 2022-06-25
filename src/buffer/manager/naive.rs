@@ -146,8 +146,8 @@ impl BufferMgr for NaiveBufferMgr {
         (self.num_of_total_pinned, self.num_of_total_unpinned)
     }
     // extends by exercise 4.18
-    fn buffer_cache_hit_ratio(&self) -> f32 {
-        self.num_of_cache_hits as f32 / self.num_of_buffer_assigned as f32
+    fn buffer_cache_hit_assigned(&self) -> (u32, u32) {
+        (self.num_of_cache_hits, self.num_of_buffer_assigned)
     }
 }
 

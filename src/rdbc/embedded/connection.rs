@@ -75,7 +75,7 @@ impl EmbeddedConnection {
         self.nums_of_read_written_blocks();
         self.nums_of_available_buffers();
         self.nums_of_total_pinned_unpinned();
-        self.buffer_cache_hit_ratio();
+        self.buffer_cache_hit_assigned();
     }
 
     // extends for statistic by exercise 3.15
@@ -102,14 +102,18 @@ impl EmbeddedConnection {
             .nums_total_pinned_unpinned();
         info!("numbers of total pinned/unpinned buffers: {}/{}", p, u);
     }
-    fn buffer_cache_hit_ratio(&self) {
-        let ratio = self
+    fn buffer_cache_hit_assigned(&self) {
+        let (hit, assigned) = self
             .db
             .buffer_mgr()
             .lock()
             .unwrap()
-            .buffer_cache_hit_ratio();
-        info!("buffer cache hit ratio: {:.3}%", ratio * 100.0);
+            .buffer_cache_hit_assigned();
+        let ratio = (hit as f32 / assigned as f32) * 100.0;
+        info!(
+            "buffer cache hit/assigned(ratio): {}/{}({:.3}%)",
+            hit, assigned, ratio
+        );
     }
 }
 
