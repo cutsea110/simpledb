@@ -372,10 +372,12 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    str_tok()
+    attempt(str_tok())
         .map(|sval| Constant::new_string(sval))
-        .or(i32_tok().map(|ival| Constant::new_i32(ival))) // pick it up as the largest signed integer
-        .or(bool_tok().map(|bval| Constant::new_bool(bval)))
+        .or(attempt(i32_tok()).map(|ival| Constant::new_i32(ival))) // pick it up as the largest signed integer
+        .or(attempt(bool_tok()).map(|bval| Constant::new_bool(bval)))
+        // lexeme
+        .skip(spaces().silent())
 }
 
 fn expression<Input>() -> impl Parser<Input, Output = Expression>
@@ -735,7 +737,7 @@ mod tests {
     }
 
     #[test]
-    fn expressin_test() {
+    fn expression_test() {
         let mut parser = expression();
         assert_eq!(parser.parse(""), Err(StringStreamError::Eoi));
         assert_eq!(
@@ -753,6 +755,20 @@ mod tests {
         assert_eq!(
             parser.parse("'bob'   "),
             Ok((Expression::Val(Constant::String("bob".to_string())), ""))
+        );
+        // If expression parser partially parse "true"'s first character 't' and then try field parser,
+        // expression parser will failed to parse "tblname" as field.
+        // This test is to check this bug.
+        assert_eq!(
+            parser.parse("tblname"),
+            Ok((Expression::Fldname("tblname".to_string()), ""))
+        );
+        // If expression parser partially parse "false"'s first character 'f' and then try field parser,
+        // expression parser will failed to parse "fldname" as field.
+        // This test is to check this bug.
+        assert_eq!(
+            parser.parse("fldname"),
+            Ok((Expression::Fldname("fldname".to_string()), ""))
         );
     }
 
@@ -936,6 +952,26 @@ mod tests {
                 Term::new(
                     Expression::Val(Constant::Bool(true)),
                     Expression::Fldname("is_deleted".to_string()),
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("tblname = 'student'"),
+            Ok((
+                Term::new(
+                    Expression::Fldname("tblname".to_string()),
+                    Expression::Val(Constant::String("student".to_string())),
+                ),
+                ""
+            ))
+        );
+        assert_eq!(
+            parser.parse("'student' = tblname"),
+            Ok((
+                Term::new(
+                    Expression::Val(Constant::String("student".to_string())),
+                    Expression::Fldname("tblname".to_string()),
                 ),
                 ""
             ))
