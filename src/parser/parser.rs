@@ -350,7 +350,7 @@ where
     Input: Stream<Token = char>,
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
-    string("false")
+    attempt(string("false"))
         .map(|_| false)
         .or(string("true").map(|_| true))
         // lexeme
@@ -375,7 +375,7 @@ where
     attempt(str_tok())
         .map(|sval| Constant::new_string(sval))
         .or(attempt(i32_tok()).map(|ival| Constant::new_i32(ival))) // pick it up as the largest signed integer
-        .or(attempt(bool_tok()).map(|bval| Constant::new_bool(bval)))
+        .or(bool_tok().map(|bval| Constant::new_bool(bval)))
         // lexeme
         .skip(spaces().silent())
 }
@@ -386,7 +386,7 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     // try constant first, because field can get bool value too.
-    constant()
+    attempt(constant())
         .map(|c| Expression::Val(c))
         .or(field().map(|fldname| Expression::new_fldname(fldname)))
 }
@@ -491,7 +491,7 @@ where
 {
     attempt(create_table().map(|t| DDL::Table(t)))
         .or(attempt(create_view().map(|v| DDL::View(v))))
-        .or(attempt(create_index().map(|i| DDL::Index(i))))
+        .or(create_index().map(|i| DDL::Index(i)))
 }
 
 /// Method for parsing delete commands
@@ -622,10 +622,10 @@ where
     let bool_def = kw_bool().map(|_| FieldInfo::new(FieldType::BOOL, 0));
     let date_def = kw_date().map(|_| FieldInfo::new(FieldType::DATE, 0));
 
-    int32_def
-        .or(int16_def)
-        .or(varchar_def)
-        .or(bool_def)
+    attempt(int32_def)
+        .or(attempt(int16_def))
+        .or(attempt(varchar_def))
+        .or(attempt(bool_def))
         .or(date_def)
 }
 
