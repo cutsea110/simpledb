@@ -1,18 +1,16 @@
+use anyhow::Result;
 use std::{
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
 };
 
-use anyhow::Result;
-
+use super::{BufferMgr, BufferMgrError, MAX_TIME};
 use crate::{
     buffer::buffer::Buffer,
     file::{block_id::BlockId, manager::FileMgr},
     log::manager::LogMgr,
 };
-
-use super::{BufferMgr, BufferMgrError, MAX_TIME};
 
 #[derive(Debug, Clone)]
 pub struct NaiveBufferMgr {
