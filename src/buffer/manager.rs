@@ -10,6 +10,7 @@ use crate::file::block_id::BlockId;
 
 // implements of BufferMgr trait
 pub mod naive;
+pub mod naivebis; // by exercise 4.17
 
 const MAX_TIME: i64 = 10_000; // 10 seconds
 
