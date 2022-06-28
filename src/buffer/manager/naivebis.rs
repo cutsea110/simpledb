@@ -23,6 +23,7 @@ pub struct NaiveBisBufferMgr {
     num_of_cache_hits: u32,
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
+    // Let only try_to_pin to handle this HashMap.
     assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
 }
 
