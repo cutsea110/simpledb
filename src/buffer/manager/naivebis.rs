@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::{
+    collections::HashMap,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -13,7 +14,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct NaiveBufferMgr {
+pub struct NaiveBisBufferMgr {
     bufferpool: Vec<Arc<Mutex<Buffer>>>,
     num_available: Arc<Mutex<usize>>,
     // extends statistics by exercise 4.18
@@ -21,9 +22,12 @@ pub struct NaiveBufferMgr {
     num_of_total_unpinned: u32,
     num_of_cache_hits: u32,
     num_of_buffer_assigned: u32,
+    // extends by exercise 4.17
+    // Let only try_to_pin to handle this HashMap.
+    assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
 }
 
-impl NaiveBufferMgr {
+impl NaiveBisBufferMgr {
     pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, numbuffs: usize) -> Self {
         let bufferpool = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
@@ -36,6 +40,7 @@ impl NaiveBufferMgr {
             num_of_total_unpinned: 0,
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
+            assigned_block_ids: HashMap::new(),
         }
     }
     // TODO: fix for thread safe
@@ -51,6 +56,10 @@ impl NaiveBufferMgr {
                 if buff.is_none() {
                     return Err(From::from(BufferMgrError::BufferAbort));
                 }
+
+                self.assigned_block_ids
+                    .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+
                 let mut b = buff.as_ref().unwrap().lock().unwrap();
                 b.assign_to_block(blk.clone())?;
                 // for statistics
@@ -65,20 +74,10 @@ impl NaiveBufferMgr {
         b.pin();
 
         drop(b); // release lock
-        Ok(Arc::clone(&buff.unwrap()))
+        Ok(buff.unwrap())
     }
     fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
-        for i in 0..self.bufferpool.len() {
-            let buff = self.bufferpool[i].lock().unwrap();
-
-            if let Some(b) = buff.block() {
-                if *b == *blk {
-                    return Some(Arc::clone(&self.bufferpool[i]));
-                }
-            }
-        }
-
-        None
+        self.assigned_block_ids.get(blk).map(|b| Arc::clone(b))
     }
     // The Naive Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
@@ -86,6 +85,11 @@ impl NaiveBufferMgr {
             let buff = self.bufferpool[i].lock().unwrap();
 
             if !buff.is_pinned() {
+                // release blk
+                if let Some(blk) = buff.block() {
+                    self.assigned_block_ids.remove(blk);
+                }
+
                 return Some(Arc::clone(&self.bufferpool[i]));
             }
         }
@@ -93,7 +97,7 @@ impl NaiveBufferMgr {
         None
     }
 }
-impl BufferMgr for NaiveBufferMgr {
+impl BufferMgr for NaiveBisBufferMgr {
     // synchronized
     fn available(&self) -> usize {
         *(self.num_available.lock().unwrap())
@@ -166,14 +170,17 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_test/buffermgrtest/naive").exists() {
-            fs::remove_dir_all("_test/buffermgrtest/naive")?;
+        if Path::new("_test/buffermgrtest/naivebis").exists() {
+            fs::remove_dir_all("_test/buffermgrtest/naivebis")?;
         }
 
-        let fm = Arc::new(Mutex::new(FileMgr::new("_test/buffermgrtest/naive", 400)?));
+        let fm = Arc::new(Mutex::new(FileMgr::new(
+            "_test/buffermgrtest/naivebis",
+            400,
+        )?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
 
-        let mut bm = NaiveBufferMgr::new(fm, lm, 3);
+        let mut bm = NaiveBisBufferMgr::new(fm, lm, 3);
 
         let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 6];
         buff[0] = bm.pin(&BlockId::new("testfile", 0))?.into();
@@ -242,17 +249,17 @@ mod tests {
 
     #[test]
     fn replace_strategy_test() -> Result<()> {
-        if Path::new("_test/buffermgrtest/naivestrategy").exists() {
-            fs::remove_dir_all("_test/buffermgrtest/naivestrategy")?;
+        if Path::new("_test/buffermgrtest/naivebisstrategy").exists() {
+            fs::remove_dir_all("_test/buffermgrtest/naivebisstrategy")?;
         }
 
         let fm = Arc::new(Mutex::new(FileMgr::new(
-            "_test/buffermgrtest/naivestrategy",
+            "_test/buffermgrtest/naivebisstrategy",
             400,
         )?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
 
-        let mut bm = NaiveBufferMgr::new(fm, lm, 4);
+        let mut bm = NaiveBisBufferMgr::new(fm, lm, 4);
 
         // p91 senario
         // pin(10); pin(20); pin(30); pin(40); unpin(20);
