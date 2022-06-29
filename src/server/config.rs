@@ -4,6 +4,8 @@ pub struct Config {
     //
     // Buffer Manager
     buffer_manager: BufferMgr,
+    // query planner
+    query_planner: QueryPlanner,
 }
 
 #[derive(Debug, Clone)]
@@ -13,4 +15,10 @@ enum BufferMgr {
     FIFO,
     LRU,
     Clock,
+}
+
+#[derive(Debug, Clone)]
+enum QueryPlanner {
+    Basic,
+    Heuristic,
 }
