@@ -9,6 +9,7 @@ use super::buffer::Buffer;
 use crate::file::block_id::BlockId;
 
 // implements of BufferMgr trait
+pub mod fifo; // by exercise 4.14
 pub mod naive;
 pub mod naivebis; // by exercise 4.17
 
