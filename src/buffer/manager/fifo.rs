@@ -25,13 +25,17 @@ pub struct FifoBufferMgr {
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
     assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
+    // extends by exercise 4.14
+    assigned_buffers: Vec<Arc<Mutex<Buffer>>>,
 }
 
 impl FifoBufferMgr {
     pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, numbuffs: usize) -> Self {
-        let bufferpool = (0..numbuffs)
+        let bufferpool: Vec<Arc<Mutex<Buffer>>> = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
+        // Initially all buffers are unpinned.
+        let assigned_buffers = (0..numbuffs).map(|i| Arc::clone(&bufferpool[i])).collect();
 
         Self {
             bufferpool,
@@ -41,6 +45,7 @@ impl FifoBufferMgr {
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
             assigned_block_ids: HashMap::new(),
+            assigned_buffers,
         }
     }
     // TODO: fix for thread safe
@@ -52,13 +57,27 @@ impl FifoBufferMgr {
                 self.num_of_cache_hits += 1;
             }
             None => {
-                buff = self.choose_unpinned_buffer();
-                if buff.is_none() {
-                    return Err(From::from(BufferMgrError::BufferAbort));
-                }
+                let found = self.choose_unpinned_buffer();
+                match found {
+                    None => {
+                        return Err(From::from(BufferMgrError::BufferAbort));
+                    }
+                    Some((i, b)) => {
+                        buff = Some(Arc::clone(&b));
 
-                self.assigned_block_ids
-                    .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+                        // release blk and buffer
+                        if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
+                            self.assigned_block_ids.remove(blk);
+                        }
+                        self.assigned_buffers.remove(i);
+
+                        // add blk and buffer
+                        self.assigned_block_ids
+                            .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+                        self.assigned_buffers
+                            .push(Arc::clone(&buff.as_ref().unwrap()));
+                    }
+                }
 
                 let mut b = buff.as_ref().unwrap().lock().unwrap();
                 b.assign_to_block(blk.clone())?;
@@ -79,22 +98,13 @@ impl FifoBufferMgr {
     fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
         self.assigned_block_ids.get(blk).map(|b| Arc::clone(b))
     }
-    // The Naive Strategy
-    fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
-        for i in 0..self.bufferpool.len() {
-            let buff = self.bufferpool[i].lock().unwrap();
-
-            if !buff.is_pinned() {
-                // release blk
-                if let Some(blk) = buff.block() {
-                    self.assigned_block_ids.remove(blk);
-                }
-
-                return Some(Arc::clone(&self.bufferpool[i]));
-            }
-        }
-
-        None
+    // The FIFO Strategy
+    fn choose_unpinned_buffer(&mut self) -> Option<(usize, Arc<Mutex<Buffer>>)> {
+        self.assigned_buffers
+            .iter()
+            .enumerate()
+            .find(|(_, x)| !x.lock().unwrap().is_pinned())
+            .map(|(i, x)| (i, Arc::clone(x)))
     }
 }
 impl BufferMgr for FifoBufferMgr {
@@ -289,11 +299,11 @@ mod tests {
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
         assert_eq!(b.is_pinned(), true);
         let b = bm.bufferpool[1].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 50)));
+        assert_eq!(b.is_pinned(), false);
+        let b = bm.bufferpool[2].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
         assert_eq!(b.is_pinned(), true);
-        let b = bm.bufferpool[2].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 30)));
-        assert_eq!(b.is_pinned(), false);
         let b = bm.bufferpool[3].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 40)));
         assert_eq!(b.is_pinned(), false);
