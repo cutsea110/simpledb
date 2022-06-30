@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    buffer::manager::{naivebis::NaiveBisBufferMgr, BufferMgr},
+    buffer::manager::{fifo::FifoBufferMgr, BufferMgr},
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
     log::manager::LogMgr,
@@ -99,7 +99,7 @@ impl SimpleDB {
             FileMgr::new(&db_directory.clone(), blocksize).unwrap(),
         ));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), LOG_FILE).unwrap()));
-        let bm = Arc::new(Mutex::new(NaiveBisBufferMgr::new(
+        let bm = Arc::new(Mutex::new(FifoBufferMgr::new(
             Arc::clone(&fm),
             Arc::clone(&lm),
             numbuffs,
