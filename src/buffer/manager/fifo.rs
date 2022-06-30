@@ -65,15 +65,15 @@ impl FifoBufferMgr {
                     Some((i, b)) => {
                         buff = Some(Arc::clone(&b));
 
-                        // release blk and buffer
+                        // update assigned_block_ids
                         if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
                             self.assigned_block_ids.remove(blk);
                         }
-                        self.assigned_buffers.remove(i);
-
-                        // add blk and buffer
                         self.assigned_block_ids
                             .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+
+                        // update assigned_buffers
+                        self.assigned_buffers.remove(i);
                         self.assigned_buffers
                             .push(Arc::clone(&buff.as_ref().unwrap()));
                     }
