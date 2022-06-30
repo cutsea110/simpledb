@@ -296,17 +296,17 @@ mod tests {
         println!("Final buffer Allocation:");
         // bufferpool
         let b = bm.bufferpool[0].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
         assert_eq!(b.is_pinned(), true);
         let b = bm.bufferpool[1].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 50)));
         assert_eq!(b.is_pinned(), false);
         let b = bm.bufferpool[2].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
-        assert_eq!(b.is_pinned(), true);
-        let b = bm.bufferpool[3].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 40)));
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 30)));
         assert_eq!(b.is_pinned(), false);
+        let b = bm.bufferpool[3].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
+        assert_eq!(b.is_pinned(), true);
 
         Ok(())
     }
