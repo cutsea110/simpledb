@@ -57,6 +57,10 @@ impl NaiveBisBufferMgr {
                     return Err(From::from(BufferMgrError::BufferAbort));
                 }
 
+                // release blk
+                if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
+                    self.assigned_block_ids.remove(blk);
+                }
                 self.assigned_block_ids
                     .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
 
@@ -85,11 +89,6 @@ impl NaiveBisBufferMgr {
             let buff = self.bufferpool[i].lock().unwrap();
 
             if !buff.is_pinned() {
-                // release blk
-                if let Some(blk) = buff.block() {
-                    self.assigned_block_ids.remove(blk);
-                }
-
                 return Some(Arc::clone(&self.bufferpool[i]));
             }
         }
