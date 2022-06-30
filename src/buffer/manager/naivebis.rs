@@ -52,17 +52,22 @@ impl NaiveBisBufferMgr {
                 self.num_of_cache_hits += 1;
             }
             None => {
-                buff = self.choose_unpinned_buffer();
-                if buff.is_none() {
-                    return Err(From::from(BufferMgrError::BufferAbort));
+                let found = self.choose_unpinned_buffer();
+                match found {
+                    None => {
+                        return Err(From::from(BufferMgrError::BufferAbort));
+                    }
+                    Some(b) => {
+                        buff = Some(Arc::clone(&b));
+                        // release blk
+                        if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
+                            self.assigned_block_ids.remove(blk);
+                        }
+                        // add blk
+                        self.assigned_block_ids
+                            .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+                    }
                 }
-
-                // release blk
-                if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
-                    self.assigned_block_ids.remove(blk);
-                }
-                self.assigned_block_ids
-                    .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
 
                 let mut b = buff.as_ref().unwrap().lock().unwrap();
                 b.assign_to_block(blk.clone())?;
