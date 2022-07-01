@@ -9,6 +9,7 @@ use super::buffer::Buffer;
 use crate::file::block_id::BlockId;
 
 // implements of BufferMgr trait
+pub mod clock; // by exercise 4.14
 pub mod fifo; // by exercise 4.14
 pub mod lru; // by exercise 4.14
 pub mod naive;
