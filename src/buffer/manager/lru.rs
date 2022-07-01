@@ -134,6 +134,7 @@ impl BufferMgr for LruBufferMgr {
     }
     // synchronized
     fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
+        // The LRU strategy
         // update unassigned_buffers
         let blk = buff.lock().unwrap().block().map(|b: &BlockId| b.clone());
         if blk.is_some() {
