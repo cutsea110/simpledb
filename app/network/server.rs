@@ -32,11 +32,28 @@ struct Opt {
 
     #[structopt(short = "p", long = "port", default_value("1099"))]
     port: u16,
+
+    #[structopt(long = "conf.block-size")]
+    block_size: i32,
+
+    #[structopt(long = "conf.buffer-size")]
+    buffer_size: usize,
+
+    #[structopt(long = "conf.buffer-manager")]
+    buffer_manager: config::BufferMgr,
+
+    #[structopt(long = "conf.query-planner")]
+    query_planner: config::QueryPlanner,
 }
 
 #[derive(Debug, Clone)]
 struct Config {
     pub addr: SocketAddr,
+
+    block_size: i32,
+    buffer_size: usize,
+    buffer_manager: config::BufferMgr,
+    query_planner: config::QueryPlanner,
 }
 
 impl Config {
@@ -47,7 +64,14 @@ impl Config {
             .next()
             .expect("could not parse address");
 
-        Self { addr }
+        Self {
+            addr,
+
+            block_size: opt.block_size,
+            buffer_size: opt.buffer_size,
+            buffer_manager: opt.buffer_manager,
+            query_planner: opt.query_planner,
+        }
     }
 }
 

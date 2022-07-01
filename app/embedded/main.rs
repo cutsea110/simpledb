@@ -7,10 +7,13 @@ use std::{
 };
 use structopt::{clap, StructOpt};
 
-use simpledb::rdbc::{
-    connectionadapter::ConnectionAdapter,
-    driveradapter::DriverAdapter,
-    embedded::{connection::EmbeddedConnection, driver::EmbeddedDriver},
+use simpledb::{
+    rdbc::{
+        connectionadapter::ConnectionAdapter,
+        driveradapter::DriverAdapter,
+        embedded::{connection::EmbeddedConnection, driver::EmbeddedDriver},
+    },
+    server::config,
 };
 
 pub mod execquery;
@@ -31,6 +34,18 @@ struct Opt {
 
     #[structopt(short = "V", long = "version")]
     version: bool,
+
+    #[structopt(long = "conf.block-size")]
+    block_size: i32,
+
+    #[structopt(long = "conf.buffer-size")]
+    buffer_size: usize,
+
+    #[structopt(long = "conf.buffer-manager")]
+    buffer_manager: config::BufferMgr,
+
+    #[structopt(long = "conf.query-planner")]
+    query_planner: config::QueryPlanner,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +53,11 @@ struct Config {
     dbname: String,
     dbpath: String,
     version: bool,
+
+    block_size: i32,
+    buffer_size: usize,
+    buffer_manager: config::BufferMgr,
+    query_planner: config::QueryPlanner,
 }
 
 impl Config {
@@ -46,6 +66,11 @@ impl Config {
             dbname: opt.dbname.clone(),
             dbpath: format!("{}/{}", DB_DIR, &opt.dbname),
             version: opt.version,
+
+            block_size: opt.block_size,
+            buffer_size: opt.buffer_size,
+            buffer_manager: opt.buffer_manager,
+            query_planner: opt.query_planner,
         }
     }
 }
