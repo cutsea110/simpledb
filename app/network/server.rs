@@ -15,7 +15,7 @@ use structopt::{clap, StructOpt};
 
 use simpledb::{
     remote_capnp::remote_driver,
-    server::{remote::RemoteDriverImpl, simpledb::SimpleDB},
+    server::{self, config::SimpleDBConfig, remote::RemoteDriverImpl, simpledb::SimpleDB},
 };
 
 const DB_DIR: &str = "data";
@@ -48,11 +48,18 @@ impl Config {
 }
 
 pub struct ServerImpl {
+    cfg: SimpleDBConfig,
     dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
 }
 impl ServerImpl {
     pub fn new() -> Self {
         Self {
+            cfg: SimpleDBConfig {
+                block_size: server::simpledb::BLOCK_SIZE,
+                num_of_buffers: server::simpledb::BUFFER_SIZE,
+                buffer_manager: server::config::BufferMgr::LRU,
+                query_planner: server::config::QueryPlanner::Heuristic,
+            },
             dbs: HashMap::new(),
         }
     }
@@ -61,7 +68,7 @@ impl simpledb::server::remote::Server for ServerImpl {
     fn get_database(&mut self, dbname: &str) -> Arc<Mutex<SimpleDB>> {
         if !self.dbs.contains_key(dbname) {
             let db_path = format!("{}/{}", DB_DIR, dbname);
-            let db = SimpleDB::new(&db_path).expect("new database");
+            let db = SimpleDB::build_from(self.cfg.clone())(&db_path).expect("new database");
             self.dbs
                 .insert(dbname.to_string(), Arc::new(Mutex::new(db)));
         }
