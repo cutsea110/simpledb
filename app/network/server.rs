@@ -80,14 +80,9 @@ pub struct ServerImpl {
     dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
 }
 impl ServerImpl {
-    pub fn new() -> Self {
+    pub fn new(cfg: SimpleDBConfig) -> Self {
         Self {
-            cfg: SimpleDBConfig {
-                block_size: config::BLOCK_SIZE,
-                num_of_buffers: config::BUFFER_SIZE,
-                buffer_manager: config::BufferMgr::LRU,
-                query_planner: config::QueryPlanner::Heuristic,
-            },
+            cfg,
             dbs: HashMap::new(),
         }
     }
@@ -126,7 +121,12 @@ async fn try_main(cfg: Config) -> Result<(), Box<dyn Error>> {
     info!("           |_|                   ");
     info!("");
 
-    let srv = ServerImpl::new();
+    let srv = ServerImpl::new(SimpleDBConfig {
+        block_size: cfg.block_size,
+        num_of_buffers: cfg.buffer_size,
+        buffer_manager: cfg.buffer_manager,
+        query_planner: cfg.query_planner,
+    });
 
     let listener = tokio::net::TcpListener::bind(&cfg.addr).await?;
     let driver_impl = RemoteDriverImpl::new(Arc::new(Mutex::new(srv)));

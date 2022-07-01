@@ -13,7 +13,7 @@ use simpledb::{
         driveradapter::DriverAdapter,
         embedded::{connection::EmbeddedConnection, driver::EmbeddedDriver},
     },
-    server::config,
+    server::config::{self, SimpleDBConfig},
 };
 
 pub mod execquery;
@@ -132,7 +132,12 @@ fn main() {
         confirm_new_db(&cfg.dbname);
     }
 
-    let drvr = EmbeddedDriver::new();
+    let drvr = EmbeddedDriver::new(SimpleDBConfig {
+        block_size: cfg.block_size,
+        num_of_buffers: cfg.buffer_size,
+        buffer_manager: cfg.buffer_manager,
+        query_planner: cfg.query_planner,
+    });
     let mut conn = drvr.connect(&cfg.dbpath).unwrap_or_else(|_| {
         println!("couldn't connect database.");
         process::exit(1);

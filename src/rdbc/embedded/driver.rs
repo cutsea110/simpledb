@@ -3,10 +3,7 @@ use anyhow::Result;
 use super::connection::EmbeddedConnection;
 use crate::{
     rdbc::driveradapter::{DriverAdapter, DriverError},
-    server::{
-        config::{self, SimpleDBConfig},
-        simpledb::SimpleDB,
-    },
+    server::{config::SimpleDBConfig, simpledb::SimpleDB},
 };
 
 pub struct EmbeddedDriver {
@@ -14,15 +11,8 @@ pub struct EmbeddedDriver {
 }
 
 impl EmbeddedDriver {
-    pub fn new() -> Self {
-        Self {
-            cfg: SimpleDBConfig {
-                block_size: config::BLOCK_SIZE,
-                num_of_buffers: config::BUFFER_SIZE,
-                buffer_manager: config::BufferMgr::LRU,
-                query_planner: config::QueryPlanner::Heuristic,
-            },
-        }
+    pub fn new(cfg: SimpleDBConfig) -> Self {
+        Self { cfg }
     }
 }
 
