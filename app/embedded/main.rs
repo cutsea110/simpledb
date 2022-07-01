@@ -35,16 +35,16 @@ struct Opt {
     #[structopt(short = "V", long = "version")]
     version: bool,
 
-    #[structopt(long = "conf.block-size")]
+    #[structopt(long = "conf.block-size", default_value("400"))]
     block_size: i32,
 
-    #[structopt(long = "conf.buffer-size")]
+    #[structopt(long = "conf.buffer-size", default_value("8"))]
     buffer_size: usize,
 
-    #[structopt(long = "conf.buffer-manager")]
+    #[structopt(long = "conf.buffer-manager", default_value("lru"))]
     buffer_manager: config::BufferMgr,
 
-    #[structopt(long = "conf.query-planner")]
+    #[structopt(long = "conf.query-planner", default_value("heuristic"))]
     query_planner: config::QueryPlanner,
 }
 
