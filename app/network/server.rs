@@ -121,12 +121,18 @@ async fn try_main(cfg: Config) -> Result<(), Box<dyn Error>> {
     info!("           |_|                   ");
     info!("");
 
-    let srv = ServerImpl::new(SimpleDBConfig {
+    let db_config = SimpleDBConfig {
         block_size: cfg.block_size,
         num_of_buffers: cfg.buffer_size,
         buffer_manager: cfg.buffer_manager,
         query_planner: cfg.query_planner,
-    });
+    };
+    info!("database config:");
+    info!("      block size: {}", db_config.block_size);
+    info!("   num of buffer: {}", db_config.num_of_buffers);
+    info!("  buffer manager: {:?}", db_config.buffer_manager);
+    info!("   query planner: {:?}", db_config.query_planner);
+    let srv = ServerImpl::new(db_config);
 
     let listener = tokio::net::TcpListener::bind(&cfg.addr).await?;
     let driver_impl = RemoteDriverImpl::new(Arc::new(Mutex::new(srv)));

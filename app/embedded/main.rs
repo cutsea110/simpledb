@@ -1,5 +1,6 @@
 use anyhow::Result;
 use env_logger::{self, Env};
+use log::info;
 use std::{
     io::{stdout, Write},
     path::Path,
@@ -131,13 +132,18 @@ fn main() {
     if !Path::new(&cfg.dbpath).exists() {
         confirm_new_db(&cfg.dbname);
     }
-
-    let drvr = EmbeddedDriver::new(SimpleDBConfig {
+    let db_config = SimpleDBConfig {
         block_size: cfg.block_size,
         num_of_buffers: cfg.buffer_size,
         buffer_manager: cfg.buffer_manager,
         query_planner: cfg.query_planner,
-    });
+    };
+    info!("database config:");
+    info!("      block size: {}", db_config.block_size);
+    info!("   num of buffer: {}", db_config.num_of_buffers);
+    info!("  buffer manager: {:?}", db_config.buffer_manager);
+    info!("   query planner: {:?}", db_config.query_planner);
+    let drvr = EmbeddedDriver::new(db_config);
     let mut conn = drvr.connect(&cfg.dbpath).unwrap_or_else(|_| {
         println!("couldn't connect database.");
         process::exit(1);
