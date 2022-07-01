@@ -25,6 +25,8 @@ pub struct ClockBufferMgr {
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
     assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
+    // extends by exercise 4.14
+    clock_hands: usize,
 }
 
 impl ClockBufferMgr {
@@ -41,6 +43,7 @@ impl ClockBufferMgr {
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
             assigned_block_ids: HashMap::new(),
+            clock_hands: 0,
         }
     }
     // TODO: fix for thread safe
@@ -90,10 +93,19 @@ impl ClockBufferMgr {
     }
     // The Clock Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
-        self.bufferpool
-            .iter()
-            .find(|x| !x.lock().unwrap().is_pinned())
-            .map(|x| Arc::clone(x))
+        let buffsize = self.bufferpool.len();
+
+        for i in self.clock_hands..self.clock_hands + buffsize {
+            let idx = i % buffsize;
+            if !self.bufferpool[idx].lock().unwrap().is_pinned() {
+                // Update the hands for the next time this function is called
+                self.clock_hands = idx + 1; // next call will start from after the replaced page.
+
+                return Some(Arc::clone(&self.bufferpool[idx]));
+            }
+        }
+
+        None
     }
 }
 impl BufferMgr for ClockBufferMgr {
@@ -285,17 +297,17 @@ mod tests {
         println!("Final buffer Allocation:");
         // bufferpool
         let b = bm.bufferpool[0].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 10)));
+        assert_eq!(b.is_pinned(), false);
+        let b = bm.bufferpool[1].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 50)));
+        assert_eq!(b.is_pinned(), false);
+        let b = bm.bufferpool[2].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
         assert_eq!(b.is_pinned(), true);
-        let b = bm.bufferpool[1].lock().unwrap();
+        let b = bm.bufferpool[3].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
         assert_eq!(b.is_pinned(), true);
-        let b = bm.bufferpool[2].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 30)));
-        assert_eq!(b.is_pinned(), false);
-        let b = bm.bufferpool[3].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 40)));
-        assert_eq!(b.is_pinned(), false);
 
         Ok(())
     }
