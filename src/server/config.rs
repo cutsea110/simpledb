@@ -1,3 +1,6 @@
+pub const BLOCK_SIZE: i32 = 400;
+pub const BUFFER_SIZE: usize = 8;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SimpleDBConfig {
     // configurable parameters

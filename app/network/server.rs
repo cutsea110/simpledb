@@ -15,7 +15,11 @@ use structopt::{clap, StructOpt};
 
 use simpledb::{
     remote_capnp::remote_driver,
-    server::{self, config::SimpleDBConfig, remote::RemoteDriverImpl, simpledb::SimpleDB},
+    server::{
+        config::{self, SimpleDBConfig},
+        remote::RemoteDriverImpl,
+        simpledb::SimpleDB,
+    },
 };
 
 const DB_DIR: &str = "data";
@@ -55,10 +59,10 @@ impl ServerImpl {
     pub fn new() -> Self {
         Self {
             cfg: SimpleDBConfig {
-                block_size: server::simpledb::BLOCK_SIZE,
-                num_of_buffers: server::simpledb::BUFFER_SIZE,
-                buffer_manager: server::config::BufferMgr::LRU,
-                query_planner: server::config::QueryPlanner::Heuristic,
+                block_size: config::BLOCK_SIZE,
+                num_of_buffers: config::BUFFER_SIZE,
+                buffer_manager: config::BufferMgr::LRU,
+                query_planner: config::QueryPlanner::Heuristic,
             },
             dbs: HashMap::new(),
         }

@@ -5,7 +5,7 @@ use crate::{
     rdbc::driveradapter::{DriverAdapter, DriverError},
     server::{
         config::{self, SimpleDBConfig},
-        simpledb::{self, SimpleDB},
+        simpledb::SimpleDB,
     },
 };
 
@@ -17,8 +17,8 @@ impl EmbeddedDriver {
     pub fn new() -> Self {
         Self {
             cfg: SimpleDBConfig {
-                block_size: simpledb::BLOCK_SIZE,
-                num_of_buffers: simpledb::BUFFER_SIZE,
+                block_size: config::BLOCK_SIZE,
+                num_of_buffers: config::BUFFER_SIZE,
                 buffer_manager: config::BufferMgr::LRU,
                 query_planner: config::QueryPlanner::Heuristic,
             },

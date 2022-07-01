@@ -54,8 +54,6 @@ impl fmt::Display for SimpleDBError {
 }
 
 pub const LOG_FILE: &str = "simpledb.log";
-pub const BLOCK_SIZE: i32 = 400;
-pub const BUFFER_SIZE: usize = 8;
 
 pub struct SimpleDB {
     // configure
@@ -78,7 +76,7 @@ pub struct SimpleDB {
 
 impl SimpleDB {
     pub fn new(db_directory: &str) -> Result<Self> {
-        let mut db = SimpleDB::new_with(db_directory, BLOCK_SIZE, BUFFER_SIZE);
+        let mut db = SimpleDB::new_with(db_directory, config::BLOCK_SIZE, config::BUFFER_SIZE);
         let tx = Arc::new(Mutex::new(db.new_tx()?));
         let isnew = db.file_mgr().lock().unwrap().is_new();
         if isnew {
