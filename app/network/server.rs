@@ -25,24 +25,30 @@ use simpledb::{
 const DB_DIR: &str = "data";
 
 #[derive(Debug, StructOpt)]
-#[structopt(setting(clap::AppSettings::ColoredHelp))]
+#[structopt(setting(clap::AppSettings::ColoredHelp), rename_all = "kebab-case")]
 struct Opt {
-    #[structopt(short = "h", long = "host", default_value("127.0.0.1"))]
+    #[structopt(short = "h", long, default_value("127.0.0.1"))]
     host: String,
 
-    #[structopt(short = "p", long = "port", default_value("1099"))]
+    #[structopt(short = "p", long, default_value("1099"))]
     port: u16,
 
-    #[structopt(long = "conf.block-size", default_value("400"))]
+    #[structopt(long, default_value("400"))]
     block_size: i32,
 
-    #[structopt(long = "conf.buffer-size", default_value("8"))]
+    #[structopt(long, default_value("8"))]
     buffer_size: usize,
 
-    #[structopt(long = "conf.buffer-manager", default_value("lru"))]
+    #[structopt(long,
+		default_value("LRU"),
+		possible_values = &config::BufferMgr::variants(),
+		case_insensitive = true)]
     buffer_manager: config::BufferMgr,
 
-    #[structopt(long = "conf.query-planner", default_value("heuristic"))]
+    #[structopt(long,
+		default_value("Heuristic"),
+		possible_values = &config::QueryPlanner::variants(),
+		case_insensitive = true)]
     query_planner: config::QueryPlanner,
 }
 
