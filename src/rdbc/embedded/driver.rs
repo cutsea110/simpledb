@@ -3,14 +3,16 @@ use anyhow::Result;
 use super::connection::EmbeddedConnection;
 use crate::{
     rdbc::driveradapter::{DriverAdapter, DriverError},
-    server::simpledb::SimpleDB,
+    server::{config::SimpleDBConfig, simpledb::SimpleDB},
 };
 
-pub struct EmbeddedDriver;
+pub struct EmbeddedDriver {
+    cfg: SimpleDBConfig,
+}
 
 impl EmbeddedDriver {
-    pub fn new() -> Self {
-        Self
+    pub fn new(cfg: SimpleDBConfig) -> Self {
+        Self { cfg }
     }
 }
 
@@ -18,7 +20,7 @@ impl DriverAdapter<'_> for EmbeddedDriver {
     type Con = EmbeddedConnection;
 
     fn connect(&self, dbname: &str) -> Result<Self::Con> {
-        if let Ok(db) = SimpleDB::new(dbname) {
+        if let Ok(db) = SimpleDB::build_from(self.cfg.clone())(dbname) {
             return Ok(EmbeddedConnection::new(db));
         }
 

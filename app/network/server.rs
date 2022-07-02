@@ -15,24 +15,51 @@ use structopt::{clap, StructOpt};
 
 use simpledb::{
     remote_capnp::remote_driver,
-    server::{remote::RemoteDriverImpl, simpledb::SimpleDB},
+    server::{
+        config::{self, SimpleDBConfig},
+        remote::RemoteDriverImpl,
+        simpledb::SimpleDB,
+    },
 };
 
 const DB_DIR: &str = "data";
 
 #[derive(Debug, StructOpt)]
-#[structopt(setting(clap::AppSettings::ColoredHelp))]
+#[structopt(setting(clap::AppSettings::ColoredHelp), rename_all = "kebab-case")]
 struct Opt {
-    #[structopt(short = "h", long = "host", default_value("127.0.0.1"))]
+    #[structopt(short = "h", long, default_value("127.0.0.1"))]
     host: String,
 
-    #[structopt(short = "p", long = "port", default_value("1099"))]
+    #[structopt(short = "p", long, default_value("1099"))]
     port: u16,
+
+    #[structopt(long, default_value("400"))]
+    block_size: i32,
+
+    #[structopt(long, default_value("8"))]
+    buffer_size: usize,
+
+    #[structopt(long,
+		default_value("LRU"),
+		possible_values = &config::BufferMgr::variants(),
+		case_insensitive = true)]
+    buffer_manager: config::BufferMgr,
+
+    #[structopt(long,
+		default_value("Heuristic"),
+		possible_values = &config::QueryPlanner::variants(),
+		case_insensitive = true)]
+    query_planner: config::QueryPlanner,
 }
 
 #[derive(Debug, Clone)]
 struct Config {
     pub addr: SocketAddr,
+
+    block_size: i32,
+    buffer_size: usize,
+    buffer_manager: config::BufferMgr,
+    query_planner: config::QueryPlanner,
 }
 
 impl Config {
@@ -43,16 +70,25 @@ impl Config {
             .next()
             .expect("could not parse address");
 
-        Self { addr }
+        Self {
+            addr,
+
+            block_size: opt.block_size,
+            buffer_size: opt.buffer_size,
+            buffer_manager: opt.buffer_manager,
+            query_planner: opt.query_planner,
+        }
     }
 }
 
 pub struct ServerImpl {
+    cfg: SimpleDBConfig,
     dbs: HashMap<String, Arc<Mutex<SimpleDB>>>,
 }
 impl ServerImpl {
-    pub fn new() -> Self {
+    pub fn new(cfg: SimpleDBConfig) -> Self {
         Self {
+            cfg,
             dbs: HashMap::new(),
         }
     }
@@ -61,7 +97,7 @@ impl simpledb::server::remote::Server for ServerImpl {
     fn get_database(&mut self, dbname: &str) -> Arc<Mutex<SimpleDB>> {
         if !self.dbs.contains_key(dbname) {
             let db_path = format!("{}/{}", DB_DIR, dbname);
-            let db = SimpleDB::new(&db_path).expect("new database");
+            let db = SimpleDB::build_from(self.cfg.clone())(&db_path).expect("new database");
             self.dbs
                 .insert(dbname.to_string(), Arc::new(Mutex::new(db)));
         }
@@ -91,7 +127,18 @@ async fn try_main(cfg: Config) -> Result<(), Box<dyn Error>> {
     info!("           |_|                   ");
     info!("");
 
-    let srv = ServerImpl::new();
+    let db_config = SimpleDBConfig {
+        block_size: cfg.block_size,
+        num_of_buffers: cfg.buffer_size,
+        buffer_manager: cfg.buffer_manager,
+        query_planner: cfg.query_planner,
+    };
+    info!("database config:");
+    info!("      block size: {}", db_config.block_size);
+    info!("   num of buffer: {}", db_config.num_of_buffers);
+    info!("  buffer manager: {:?}", db_config.buffer_manager);
+    info!("   query planner: {:?}", db_config.query_planner);
+    let srv = ServerImpl::new(db_config);
 
     let listener = tokio::net::TcpListener::bind(&cfg.addr).await?;
     let driver_impl = RemoteDriverImpl::new(Arc::new(Mutex::new(srv)));

@@ -6,14 +6,21 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use super::config::{self, SimpleDBConfig};
 use crate::{
-    buffer::manager::{lru::LruBufferMgr, BufferMgr},
+    buffer::manager::{
+        clock::ClockBufferMgr, fifo::FifoBufferMgr, lru::LruBufferMgr, naive::NaiveBufferMgr,
+        naivebis::NaiveBisBufferMgr, BufferMgr,
+    },
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
     log::manager::LogMgr,
     metadata::{indexmanager::IndexInfo, manager::MetadataMgr},
     opt::heuristicqueryplanner::HeuristicQueryPlanner,
-    plan::{planner::Planner, queryplanner::QueryPlanner, updateplanner::UpdatePlanner},
+    plan::{
+        basicqueryplanner::BasicQueryPlanner, planner::Planner, queryplanner::QueryPlanner,
+        updateplanner::UpdatePlanner,
+    },
     record::schema::Schema,
     tx::{concurrency::locktable::LockTable, transaction::Transaction},
 };
@@ -47,8 +54,6 @@ impl fmt::Display for SimpleDBError {
 }
 
 pub const LOG_FILE: &str = "simpledb.log";
-pub const BLOCK_SIZE: i32 = 400;
-pub const BUFFER_SIZE: usize = 8;
 
 pub struct SimpleDB {
     // configure
@@ -71,7 +76,7 @@ pub struct SimpleDB {
 
 impl SimpleDB {
     pub fn new(db_directory: &str) -> Result<Self> {
-        let mut db = SimpleDB::new_with(db_directory, BLOCK_SIZE, BUFFER_SIZE);
+        let mut db = SimpleDB::new_with(db_directory, config::BLOCK_SIZE, config::BUFFER_SIZE);
         let tx = Arc::new(Mutex::new(db.new_tx()?));
         let isnew = db.file_mgr().lock().unwrap().is_new();
         if isnew {
@@ -147,6 +152,76 @@ impl SimpleDB {
             }
         }
         Err(From::from(SimpleDBError::NoPlanner))
+    }
+    // my own extends
+    // constructor generator from SimpleDBConfig
+    pub fn build_from(cfg: SimpleDBConfig) -> impl Fn(&str) -> Result<Self> {
+        move |db_directory: &str| {
+            let next_tx_num = Arc::new(Mutex::new(0));
+            let locktbl = Arc::new(Mutex::new(LockTable::new()));
+            let fm = Arc::new(Mutex::new(
+                FileMgr::new(&db_directory.clone(), cfg.block_size).unwrap(),
+            ));
+            let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), LOG_FILE).unwrap()));
+            let (bm_fm, bm_lm, numsbuff) = (Arc::clone(&fm), Arc::clone(&lm), cfg.num_of_buffers);
+            let bm: Arc<Mutex<dyn BufferMgr>> = match cfg.buffer_manager {
+                config::BufferMgr::Naive => {
+                    Arc::new(Mutex::new(NaiveBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::NaiveBis => {
+                    Arc::new(Mutex::new(NaiveBisBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::FIFO => {
+                    Arc::new(Mutex::new(FifoBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::LRU => {
+                    Arc::new(Mutex::new(LruBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::Clock => {
+                    Arc::new(Mutex::new(ClockBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+            };
+
+            let mut db = Self {
+                db_directory: db_directory.to_string(),
+                blocksize: cfg.block_size,
+                numbuffs: cfg.num_of_buffers,
+                next_tx_num,
+                locktbl,
+                fm,
+                lm,
+                bm,
+                mdm: None,
+                qp: None,
+                up: None,
+            };
+
+            let tx = Arc::new(Mutex::new(db.new_tx()?));
+            let isnew = db.file_mgr().lock().unwrap().is_new();
+            if isnew {
+                trace!("creating new database");
+            } else {
+                trace!("recovering existing database");
+                tx.lock().unwrap().recover()?;
+            }
+            let meta = MetadataMgr::new(isnew, Arc::clone(&tx))?;
+            db.mdm = Some(Arc::new(Mutex::new(meta)));
+            let next_table_num = Arc::new(Mutex::new(0));
+            let qp_mdm = Arc::clone(&db.mdm.as_ref().unwrap());
+            let qp: Arc<Mutex<dyn QueryPlanner>> = match cfg.query_planner {
+                config::QueryPlanner::Basic => Arc::new(Mutex::new(BasicQueryPlanner::new(qp_mdm))),
+                config::QueryPlanner::Heuristic => Arc::new(Mutex::new(
+                    HeuristicQueryPlanner::new(next_table_num, qp_mdm),
+                )),
+            };
+            db.qp = Some(qp);
+            let up = IndexUpdatePlanner::new(Arc::clone(&db.mdm.as_ref().unwrap()));
+            db.up = Some(Arc::new(Mutex::new(up)));
+
+            tx.lock().unwrap().commit()?;
+
+            Ok(db)
+        }
     }
     // my own extend
     pub fn get_table_schema(
