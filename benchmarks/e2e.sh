@@ -1,9 +1,16 @@
 #!/bin/sh
 
+# This script requires awk and jq, and a link for esql binary build image.
+
 set -xu
 
 LOG_DIR=./logs
 mkdir -p ${LOG_DIR}
+SUMMARY_DIR=./summary
+mkdir -p ${SUMMARY_DIR}
+# It is assumed that a link to esql exists.
+# See benchmarks.sh.
+ESQL=./esql
 
 for bm in naive naivebis fifo lru clock
 do
@@ -11,10 +18,9 @@ do
     do
 	# clear db
 	rm -rf data
-	
+	# init db
 	RUST_LOG=trace \
-		cargo run --bin esql -- \
-		-d demo \
+		${ESQL} -d demo \
 		--buffer-manager ${bm} \
 		--query-planner ${qp} \
 		2> ${LOG_DIR}/${bm}_${qp}_init.log <<EOM
@@ -72,16 +78,22 @@ CREATE VIEW einstein AS SELECT sect_id FROM section WHERE prof = 'einstein';
 
 :q
 EOM
+	# query db
 	RUST_LOG=trace \
-		cargo run --bin esql -- \
-		-d demo \
+		${ESQL} -d demo \
 		--buffer-manager ${bm} \
 		--query-planner ${qp} \
 		2> ${LOG_DIR}/${bm}_${qp}_query.log <<EOM
 SELECT sid, sname, dname, grad_year, birth FROM student, dept WHERE did = major_id;
 SELECT tblname, fldname, type, length FROM fldcat WHERE tblname = 'student';
 SELECT sname, grade, prof FROM student, section, enroll WHERE sid = student_id AND sect_id = section_id;
+SELECT sect_id FROM einstein;
+SELECT sname, grade, prof FROM student, enroll, einstein WHERE sid = student_id AND sect_id = section_id;
 :q
 EOM
+	# summary log
+	awk -F'[/ ()]' -f log2data.awk -- \
+	    ${LOG_DIR}/${bm}_${qp}_query.log | \
+	    \jq -s > ${SUMMARY_DIR}/${bm}_${qp}.json
     done
 done
