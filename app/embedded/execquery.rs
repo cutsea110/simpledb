@@ -1,4 +1,5 @@
 use anyhow::Result;
+use log::info;
 use std::time::Instant;
 
 use simpledb::rdbc::{
@@ -84,6 +85,11 @@ pub fn exec_query<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
             println!(
                 "Rows {} ({}.{:03}s)",
                 cnt,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
+            info!(
+                "elapsed time(secs): {}.{:03}",
                 end.as_secs(),
                 end.subsec_nanos() / 1_000_000
             );

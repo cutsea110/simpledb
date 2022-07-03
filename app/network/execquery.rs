@@ -1,5 +1,5 @@
 use anyhow::Result;
-use log::warn;
+use log::{info, warn};
 use std::{collections::HashMap, time::Instant};
 
 use simpledb::rdbc::{
@@ -101,6 +101,11 @@ pub async fn exec_query(stmt: &mut NetworkStatement) {
                     end.subsec_nanos() / 1_000_000
                 );
                 println!("transaction {} committed", tx_num);
+                info!(
+                    "elapsed time(secs): {}.{:03}",
+                    end.as_secs(),
+                    end.subsec_nanos() / 1_000_000
+                );
             }
             Err(e) => {
                 warn!("failed to exec query: {}", e);
