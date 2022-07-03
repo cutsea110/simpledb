@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use log::info;
 use simpledb::rdbc::{network::statement::NetworkStatement, statementadapter::StatementAdapter};
 
 pub async fn exec_update_cmd(stmt: &mut NetworkStatement) {
@@ -12,6 +13,11 @@ pub async fn exec_update_cmd(stmt: &mut NetworkStatement) {
             println!(
                 "Affected {} ({}.{:03}s)",
                 affected,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
+            info!(
+                "elapsed time(secs): {}.{:03}",
                 end.as_secs(),
                 end.subsec_nanos() / 1_000_000
             );

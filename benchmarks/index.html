@@ -1,0 +1,274 @@
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['line']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+
+	  var reads_data = new google.visualization.DataTable();
+	  reads_data.addColumn('string', 'Query');
+	  reads_data.addColumn('number', 'Naive x Basic');
+	  reads_data.addColumn('number', 'Naive x Heuristic');
+	  reads_data.addColumn('number', 'NaiveBis x Basic');
+	  reads_data.addColumn('number', 'NaiveBis x Heuristic');
+	  reads_data.addColumn('number', 'FIFO x Basic');
+	  reads_data.addColumn('number', 'FIFO x Heuristic');
+	  reads_data.addColumn('number', 'LRU x Basic');
+	  reads_data.addColumn('number', 'LRU x Heuristic');
+	  reads_data.addColumn('number', 'Clock x Basic');
+	  reads_data.addColumn('number', 'Clock x Heuristic');
+
+	  reads_data.addRows([
+              ['1', 185, 209, 185, 209, 115, 118,  99, 102, 115, 118],
+              ['2', 203, 228, 203, 228, 122, 126, 100, 110, 121, 126],
+              ['3', 245, 291, 245, 291, 125, 133, 103, 117, 125, 133],
+              ['4', 265, 313, 265, 313, 132, 142, 110, 126, 132, 142],
+              ['5', 305, 376, 305, 376, 135, 157, 113, 135, 135, 157],
+              ['6', 333, 426, 333, 426, 144, 171, 122, 149, 144, 171],
+              ['7', 333, 426, 333, 426, 144, 171, 122, 149, 144, 171]
+	  ]);
+
+	  var reads_options = {
+	      chart: {
+		  title: 'file manager reads',
+		  subtitle: 'read times'
+	      },
+	      width: 900,
+	      height: 500,
+	      axes: {
+		  x: {
+		      0: {side: 'top'}
+		  }
+	      }
+	  };
+
+	  var reads_chart = new google.charts.Line(document.getElementById('reads_chart'));
+	  reads_chart.draw(reads_data, google.charts.Line.convertOptions(reads_options));
+
+
+	  var writes_data = new google.visualization.DataTable();
+	  writes_data.addColumn('string', 'Query');
+	  writes_data.addColumn('number', 'Naive x Basic');
+	  writes_data.addColumn('number', 'Naive x Heuristic');
+	  writes_data.addColumn('number', 'NaiveBis x Basic');
+	  writes_data.addColumn('number', 'NaiveBis x Heuristic');
+	  writes_data.addColumn('number', 'FIFO x Basic');
+	  writes_data.addColumn('number', 'FIFO x Heuristic');
+	  writes_data.addColumn('number', 'LRU x Basic');
+	  writes_data.addColumn('number', 'LRU x Heuristic');
+	  writes_data.addColumn('number', 'Clock x Basic');
+	  writes_data.addColumn('number', 'Clock x Heuristic');
+
+	  writes_data.addRows([
+              ['1',  4,   4,   4,   4,   4,   4,   4,   4,   4,   4],
+              ['2',  5,   5,   5,   5,   5,   5,   5,   5,   5,   5],
+              ['3',  6,  66,   6,  66,   6,  66,   6,  66,   6,  66],
+              ['4',  7,  67,   7,  67,   7,  67,   7,  67,   7,  67],
+              ['5',  8, 113,   8, 113,   8, 113,   8, 113,   8, 113],
+              ['6',  9, 128,   9, 128,   9, 128,   9, 128,   9, 128],
+              ['7', 10, 129,  10, 129,  10, 129,  10, 129,  10, 129]
+	  ]);
+
+	  var writes_options = {
+	      chart: {
+		  title: 'file manager writes',
+		  subtitle: 'write times'
+	      },
+	      width: 900,
+	      height: 500,
+	      axes: {
+		  x: {
+		      0: {side: 'top'}
+		  }
+	      }
+	  };
+
+	  var writes_chart = new google.charts.Line(document.getElementById('writes_chart'));
+	  writes_chart.draw(writes_data, google.charts.Line.convertOptions(writes_options));
+
+
+	  var hit_data = new google.visualization.DataTable();
+	  hit_data.addColumn('string', 'Query');
+	  hit_data.addColumn('number', 'Naive x Basic');
+	  hit_data.addColumn('number', 'Naive x Heuristic');
+	  hit_data.addColumn('number', 'NaiveBis x Basic');
+	  hit_data.addColumn('number', 'NaiveBis x Heuristic');
+	  hit_data.addColumn('number', 'FIFO x Basic');
+	  hit_data.addColumn('number', 'FIFO x Heuristic');
+	  hit_data.addColumn('number', 'LRU x Basic');
+	  hit_data.addColumn('number', 'LRU x Heuristic');
+	  hit_data.addColumn('number', 'Clock x Basic');
+	  hit_data.addColumn('number', 'Clock x Heuristic');
+
+	  hit_data.addRows([
+              ['1',  21,  24,  21,  24,  91, 115, 107, 131,  91, 115],
+              ['2',  21,  24,  21,  24, 102, 126, 124, 142, 103, 126],
+              ['3',  84,  34,  84,  34, 204, 192, 226, 208, 204, 192],
+              ['4',  85,  34,  85,  34, 218, 205, 240, 221, 218, 205],
+              ['5', 150,  44, 150,  44, 320, 263, 342, 285, 320, 263],
+              ['6', 159,  52, 159,  52, 348, 307, 370, 329, 348, 307],
+              ['7', 159,  52, 159,  52, 348, 307, 370, 329, 348, 307]
+	  ]);
+
+	  var hit_options = {
+	      chart: {
+		  title: 'buffer manager cache hit',
+		  subtitle: 'cache hit times'
+	      },
+	      width: 900,
+	      height: 500,
+	      axes: {
+		  x: {
+		      0: {side: 'top'}
+		  }
+	      }
+	  };
+
+	  var hit_chart = new google.charts.Line(document.getElementById('hit_chart'));
+	  hit_chart.draw(hit_data, google.charts.Line.convertOptions(hit_options));
+
+
+	  var assigned_data = new google.visualization.DataTable();
+	  assigned_data.addColumn('string', 'Query');
+	  assigned_data.addColumn('number', 'Naive x Basic');
+	  assigned_data.addColumn('number', 'Naive x Heuristic');
+	  assigned_data.addColumn('number', 'NaiveBis x Basic');
+	  assigned_data.addColumn('number', 'NaiveBis x Heuristic');
+	  assigned_data.addColumn('number', 'FIFO x Basic');
+	  assigned_data.addColumn('number', 'FIFO x Heuristic');
+	  assigned_data.addColumn('number', 'LRU x Basic');
+	  assigned_data.addColumn('number', 'LRU x Heuristic');
+	  assigned_data.addColumn('number', 'Clock x Basic');
+	  assigned_data.addColumn('number', 'Clock x Heuristic');
+
+	  assigned_data.addRows([
+              ['1', 103, 127, 103, 127,  33,  36,  17,  20,  33,  36],
+              ['2', 121, 146, 121, 146,  40,  44,  18,  28,  39,  44],
+              ['3', 163, 209, 163, 209,  43,  51,  21,  35,  43,  51],
+              ['4', 183, 231, 183, 231,  50,  60,  28,  44,  50,  60],
+              ['5', 223, 294, 223, 294,  53,  75,  31,  53,  53,  75],
+              ['6', 251, 344, 251, 344,  62,  89,  40,  67,  62,  89],
+              ['7', 251, 344, 251, 344,  62,  89,  40,  67,  62,  89]
+	  ]);
+
+	  var assigned_options = {
+	      chart: {
+		  title: 'buffer manager assigned',
+		  subtitle: 'new page assigned times'
+	      },
+	      width: 900,
+	      height: 500,
+	      axes: {
+		  x: {
+		      0: {side: 'top'}
+		  }
+	      }
+	  };
+
+	  var assigned_chart = new google.charts.Line(document.getElementById('assigned_chart'));
+	  assigned_chart.draw(assigned_data, google.charts.Line.convertOptions(assigned_options));
+
+
+	  var ratio_data = new google.visualization.DataTable();
+	  ratio_data.addColumn('string', 'Query');
+	  ratio_data.addColumn('number', 'Naive x Basic');
+	  ratio_data.addColumn('number', 'Naive x Heuristic');
+	  ratio_data.addColumn('number', 'NaiveBis x Basic');
+	  ratio_data.addColumn('number', 'NaiveBis x Heuristic');
+	  ratio_data.addColumn('number', 'FIFO x Basic');
+	  ratio_data.addColumn('number', 'FIFO x Heuristic');
+	  ratio_data.addColumn('number', 'LRU x Basic');
+	  ratio_data.addColumn('number', 'LRU x Heuristic');
+	  ratio_data.addColumn('number', 'Clock x Basic');
+	  ratio_data.addColumn('number', 'Clock x Heuristic');
+
+	  ratio_data.addRows([
+              ['1', 20.388, 18.898, 20.388, 18.898, 275.758, 319.444,  629.412, 655.000, 275.758, 319.444],
+              ['2', 17.355, 16.438, 17.355, 16.438, 255.000, 286.364,  688.889, 507.143, 264.103, 286.364],
+              ['3', 51.534, 16.268, 51.534, 16.268, 474.419, 376.471, 1076.190, 594.286, 474.419, 376.471],
+              ['4', 46.448, 14.719, 46.448, 14.719, 436.000, 341.667,  857.143, 502.273, 436.000, 341.667],
+              ['5', 67.265, 14.966, 67.265, 14.966, 603.774, 350.667, 1103.226, 537.736, 603.774, 350.667],
+              ['6', 63.347, 15.116, 63.347, 15.116, 561.290, 344.944,  925.000, 491.045, 561.290, 344.944],
+              ['7', 63.347, 15.116, 63.347, 15.116, 561.290, 344.944,  925.000, 491.045, 561.290, 344.944]
+	  ]);
+
+	  var ratio_options = {
+	      chart: {
+		  title: 'buffer manager cache hit ratio',
+		  subtitle: 'cache hit ratio(%)'
+	      },
+	      width: 900,
+	      height: 500,
+	      axes: {
+		  x: {
+		      0: {side: 'top'}
+		  }
+	      }
+	  };
+
+	  var ratio_chart = new google.charts.Line(document.getElementById('ratio_chart'));
+	  ratio_chart.draw(ratio_data, google.charts.Line.convertOptions(ratio_options));
+
+
+	  var elapsed_data = new google.visualization.DataTable();
+	  elapsed_data.addColumn('string', 'Query');
+	  elapsed_data.addColumn('number', 'Naive x Basic');
+	  elapsed_data.addColumn('number', 'Naive x Heuristic');
+	  elapsed_data.addColumn('number', 'NaiveBis x Basic');
+	  elapsed_data.addColumn('number', 'NaiveBis x Heuristic');
+	  elapsed_data.addColumn('number', 'FIFO x Basic');
+	  elapsed_data.addColumn('number', 'FIFO x Heuristic');
+	  elapsed_data.addColumn('number', 'LRU x Basic');
+	  elapsed_data.addColumn('number', 'LRU x Heuristic');
+	  elapsed_data.addColumn('number', 'Clock x Basic');
+	  elapsed_data.addColumn('number', 'Clock x Heuristic');
+
+	  elapsed_data.addRows([
+              ['1', 0.008, 0.006, 0.006, 0.009, 0.005, 0.008, 0.005, 0.008, 0.005, 0.007],
+              ['2', 0.004, 0.002, 0.004, 0.003, 0.002, 0.003, 0.002, 0.003, 0.002, 0.003],
+              ['3', 0.021, 0.015, 0.019, 0.022, 0.014, 0.014, 0.014, 0.015, 0.014, 0.015],
+              ['4', 0.003, 0.002, 0.003, 0.003, 0.002, 0.002, 0.002, 0.003, 0.002, 0.002],
+              ['5', 0.014, 0.012, 0.019, 0.014, 0.013, 0.012, 0.016, 0.012, 0.014, 0.012],
+              ['6', 0.004, 0.008, 0.005, 0.009, 0.005, 0.008, 0.005, 0.008, 0.004, 0.007],
+              ['7', 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
+	  ]);
+
+	  var elapsed_options = {
+	      chart: {
+		  title: 'query elapsed time(sec)',
+		  subtitle: 'elapsed time'
+	      },
+	      width: 900,
+	      height: 500,
+	      axes: {
+		  x: {
+		      0: {side: 'top'}
+		  }
+	      }
+	  };
+
+	  var elapsed_chart = new google.charts.Line(document.getElementById('elapsed_chart'));
+	  elapsed_chart.draw(elapsed_data, google.charts.Line.convertOptions(elapsed_options));
+
+      }
+    </script>
+  </head>
+  <body>
+    <table>
+      <tr>
+	<td><div id="reads_chart"></div></td>
+	<td><div id="writes_chart"></div></td>
+      </tr>
+      <tr>
+	<td><div id="hit_chart"></div></td>
+	<td><div id="assigned_chart"></div></td>
+      </tr>
+      <tr>
+	<td><div id="ratio_chart"></div></td>
+	<td><div id="elapsed_chart"></div></td>
+      </tr>
+    </table>
+  </body>
+</html>

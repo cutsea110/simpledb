@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use log::info;
 use simpledb::rdbc::{embedded::statement::EmbeddedStatement, statementadapter::StatementAdapter};
 
 pub fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
@@ -13,6 +14,11 @@ pub fn exec_update_cmd<'a>(stmt: &'a mut EmbeddedStatement<'a>) {
             println!(
                 "Affected {} ({}.{:03}s)",
                 affected,
+                end.as_secs(),
+                end.subsec_nanos() / 1_000_000
+            );
+            info!(
+                "elapsed time(secs): {}.{:03}",
                 end.as_secs(),
                 end.subsec_nanos() / 1_000_000
             );
