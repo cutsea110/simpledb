@@ -22,6 +22,19 @@ function to_json(record) {
     return item;
 }
 
+/block size:/ {
+    config["block-size"] = $(NF);
+}
+/num of buffer:/ {
+    config["buffer-size"] = $(NF);
+}
+/buffer manager:/ {
+    config["buffer-manager"] = $(NF);
+}
+/query planner:/ {
+    config["query-planner"] = $(NF);
+}
+
 /numbers of read\/written blocks:/ {
     record["read-blocks"] = $(NF-1);
     record["write-blocks"] = $(NF);
@@ -42,15 +55,25 @@ function to_json(record) {
     record["elapsed-time"] = $(NF);
 
     # itemize and add it to summary array
-    c += 1;
-    summary[c] = to_json(record);
+    summary[c++] = to_json(record);
 }
 END {
     record["elapsed-time"] = 0.00;
-    c += 1;
-    summary[c] = to_json(record);
+    summary[c++] = to_json(record);
 
-    for (i = 0; i <= c; i++) {
-	print summary[i]
+    cfg = sprintf("{\"block-size\":%d,\"buffer-size\":%d,\"buffer-manager\":\"%s\",\"query-planner\":\"%s\"}",
+           config["block-size"],
+           config["buffer-size"],
+           config["buffer-manager"],
+           config["query-planner"]);
+
+    for (i = 0; i < c; i++) {
+	if (i == 0) {
+	    recs = summary[i];
+	} else {
+	    recs = recs "," summary[i];
+	}
     }
+
+    printf("{\"config\":%s,\"records\":[%s]}", cfg, recs);
 }

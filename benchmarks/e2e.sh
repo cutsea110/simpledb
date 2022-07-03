@@ -97,6 +97,6 @@ EOM
 	# summary log
 	awk -F'[/ ()]' -f log2data.awk -- \
 	    ${LOG_DIR}/${bm}_${qp}_query.log | \
-	    \jq -s > ${SUMMARY_DIR}/${bm}_${qp}.json
+	    \jq > ${SUMMARY_DIR}/${bm}_${qp}.json
     done
 done
