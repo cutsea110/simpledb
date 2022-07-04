@@ -97,7 +97,7 @@ SELECT sid, sname, dname, grad_year, birth FROM student, dept WHERE did = major_
 :q
 EOM
 	# convert to json
-	awk -F'[/ ()]' -f log2data.awk -- \
+	awk -F'[/ ()]' -f log2json.awk -- \
 	    ${LOG_DIR}/${bm}_${qp}_query.log | \
 	    \jq -c > ${CONVERTED_DIR}/${bm}_${qp}.json
     done
@@ -107,21 +107,13 @@ done
 cat ${CONVERTED_DIR}/*.json | \
     \jq -s '[.[] | { "name": (.config."buffer-manager" + "-" + .config."query-planner" + "-" + (.config."block-size"|tostring) + "-" + (.config."buffer-size"|tostring)), "read": (.records | map(."file-manager".read)), "written": (.records | map(."file-manager".written)), "pinned": (.records | map(."buffer-manager".pinned)), "unpinned": (.records | map(."buffer-manager".unpinned)), "hit": (.records | map(."buffer-manager".cache.hit)), "assigned": (.records | map(."buffer-manager".cache.assigned)), "ratio": (.records | map(."buffer-manager".cache.ratio)), "elapsed" : (.records | map(."elapsed-time"))}]' > ${SUMMARY_DIR}/data.json
 
-# construction name
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .name]' > ${SUMMARY_DIR}/name.json
-# file-manager block read
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .read] | transpose' > ${SUMMARY_DIR}/read.json
-# file-manager block written
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .written] | transpose' > ${SUMMARY_DIR}/written.json
-# buffer-manager pinned
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .pinned] | transpose' > ${SUMMARY_DIR}/pinned.json
-# buffer-manager unpinned
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .unpinned] | transpose' > ${SUMMARY_DIR}/unpinned.json
-# buffer-manager cahe hit
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .hit] | transpose' > ${SUMMARY_DIR}/hit.json
-# buffer-manager assigned
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .assigned] | transpose' > ${SUMMARY_DIR}/assigned.json
-# buffer-manager cache hit ratio
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .ratio] | transpose' > ${SUMMARY_DIR}/ratio.json
-# query elapsed time
-cat ${SUMMARY_DIR}/data.json | jq -c '[.[] | .elapsed] | transpose' > ${SUMMARY_DIR}/elapsed.json
+# names of database construction
+cat ${SUMMARY_DIR}/data.json | \
+    \jq -c '[.[] | .name]' > ${SUMMARY_DIR}/name.json
+
+# the other measures
+for k in read written pinned unpinned hit assigned ratio elapsed
+do
+    cat ${SUMMARY_DIR}/data.json | \
+	\jq -c "[.[] | .${k}] | transpose | to_entries | map(. |= [\"Q\"+(.key+1|tostring)]+.value)" > ${SUMMARY_DIR}/${k}.json
+done
