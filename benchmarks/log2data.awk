@@ -2,9 +2,9 @@ function to_json(record) {
 
     sub("%", "", record["cache-hit-ratio"]);
 
-    fm = sprintf("{\"read\":%d,\"write\":%d}",
+    fm = sprintf("{\"read\":%d,\"written\":%d}",
 		 record["read-blocks"],
-		 record["write-blocks"]);
+		 record["written-blocks"]);
     cache = sprintf("{\"hit\":%d,\"assigned\":%d,\"ratio\":%f}",
 		    record["cache-hit"],
 		    record["new-assigned"],
@@ -37,7 +37,7 @@ function to_json(record) {
 
 /numbers of read\/written blocks:/ {
     record["read-blocks"] = $(NF-1);
-    record["write-blocks"] = $(NF);
+    record["written-blocks"] = $(NF);
 }
 /numbers of available buffers:/ {
     record["available-buffers"] = $(NF);
