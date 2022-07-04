@@ -6,8 +6,8 @@ set -xu
 
 LOG_DIR=./logs
 mkdir -p ${LOG_DIR}
-CONVERTED_DIR=./converted
-mkdir -p ${CONVERTED_DIR}
+JSON_DIR=./json
+mkdir -p ${JSON_DIR}
 SUMMARY_DIR=./summary
 mkdir -p ${SUMMARY_DIR}
 # It is assumed that a link to esql exists.
@@ -99,13 +99,29 @@ EOM
 	# convert to json
 	awk -F'[/ ()]' -f log2json.awk -- \
 	    ${LOG_DIR}/${bm}_${qp}_query.log | \
-	    \jq -c > ${CONVERTED_DIR}/${bm}_${qp}.json
+	    \jq -c > ${JSON_DIR}/${bm}_${qp}.json
     done
 done
 
 # merge all data
-cat ${CONVERTED_DIR}/*.json | \
-    \jq -s '[.[] | { "name": (.config."buffer-manager" + "-" + .config."query-planner" + "-" + (.config."block-size"|tostring) + "-" + (.config."buffer-size"|tostring)), "read": (.records | map(."file-manager".read)), "written": (.records | map(."file-manager".written)), "pinned": (.records | map(."buffer-manager".pinned)), "unpinned": (.records | map(."buffer-manager".unpinned)), "hit": (.records | map(."buffer-manager".cache.hit)), "assigned": (.records | map(."buffer-manager".cache.assigned)), "ratio": (.records | map(."buffer-manager".cache.ratio)), "elapsed" : (.records | map(."elapsed-time"))}]' > ${SUMMARY_DIR}/data.json
+cat ${JSON_DIR}/*.json | \
+    \jq -s '[.[] |
+             .config."buffer-manager"           as $bm    |
+             .config."query-planner"            as $qp    |
+             (.config."block-size"|tostring)    as $blksz |
+             (.config."buffer-size"|tostring)   as $bfsz  |
+             ($bm+"-"+$qp+"-"+$blksz+"-"+$bfsz) as $nm    |
+             { "name": $nm
+             , "read": (.records | map(."file-manager".read))
+             , "written": (.records | map(."file-manager".written))
+             , "pinned": (.records | map(."buffer-manager".pinned))
+             , "unpinned": (.records | map(."buffer-manager".unpinned))
+             , "hit": (.records | map(."buffer-manager".cache.hit))
+             , "assigned": (.records | map(."buffer-manager".cache.assigned))
+             , "ratio": (.records | map(."buffer-manager".cache.ratio))
+             , "elapsed" : (.records | map(."elapsed-time"))
+             }
+            ]' > ${SUMMARY_DIR}/data.json
 
 # names of database construction
 cat ${SUMMARY_DIR}/data.json | \
@@ -115,5 +131,8 @@ cat ${SUMMARY_DIR}/data.json | \
 for k in read written pinned unpinned hit assigned ratio elapsed
 do
     cat ${SUMMARY_DIR}/data.json | \
-	\jq -c "[.[] | .${k}] | transpose | to_entries | map(. |= [\"Q\"+(.key+1|tostring)]+.value)" > ${SUMMARY_DIR}/${k}.json
+	\jq -c "[.[] |
+                 .${k}] | transpose |
+                 to_entries |
+                 map(. |= [\"Q\"+(.key+1|tostring)]+.value)" > ${SUMMARY_DIR}/${k}.json
 done

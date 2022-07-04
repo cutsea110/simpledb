@@ -22,7 +22,7 @@
 	  new google.visualization.ComboChart(document.getElementById('rw_chart'))
 	      .draw(rw_data,
 		    {title:"file manager read/written blocks and total elapsed time",
-		     width:900, height:500,
+		     width:600, height:400,
 		     isStacked: true,
 		     vAxis: {
 			 0: {title: "read+written blocks"},
@@ -52,7 +52,7 @@
 	  new google.visualization.ComboChart(document.getElementById('cache_chart'))
 	      .draw(cache_data,
 		    {title:"buffer manager cache hit/new assigned pages and the ratio",
-		     width:900, height:500,
+		     width:600, height:400,
 		     isStacked: true,
 		     vAxis: {
 			 0: {title: "pages"},
