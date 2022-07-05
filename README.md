@@ -46,3 +46,22 @@ How to run sql as simpledb client program.
 ``` shell
 cargo run --bin sql -- -d <dbname>
 ```
+
+## Benchmarking & Visualize
+
+take benchmarking data.
+
+``` shell
+./benchmarks.sh
+```
+
+and then run http-server.
+You must install http-server on npm.
+
+``` shell
+cd benchmarks
+http-server -p 3000
+```
+
+and then open browser http://localhost:3000
+
