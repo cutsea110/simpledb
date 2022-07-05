@@ -12,7 +12,9 @@ if [ ! -e ./esql ]; then
 fi
 
 # default tiny
-rm -rf ./benchmarks/tiny
+if [ -d ./tiny ]; then
+    rm -rf ./tiny
+fi
 ./gen-sql-for-db.sh tiny > ./init-tiny.sql
 ./e2e.sh tiny
 

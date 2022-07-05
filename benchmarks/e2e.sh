@@ -71,36 +71,90 @@ EOM
     done
 done
 
-# merge all data
-cat ${JSON_DIR}/*.json | \
-    \jq -s '[.[] |
-             .config."buffer-manager"           as $bm    |
-             .config."query-planner"            as $qp    |
-             (.config."block-size"|tostring)    as $blksz |
-             (.config."buffer-size"|tostring)   as $bfsz  |
-             ($bm+"-"+$qp+"-"+$blksz+"-"+$bfsz) as $nm    |
-             { "name": $nm
-             , "read": (.records | map(."file-manager".read))
-             , "written": (.records | map(."file-manager".written))
-             , "pinned": (.records | map(."buffer-manager".pinned))
-             , "unpinned": (.records | map(."buffer-manager".unpinned))
-             , "hit": (.records | map(."buffer-manager".cache.hit))
-             , "assigned": (.records | map(."buffer-manager".cache.assigned))
-             , "ratio": (.records | map(."buffer-manager".cache.ratio))
-             , "elapsed" : (.records | map(."elapsed-time"))
-             }
-            ]' > ${SUMMARY_DIR}/data.json
 
-# names of database construction
-cat ${SUMMARY_DIR}/data.json | \
-    \jq -c '[.[] | .name]' > ${SUMMARY_DIR}/name.json
-
-# the other measures
-for k in read written pinned unpinned hit assigned ratio elapsed
+for bm in naive naivebis fifo lru clock
 do
-    cat ${SUMMARY_DIR}/data.json | \
-	\jq -c "[.[] |
-                 .${k}] | transpose |
-                 to_entries |
-                 map(. |= [\"Q\"+(.key+1|tostring)]+.value)" > ${SUMMARY_DIR}/${k}.json
+    for qp in basic heuristic
+    do
+	# merge over the same buffer-manager and query-planner
+	cat ${JSON_DIR}/${bm}_${qp}_*.json | \
+	    \jq -s '[.[] |
+                     .config."buffer-manager"         as $bm    |
+		     .config."query-planner"          as $qp    |
+                     (.config."block-size"|tostring)  as $blksz |
+                     (.config."buffer-size"|tostring) as $bfsz  |
+                     ($blksz+"x"+$bfsz)               as $nm    |
+                     { "name": $nm
+                     , "read": (.records | map(."file-manager".read))
+                     , "written": (.records | map(."file-manager".written))
+                     , "pinned": (.records | map(."buffer-manager".pinned))
+                     , "unpinned": (.records | map(."buffer-manager".unpinned))
+                     , "hit": (.records | map(."buffer-manager".cache.hit))
+                     , "assigned": (.records | map(."buffer-manager".cache.assigned))
+                     , "ratio": (.records | map(."buffer-manager".cache.ratio))
+                     , "elapsed" : (.records | map(."elapsed-time"))
+                     }
+                    ]' > ${SUMMARY_DIR}/${bm}_${qp}_data.json
+	# metrics
+	cat ${SUMMARY_DIR}/${bm}_${qp}_data.json | \
+            \jq -c '{ "rw": ([["construct", "read", "write", "elapsed (sec)"]] +
+                             [.[] |
+                              (.read|length)    as $rN  |
+                              (.written|length) as $wN  |
+                              (.elapsed|add)    as $ttl |
+                              [.name, .read[$rN-1], .written[$wN-1], $ttl]
+                             ]),
+                      "cache": ([["construct", "assigned", "cache hit", "ratio (%)"]] +
+                                [.[] |
+                                 (.assigned|length) as $aN |
+                                 (.hit|length) as $hN |
+                                 (.ratio|length) as $rN |
+                                 [.name, .assigned[$aN-1], .hit[$hN-1], .ratio[$rN-1]]
+                                ])
+                    }' > ${SUMMARY_DIR}/${bm}_${qp}_metrics.json
+    done
+done
+
+for blksz in 400 1000 4000
+do
+    for bfsz in 8 32 128
+    do
+
+	# merge over the same block-size and buffer-size
+	cat ${JSON_DIR}/*_${blksz}x${bfsz}.json | \
+	    \jq -s '[.[] |
+                     .config."buffer-manager"         as $bm    |
+		     .config."query-planner"          as $qp    |
+                     (.config."block-size"|tostring)  as $blksz |
+                     (.config."buffer-size"|tostring) as $bfsz  |
+                     ($bm+"-"+$qp)                    as $nm    |
+                     { "name": $nm
+                     , "read": (.records | map(."file-manager".read))
+                     , "written": (.records | map(."file-manager".written))
+                     , "pinned": (.records | map(."buffer-manager".pinned))
+                     , "unpinned": (.records | map(."buffer-manager".unpinned))
+                     , "hit": (.records | map(."buffer-manager".cache.hit))
+                     , "assigned": (.records | map(."buffer-manager".cache.assigned))
+                     , "ratio": (.records | map(."buffer-manager".cache.ratio))
+                     , "elapsed" : (.records | map(."elapsed-time"))
+                     }
+                    ]' > ${SUMMARY_DIR}/${blksz}x${bfsz}_data.json
+	# metrics
+	cat ${SUMMARY_DIR}/${blksz}x${bfsz}_data.json | \
+            \jq -c '{ "rw": ([["construct", "read", "write", "elapsed (sec)"]] +
+                             [.[] |
+                              (.read|length)    as $rN  |
+                              (.written|length) as $wN  |
+                              (.elapsed|add)    as $ttl |
+                              [.name, .read[$rN-1], .written[$wN-1], $ttl]
+                             ]),
+                      "cache": ([["construct", "assigned", "cache hit", "ratio (%)"]] +
+                                [.[] |
+                                 (.assigned|length) as $aN |
+                                 (.hit|length) as $hN |
+                                 (.ratio|length) as $rN |
+                                 [.name, .assigned[$aN-1], .hit[$hN-1], .ratio[$rN-1]]
+                                ])
+                    }' > ${SUMMARY_DIR}/${blksz}x${bfsz}_metrics.json
+    done
 done
