@@ -2,7 +2,7 @@
 
 # This script requires awk and jq, and a link for esql binary build image.
 
-set -xu
+set -eux
 
 #
 # DBSIZE: tiny, small, medium, large
@@ -26,36 +26,48 @@ for bm in naive naivebis fifo lru clock
 do
     for qp in basic heuristic
     do
-	# clear db
-	rm -rf data
-	# init db
-	RUST_LOG=trace \
-		${ESQL} -d demo \
-		--buffer-manager ${bm} \
-		--query-planner ${qp} \
-		2> ${LOG_DIR}/${bm}_${qp}_init.log <<EOM
+	for blksz in 400 1000 4000
+	do
+	    for bfsz in 8 32 128
+	    do
+		# clear db
+		rm -rf data
+
+		CONSTRUCT=${bm}_${qp}_${blksz}x${bfsz}
+		# init db
+		RUST_LOG=trace \
+			${ESQL} -d demo \
+			--buffer-manager ${bm} \
+			--query-planner ${qp} \
+			--block-size ${blksz} \
+			--buffer-size ${bfsz} \
+			2> ${LOG_DIR}/${CONSTRUCT}_init.log <<EOM
 yes
 
 ${INIT_SQL}
 
 :q
 EOM
-	# query db
-	# couldn't use view, because basic query planner can't correctly handle view table.
-	RUST_LOG=trace \
-		${ESQL} -d demo \
-		--buffer-manager ${bm} \
-		--query-planner ${qp} \
-		2> ${LOG_DIR}/${bm}_${qp}_query.log <<EOM
+		# query db
+		# couldn't use view, because basic query planner can't correctly handle view table.
+		RUST_LOG=trace \
+			${ESQL} -d demo \
+			--buffer-manager ${bm} \
+			--query-planner ${qp} \
+			--block-size ${blksz} \
+			--buffer-size ${bfsz} \
+			2> ${LOG_DIR}/${CONSTRUCT}_query.log <<EOM
 
 ${QUERY_SQL}
 
 :q
 EOM
-	# convert to json
-	awk -F'[/ ()]' -f log2json.awk -- \
-	    ${LOG_DIR}/${bm}_${qp}_query.log | \
-	    \jq -c > ${JSON_DIR}/${bm}_${qp}.json
+		# convert to json
+		awk -F'[/ ()]' -f log2json.awk -- \
+		    ${LOG_DIR}/${CONSTRUCT}_query.log | \
+		    \jq -c > ${JSON_DIR}/${CONSTRUCT}.json
+	    done
+	done
     done
 done
 

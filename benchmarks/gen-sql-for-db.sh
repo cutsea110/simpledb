@@ -31,15 +31,17 @@ INSERT INTO sex (sex_name, value) VALUES ('female', false);
 
 EOM
 
-## year_range=2
-## student_num=5
-## dept_num=2
-## course_num=3
-## section_num=3
-## prof_num=3
-## enroll_num=10
 case "${DBSIZE}" in
     "tiny")
+	year_range=4
+	student_num=20
+	dept_num=3
+	course_num=5
+	section_num=5
+	prof_num=10
+	enroll_num=100
+	;;
+    "small")
 	year_range=4
 	student_num=100
 	dept_num=5
@@ -48,7 +50,7 @@ case "${DBSIZE}" in
 	prof_num=10
 	enroll_num=1000
 	;;
-    "small")
+    "medium")
 	year_range=4
 	student_num=600
 	dept_num=5
@@ -57,7 +59,7 @@ case "${DBSIZE}" in
 	prof_num=20
 	enroll_num=10000
 	;;
-    "medium")
+    "large")
 	year_range=6
 	student_num=1200
 	dept_num=10
@@ -66,7 +68,7 @@ case "${DBSIZE}" in
 	prof_num=50
 	enroll_num=100000
 	;;
-    "large")
+    "x-large")
 	year_range=20
 	student_num=10000
 	dept_num=20
