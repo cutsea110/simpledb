@@ -7,6 +7,8 @@ RAND() {
     shuf -i $1-$2 | head -n $3
 }
 
+DBSIZE=${1:-tiny}
+
 cat <<EOM
 CREATE TABLE student (sid integer, sname varchar(10), grad_year smallint, major_id integer, birth date, sex bool);
 CREATE TABLE dept (did integer, dname varchar(10));
@@ -29,20 +31,51 @@ INSERT INTO sex (sex_name, value) VALUES ('female', false);
 
 EOM
 
-year_range=4
-student_num=100
-dept_num=4
-course_num=8
-section_num=16
-prof_num=20
-enroll_num=600
-## year_range=6
-## student_num=1200
-## dept_num=5
-## course_num=80
-## section_num=600
-## prof_num=50
-## enroll_num=100000
+## year_range=2
+## student_num=5
+## dept_num=2
+## course_num=3
+## section_num=3
+## prof_num=3
+## enroll_num=10
+case "${DBSIZE}" in
+    "tiny")
+	year_range=4
+	student_num=100
+	dept_num=5
+	course_num=10
+	section_num=20
+	prof_num=10
+	enroll_num=1000
+	;;
+    "small")
+	year_range=4
+	student_num=600
+	dept_num=5
+	course_num=20
+	section_num=50
+	prof_num=20
+	enroll_num=10000
+	;;
+    "medium")
+	year_range=6
+	student_num=1200
+	dept_num=10
+	course_num=80
+	section_num=600
+	prof_num=50
+	enroll_num=100000
+	;;
+    "large")
+	year_range=20
+	student_num=10000
+	dept_num=20
+	course_num=160
+	section_num=1200
+	prof_num=100
+	enroll_num=10000000
+	;;
+esac
 
 #
 # STUDENT
