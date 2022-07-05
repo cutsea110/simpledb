@@ -4,18 +4,23 @@
 
 set -xu
 
-LOG_DIR=./logs
+#
+# DBSIZE: tiny, small, medium, large
+#
+DBSIZE=${1:-tiny}
+
+LOG_DIR=./${DBSIZE}/logs
 mkdir -p ${LOG_DIR}
-JSON_DIR=./json
+JSON_DIR=./${DBSIZE}/json
 mkdir -p ${JSON_DIR}
-SUMMARY_DIR=./summary
+SUMMARY_DIR=./${DBSIZE}/summary
 mkdir -p ${SUMMARY_DIR}
 # It is assumed that a link to esql exists.
 # See benchmarks.sh.
 ESQL=./esql
 
-INIT_SQL=`cat init.sql`
-QUERY_SQL=`cat query.sql`
+INIT_SQL=`cat init-${DBSIZE}.sql`
+QUERY_SQL=`cat query-${DBSIZE}.sql`
 
 for bm in naive naivebis fifo lru clock
 do

@@ -23,6 +23,13 @@ INSERT INTO sex (sex_name, value) VALUES ('female', false);
 
 EOM
 
+year_range=4
+student_num=100
+dept_num=4
+course_num=8
+section_num=16
+prof_num=20
+enroll_num=600
 ## year_range=6
 ## student_num=1200
 ## dept_num=5
@@ -30,13 +37,6 @@ EOM
 ## section_num=600
 ## prof_num=50
 ## enroll_num=100000
-year_range=3
-student_num=100
-dept_num=5
-course_num=10
-section_num=30
-prof_num=20
-enroll_num=600
 
 #
 # STUDENT
