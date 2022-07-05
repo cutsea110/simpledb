@@ -20,7 +20,7 @@ mkdir -p ${SUMMARY_DIR}
 ESQL=./esql
 
 INIT_SQL=`cat init-${DBSIZE}.sql`
-QUERY_SQL=`cat query-${DBSIZE}.sql`
+QUERY_SQL=`cat query.sql` # This query must be independent of DBSIZE.
 
 for bm in naive naivebis fifo lru clock
 do

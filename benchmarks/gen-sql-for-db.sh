@@ -13,10 +13,16 @@ CREATE TABLE dept (did integer, dname varchar(10));
 CREATE TABLE course (cid integer, title varchar(16), dept_id integer);
 CREATE TABLE section (sect_id integer, course_id integer, prof varchar(10), year_offered integer);
 CREATE TABLE enroll (eid integer, student_id integer, section_id integer, grade varchar(2));
+CREATE TABLE sex (sex_name varchar(10), value bool);
+
 CREATE INDEX idx_grad_year ON student (grad_year);
 CREATE INDEX idx_major_id ON student (major_id);
 CREATE INDEX idx_sex ON student (sex);
-CREATE TABLE sex (sex_name varchar(10), value bool);
+
+CREATE INDEX idx_prof ON section (prof);
+
+CREATE INDEX idx_student_id ON enroll (student_id);
+CREATE INDEX idx_grade ON enroll (grade);
 
 INSERT INTO sex (sex_name, value) VALUES ('male', true);
 INSERT INTO sex (sex_name, value) VALUES ('female', false);
