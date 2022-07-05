@@ -1,70 +1,53 @@
 <html>
   <head>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
     <script type="text/javascript">
       google.charts.load('current', {'packages':['corechart']});
       google.charts.setOnLoadCallback(drawChart);
 
       function drawChart() {
-	  var rw_data = new google.visualization.arrayToDataTable([
-	      ['construct', 'read', 'written', 'elapsed (sec)'],
-	      ['Naive-Basic-400-8',        333,  10, 0.040],
-	      ['Naive-Heuristic-400-8',    426, 129, 0.030],
-	      ['NaiveBis-Basic-400-8',     333,  10, 0.036],
-	      ['NaiveBis-Heuristic-400-8', 426, 129, 0.040],
-	      ['FIFO-Basic-400-8',         144,  10, 0.033],
-	      ['FIFO-Heuristic-400-8',     171, 129, 0.034],
-	      ['LRU-Basic-400-8',          122,  10, 0.030],
-	      ['LRU-Heuristic-400-8',      149, 129, 0.044],
-	      ['Clock-Basic-400-8',        144,  10, 0.034],
-	      ['Clock-Heuristic-400-8',    171, 129, 0.032],
-	  ]);
-	  new google.visualization.ComboChart(document.getElementById('rw_chart'))
-	      .draw(rw_data,
-		    {title:"file manager read/written blocks and total elapsed time",
-		     width:600, height:400,
-		     isStacked: true,
-		     vAxis: {
-			 0: {title: "read+written blocks"},
-			 1: {title: "elapsed time (sec)"},
-		     },
-		     hAxis: {title: "construction"},
-		     series: {
-			 0: {type: 'bars', targetAxisIndex: 0},
-			 1: {type: 'bars', targetAxisIndex: 0},
-			 2: {type: 'line', targetAxisIndex: 1},
-		     }
-		    });
+	  $.getJSON("./sample.json", function(json) {
+	      var data = eval("("+jsonData.responseText+")");
+	      console.log(data);
+	      var rw_data = new google.visualization.arrayToDataTable(data["rw"]);
+	      new google.visualization.ComboChart(document.getElementById('rw_chart'))
+		  .draw(rw_data,
+			{title:"file manager read/written blocks and total elapsed time",
+			 width:600, height:400,
+			 isStacked: true,
+			 vAxis: {
+			     0: {title: "read+written blocks"},
+			     1: {title: "elapsed time (sec)"},
+			 },
+			 hAxis: {title: "construction"},
+			 series: {
+			     0: {type: 'bars', targetAxisIndex: 0},
+			     1: {type: 'bars', targetAxisIndex: 0},
+			     2: {type: 'line', targetAxisIndex: 1},
+			 }
+			});
 
-	  var cache_data = new google.visualization.arrayToDataTable([
-	      ['construct', 'assigned', 'cache hit', 'ratio (%)'],
-	      ['Naive-Basic-400-8',        251,  159,  63.347],
-	      ['Naive-Heuristic-400-8',    344,   52,  15.116],
-	      ['NaiveBis-Basic-400-8',     251,  159,  63.347],
-	      ['NaiveBis-Heuristic-400-8', 344,   52,  15.116],
-	      ['FIFO-Basic-400-8',          62,  348, 561.290],
-	      ['FIFO-Heuristic-400-8',      89,  307, 344.944],
-	      ['LRU-Basic-400-8',           40,  370, 925.000],
-	      ['LRU-Heuristic-400-8',       67,  329, 491.045],
-	      ['Clock-Basic-400-8',         62,  348, 561.290],
-	      ['Clock-Heuristic-400-8',     89,  307, 344.944],
-	  ]);
-	  new google.visualization.ComboChart(document.getElementById('cache_chart'))
-	      .draw(cache_data,
-		    {title:"buffer manager cache hit/new assigned pages and the ratio",
-		     width:600, height:400,
-		     isStacked: true,
-		     vAxis: {
-			 0: {title: "pages"},
-			 1: {title: "ratio (%%)"},
-		     },
-		     hAxis: {title: "construction"},
-		     series: {
-			 0: {type: 'bars', targetAxisIndex: 0},
-			 1: {type: 'bars', targetAxisIndex: 0},
-			 2: {type: 'line', targetAxisIndex: 1},
-		     }
-		    });
+	      var cache_data = new google.visualization.arrayToDataTable(data["cache"]);
+	      new google.visualization.ComboChart(document.getElementById('cache_chart'))
+		  .draw(cache_data,
+			{title:"buffer manager cache hit/new assigned pages and the ratio",
+			 width:600, height:400,
+			 isStacked: true,
+			 vAxis: {
+			     0: {title: "pages"},
+			     1: {title: "ratio (%%)"},
+			 },
+			 hAxis: {title: "construction"},
+			 series: {
+			     0: {type: 'bars', targetAxisIndex: 0},
+			     1: {type: 'bars', targetAxisIndex: 0},
+			     2: {type: 'line', targetAxisIndex: 1},
+			 }
+			});
+	  });
+	  
 
       }
     </script>

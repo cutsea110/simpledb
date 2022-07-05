@@ -1,0 +1,28 @@
+{
+    "rw": [
+	["construct", "read", "written", "elapsed (sec)"],
+	["Naive-Basic-400-8",        333,  10, 0.040],
+	["Naive-Heuristic-400-8",    426, 129, 0.030],
+	["NaiveBis-Basic-400-8",     333,  10, 0.036],
+	["NaiveBis-Heuristic-400-8", 426, 129, 0.040],
+	["FIFO-Basic-400-8",         144,  10, 0.033],
+	["FIFO-Heuristic-400-8",     171, 129, 0.034],
+	["LRU-Basic-400-8",          122,  10, 0.030],
+	["LRU-Heuristic-400-8",      149, 129, 0.044],
+	["Clock-Basic-400-8",        144,  10, 0.034],
+	["Clock-Heuristic-400-8",    171, 129, 0.032]
+    ],
+    "cache": [
+	["construct", "assigned", "cache hit", "ratio (%)"],
+	["Naive-Basic-400-8",        251,  159,  63.347],
+	["Naive-Heuristic-400-8",    344,   52,  15.116],
+	["NaiveBis-Basic-400-8",     251,  159,  63.347],
+	["NaiveBis-Heuristic-400-8", 344,   52,  15.116],
+	["FIFO-Basic-400-8",          62,  348, 561.290],
+	["FIFO-Heuristic-400-8",      89,  307, 344.944],
+	["LRU-Basic-400-8",           40,  370, 925.000],
+	["LRU-Heuristic-400-8",       67,  329, 491.045],
+	["Clock-Basic-400-8",         62,  348, 561.290],
+	["Clock-Heuristic-400-8",     89,  307, 344.944]
+    ]
+}
