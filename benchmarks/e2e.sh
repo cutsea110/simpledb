@@ -76,9 +76,8 @@ ${QUERY_SQL}
 
 :q
 EOM
-		# convert to json
-		awk -F'[/ ()]' -f log2json.awk -- \
-		    ${LOG_DIR}/${CONSTRUCT}_query.log | \
+		# convert to json from log
+		./log2json ${LOG_DIR}/${CONSTRUCT}_query.log | \
 		    \jq -c > ${JSON_DIR}/${CONSTRUCT}.json
 	    done
 	done
@@ -108,7 +107,7 @@ do
                      , "elapsed" : (.records | map(."elapsed-time"))
                      }
                     ]' > ${SUMMARY_DIR}/${bm}_${qp}_data.json
-	# metrics
+	# generate metrics
 	cat ${SUMMARY_DIR}/${bm}_${qp}_data.json | \
             \jq -c '{ "rw": ([["construct", "read", "write", "elapsed (sec)"]] +
                              [.[] |
@@ -132,7 +131,6 @@ for blksz in ${BLOCK_SIZES}
 do
     for bfsz in ${BUFFER_SIZES}
     do
-
 	# merge over the same block-size and buffer-size
 	cat ${JSON_DIR}/*_${blksz}x${bfsz}.json | \
 	    \jq -s '[.[] |
@@ -152,7 +150,7 @@ do
                      , "elapsed" : (.records | map(."elapsed-time"))
                      }
                     ]' > ${SUMMARY_DIR}/${blksz}x${bfsz}_data.json
-	# metrics
+	# generate metrics
 	cat ${SUMMARY_DIR}/${blksz}x${bfsz}_data.json | \
             \jq -c '{ "rw": ([["construct", "read", "write", "elapsed (sec)"]] +
                              [.[] |
