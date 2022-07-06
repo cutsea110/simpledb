@@ -22,13 +22,27 @@ ESQL=./esql
 INIT_SQL=`cat init-${DBSIZE}.sql`
 QUERY_SQL=`cat query.sql` # This query must be independent of DBSIZE.
 
-for bm in naive naivebis fifo lru clock
+#
+# DATABASE Construction Parameters
+#
+BUFFER_MANAGERS_STR='"naive","naivebis","fifo","lru","clock"'
+QUERY_PLANNERS_STR='"basic","heuristic"'
+BLOCK_SIZES_STR='400,1000,4000'
+BUFFER_SIZES_STR='8,32,128'
+
+# to array
+BUFFER_MANAGERS=`echo ${BUFFER_MANAGERS_STR} | sed 's/"//g' | tr "," "\n"`
+QUERY_PLANNERS=`echo ${QUERY_PLANNERS_STR} | sed 's/"//g' | tr "," "\n"`
+BLOCK_SIZES=`echo ${BLOCK_SIZES_STR} | sed 's/"//g' | tr "," "\n"`
+BUFFER_SIZES=`echo ${BUFFER_SIZES_STR} | sed 's/"//g' | tr "," "\n"`
+
+for bm in ${BUFFER_MANAGERS}
 do
-    for qp in basic heuristic
+    for qp in ${QUERY_PLANNERS}
     do
-	for blksz in 400 1000 4000
+	for blksz in ${BLOCK_SIZES}
 	do
-	    for bfsz in 8 32 128
+	    for bfsz in ${BUFFER_SIZES}
 	    do
 		# clear db
 		rm -rf data
@@ -71,10 +85,9 @@ EOM
     done
 done
 
-
-for bm in naive naivebis fifo lru clock
+for bm in ${BUFFER_MANAGERS}
 do
-    for qp in basic heuristic
+    for qp in ${QUERY_PLANNERS}
     do
 	# merge over the same buffer-manager and query-planner
 	cat ${JSON_DIR}/${bm}_${qp}_*.json | \
@@ -115,9 +128,9 @@ do
     done
 done
 
-for blksz in 400 1000 4000
+for blksz in ${BLOCK_SIZES}
 do
-    for bfsz in 8 32 128
+    for bfsz in ${BUFFER_SIZES}
     do
 
 	# merge over the same block-size and buffer-size
@@ -158,3 +171,14 @@ do
                     }' > ${SUMMARY_DIR}/${blksz}x${bfsz}_metrics.json
     done
 done
+
+#
+# Benchmarking Parameters
+#
+cat > ${SUMMARY_DIR}/parameters.json <<EOM
+{ "buffer_managers": [${BUFFER_MANAGERS_STR}]
+, "query_planners":  [${QUERY_PLANNERS_STR}]
+, "block_sizes":     [${BLOCK_SIZES_STR}]
+, "buffer_sizes":    [${BUFFER_SIZES_STR}]
+}
+EOM
