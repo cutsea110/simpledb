@@ -27,8 +27,8 @@ QUERY_SQL=`cat query.sql` # This query must be independent of DBSIZE.
 #
 BUFFER_MANAGERS_STR='"naive","naivebis","fifo","lru","clock"'
 QUERY_PLANNERS_STR='"basic","heuristic"'
-BLOCK_SIZES_STR='400,1000,4000'
-BUFFER_SIZES_STR='8,32,128'
+BLOCK_SIZES_STR='400,800,1200,2000,4000'
+BUFFER_SIZES_STR='8,16,32,64,128'
 
 # to array
 BUFFER_MANAGERS=`echo ${BUFFER_MANAGERS_STR} | sed 's/"//g' | tr "," "\n"`
