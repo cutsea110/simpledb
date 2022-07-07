@@ -63,5 +63,6 @@ cd benchmarks
 http-server -p 3000
 ```
 
-and then open browser http://localhost:3000
+and then open browser http://localhost:3000?scale=tiny.
+At this url, query parameter scale can has tiny/small/medium/large.
 
