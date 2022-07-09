@@ -14,7 +14,7 @@ fi
 #
 # Any combination of tiny small medium large can be specified.
 #
-for scale in tiny small
+for scale in tiny small medium
 do
     if [ -d ./${scale} ]; then
 	rm -rf ./${scale}

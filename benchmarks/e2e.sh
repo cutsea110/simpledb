@@ -25,10 +25,32 @@ QUERY_SQL=`cat query.sql` # This query must be independent of DBSIZE.
 #
 # DATABASE Construction Parameters
 #
-BUFFER_MANAGERS_STR='"naive","naivebis","fifo","lru","clock"'
-QUERY_PLANNERS_STR='"basic","heuristic"'
-BLOCK_SIZES_STR='400,800,1200,2000,4000'
-BUFFER_SIZES_STR='8,16,32,64,128'
+case "${DBSIZE}" in
+    "tiny")
+	BUFFER_MANAGERS_STR='"naive","naivebis","fifo","lru","clock"'
+	QUERY_PLANNERS_STR='"basic","heuristic"'
+	BLOCK_SIZES_STR='400,800,1200,2000,4000'
+	BUFFER_SIZES_STR='8,16,32,64,128'
+	;;
+    "small")
+	BUFFER_MANAGERS_STR='"naive","naivebis","fifo","lru","clock"'
+	QUERY_PLANNERS_STR='"basic","heuristic"'
+	BLOCK_SIZES_STR='400,800,1200,2000,4000'
+	BUFFER_SIZES_STR='8,16,32,64,128'
+	;;
+    "medium")
+	BUFFER_MANAGERS_STR='"naive","naivebis","fifo","lru","clock"'
+	QUERY_PLANNERS_STR='"heuristic"'
+	BLOCK_SIZES_STR='400,800,1200,2000,4000'
+	BUFFER_SIZES_STR='8,16,32,64,128'
+	;;
+    "large")
+	BUFFER_MANAGERS_STR='"naive","naivebis","fifo","lru","clock"'
+	QUERY_PLANNERS_STR='"heuristic"'
+	BLOCK_SIZES_STR='400,800,1200,2000,4000'
+	BUFFER_SIZES_STR='8,16,32,64,128'
+	;;
+esac
 
 # to array
 BUFFER_MANAGERS=`echo ${BUFFER_MANAGERS_STR} | sed 's/"//g' | tr "," "\n"`
