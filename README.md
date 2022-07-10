@@ -68,6 +68,6 @@ At this url, query parameter scale can has tiny/small/medium/large.
 
 ### Benchmark results
 
-[tiny](https://cutsea110.github.io/simpledb/?scale=tiny)
-[small](https://cutsea110.github.io/simpledb/?scale=small)
-[medium](https://cutsea110.github.io/simpledb/?scale=medium)
+- [tiny](https://cutsea110.github.io/simpledb/?scale=tiny)
+- [small](https://cutsea110.github.io/simpledb/?scale=small)
+- [medium](https://cutsea110.github.io/simpledb/?scale=medium)
