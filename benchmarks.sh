@@ -14,7 +14,7 @@ fi
 #
 # Any combination of tiny small medium large can be specified.
 #
-for scale in tiny small
+for scale in tiny small medium
 do
     if [ -d ./${scale} ]; then
 	rm -rf ./${scale}
@@ -26,3 +26,14 @@ done
 rm esql
 
 popd
+
+#
+# republish data for docs
+#
+rm -rf docs/*
+cp benchmarks/index.html docs
+for scale in tiny small medium
+do
+    mkdir -p docs/${scale}/summary
+    cp -r benchmarks/${scale}/summary docs/${scale}
+done

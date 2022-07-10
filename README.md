@@ -56,7 +56,7 @@ take benchmarking data.
 ```
 
 and then run http-server.
-You must install http-server on npm.
+You must install http-server on npm, if you view the results on your local.
 
 ``` shell
 cd benchmarks
@@ -65,4 +65,3 @@ http-server -p 3000
 
 and then open browser http://localhost:3000?scale=tiny.
 At this url, query parameter scale can has tiny/small/medium/large.
-
