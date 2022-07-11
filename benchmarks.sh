@@ -11,10 +11,13 @@ if [ ! -e ./esql ]; then
     ln -s ../target/debug/esql
 fi
 
+# target scales
+TARGET_SCALES=`echo tiny small medium`
+
 #
 # Any combination of tiny small medium large can be specified.
 #
-for scale in tiny small medium
+for scale in ${TARGET_SCALES}
 do
     if [ -d ./${scale} ]; then
 	rm -rf ./${scale}
@@ -32,7 +35,7 @@ popd
 #
 rm -rf docs/*
 cp benchmarks/index.html docs
-for scale in tiny small medium
+for scale in ${TARGET_SCALES}
 do
     mkdir -p docs/${scale}/summary
     cp -r benchmarks/${scale}/summary docs/${scale}
