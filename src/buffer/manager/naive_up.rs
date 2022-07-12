@@ -82,15 +82,24 @@ impl NaiveUPBufferMgr {
     }
     // The Naive with Unmodified Preferd Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
+        // hold the first modified page's index
+        let mut first_modified: Option<Arc<Mutex<Buffer>>> = None;
+
         for i in 0..self.bufferpool.len() {
             let buff = self.bufferpool[i].lock().unwrap();
 
             if !buff.is_pinned() {
-                return Some(Arc::clone(&self.bufferpool[i]));
+                if !buff.is_modified() {
+                    // find unmodified page
+                    return Some(Arc::clone(&self.bufferpool[i]));
+                } else if first_modified.is_none() {
+                    // hold first modified page
+                    first_modified = Some(Arc::clone(&self.bufferpool[i]));
+                }
             }
         }
 
-        None
+        first_modified
     }
 }
 impl BufferMgr for NaiveUPBufferMgr {
