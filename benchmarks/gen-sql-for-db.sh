@@ -29,6 +29,8 @@ CREATE INDEX idx_grade ON enroll (grade);
 INSERT INTO sex (sex_name, value) VALUES ('male', true);
 INSERT INTO sex (sex_name, value) VALUES ('female', false);
 
+CREATE VIEW einstein AS SELECT sect_id, prof FROM section WHERE prof='einstein';
+
 EOM
 
 case "${DBSIZE}" in
