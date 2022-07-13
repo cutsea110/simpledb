@@ -88,12 +88,25 @@ impl NaiveBisUPBufferMgr {
     fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
         self.assigned_block_ids.get(blk).map(|b| Arc::clone(b))
     }
-    // The Naive Strategy
+    // The Naive with Unmodified Prefered Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
-        self.bufferpool
-            .iter()
-            .find(|x| !x.lock().unwrap().is_pinned())
-            .map(|x| Arc::clone(x))
+        let mut first_modified: Option<Arc<Mutex<Buffer>>> = None;
+
+        for i in 0..self.bufferpool.len() {
+            let buff = self.bufferpool[i].lock().unwrap();
+
+            if !buff.is_pinned() {
+                if !buff.is_modified() {
+                    // find unmodified page
+                    return Some(Arc::clone(&self.bufferpool[i]));
+                } else if first_modified.is_none() {
+                    // hold first modified page
+                    first_modified = Some(Arc::clone(&self.bufferpool[i]));
+                }
+            }
+        }
+
+        first_modified
     }
 }
 impl BufferMgr for NaiveBisUPBufferMgr {
