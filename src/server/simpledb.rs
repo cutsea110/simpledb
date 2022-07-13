@@ -10,7 +10,7 @@ use super::config::{self, SimpleDBConfig};
 use crate::{
     buffer::manager::{
         clock::ClockBufferMgr, fifo::FifoBufferMgr, lru::LruBufferMgr, naive::NaiveBufferMgr,
-        naivebis::NaiveBisBufferMgr, BufferMgr,
+        naive_up::NaiveUPBufferMgr, naivebis::NaiveBisBufferMgr, BufferMgr,
     },
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
@@ -167,6 +167,9 @@ impl SimpleDB {
             let bm: Arc<Mutex<dyn BufferMgr>> = match cfg.buffer_manager {
                 config::BufferMgr::Naive => {
                     Arc::new(Mutex::new(NaiveBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::NaiveUp => {
+                    Arc::new(Mutex::new(NaiveUPBufferMgr::new(bm_fm, bm_lm, numsbuff)))
                 }
                 config::BufferMgr::NaiveBis => {
                     Arc::new(Mutex::new(NaiveBisBufferMgr::new(bm_fm, bm_lm, numsbuff)))

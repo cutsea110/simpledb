@@ -100,6 +100,10 @@ impl Buffer {
     pub fn unpin(&mut self) {
         self.pins -= 1;
     }
+    // my own extends
+    pub fn is_modified(&self) -> bool {
+        self.txnum != -1
+    }
 }
 
 #[cfg(test)]

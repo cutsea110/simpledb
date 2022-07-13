@@ -13,6 +13,7 @@ pub mod clock; // by exercise 4.14
 pub mod fifo; // by exercise 4.14
 pub mod lru; // by exercise 4.14
 pub mod naive;
+pub mod naive_up; // with unmodified preferd
 pub mod naivebis; // by exercise 4.17
 
 const MAX_TIME: i64 = 10_000; // 10 seconds
