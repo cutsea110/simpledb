@@ -15,6 +15,7 @@ pub mod lru; // by exercise 4.14
 pub mod naive;
 pub mod naive_up; // with unmodified preferd
 pub mod naivebis; // by exercise 4.17
+pub mod naivebis_up; // with unmodified preferd
 
 const MAX_TIME: i64 = 10_000; // 10 seconds
 
