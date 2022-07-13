@@ -20,6 +20,7 @@ arg_enum! {
     #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub enum BufferMgr {
         Naive,
+        NaiveUp,
         NaiveBis,
         FIFO,
         LRU,
