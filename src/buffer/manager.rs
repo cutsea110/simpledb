@@ -11,6 +11,7 @@ use crate::file::block_id::BlockId;
 // implements of BufferMgr trait
 pub mod clock; // by exercise 4.14
 pub mod fifo; // by exercise 4.14
+pub mod fifo_up; // with unmodified preferd
 pub mod lru; // by exercise 4.14
 pub mod naive;
 pub mod naive_up; // with unmodified preferd
