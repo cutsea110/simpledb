@@ -291,6 +291,7 @@ mod tests {
         bm.unpin(Arc::clone(&buff[2].clone().unwrap()))?; // unpin 30
         buff[2] = None;
         bm.unpin(Arc::clone(&buff[4].clone().unwrap()))?; // unpin 50
+        buff[4].as_ref().unwrap().lock().unwrap().set_modified(1, 1); // set modify
         buff[4] = None;
         // p91 senario
         // pin(60); pin(70);
@@ -304,14 +305,77 @@ mod tests {
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
         assert_eq!(b.is_pinned(), true);
         let b = bm.bufferpool[1].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 50)));
+        assert_eq!(b.is_pinned(), false);
+        let b = bm.bufferpool[2].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
         assert_eq!(b.is_pinned(), true);
+        let b = bm.bufferpool[3].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 40)));
+        assert_eq!(b.is_pinned(), false);
+
+        Ok(())
+    }
+
+    #[test]
+    fn replace_strategy_modified_test() -> Result<()> {
+        if Path::new("_test/buffermgrtest/naivebisupstrategy_all_modified").exists() {
+            fs::remove_dir_all("_test/buffermgrtest/naivebisupstrategy_all_modified")?;
+        }
+
+        let fm = Arc::new(Mutex::new(FileMgr::new(
+            "_test/buffermgrtest/naivebisupstrategy_all_modified",
+            400,
+        )?));
+        let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
+
+        let mut bm = NaiveBisUPBufferMgr::new(fm, lm, 4);
+
+        // p91 senario
+        // pin(10); pin(20); pin(30); pin(40); unpin(20);
+        // pin(50); unpin(40); unpin(10); unpin(30); unpin(50);
+        let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 7];
+        buff[0] = bm.pin(&BlockId::new("testfile", 10))?.into();
+        buff[1] = bm.pin(&BlockId::new("testfile", 20))?.into();
+        buff[2] = bm.pin(&BlockId::new("testfile", 30))?.into();
+        buff[3] = bm.pin(&BlockId::new("testfile", 40))?.into();
+
+        buff[1].as_ref().unwrap().lock().unwrap().set_modified(1, 1); // set modify
+        bm.unpin(Arc::clone(&buff[1].clone().unwrap()))?; // unpin 20
+        buff[1] = None;
+        buff[4] = bm.pin(&BlockId::new("testfile", 50))?.into();
+        bm.unpin(Arc::clone(&buff[3].clone().unwrap()))?; // unpin 40 without modified
+        buff[3] = None;
+        buff[0].as_ref().unwrap().lock().unwrap().set_modified(1, 1); // set modify
+        bm.unpin(Arc::clone(&buff[0].clone().unwrap()))?; // unpin 10
+        buff[0] = None;
+        buff[2].as_ref().unwrap().lock().unwrap().set_modified(1, 1); // set modify
+        bm.unpin(Arc::clone(&buff[2].clone().unwrap()))?; // unpin 30
+        buff[2] = None;
+        buff[4].as_ref().unwrap().lock().unwrap().set_modified(1, 1); // set modify
+        bm.unpin(Arc::clone(&buff[4].clone().unwrap()))?; // unpin 50
+        buff[4] = None;
+
+        // p91 senario
+        // pin(60); pin(70);
+        buff[5] = bm.pin(&BlockId::new("testfile", 60))?.into();
+        buff[6] = bm.pin(&BlockId::new("testfile", 70))?.into();
+
+        assert_eq!(bm.available(), 2);
+        println!("Final buffer Allocation:");
+        // bufferpool
+        let b = bm.bufferpool[0].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
+        assert_eq!(b.is_pinned(), true);
+        let b = bm.bufferpool[1].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 50)));
+        assert_eq!(b.is_pinned(), false);
         let b = bm.bufferpool[2].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 30)));
         assert_eq!(b.is_pinned(), false);
         let b = bm.bufferpool[3].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 40)));
-        assert_eq!(b.is_pinned(), false);
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
+        assert_eq!(b.is_pinned(), true);
 
         Ok(())
     }
