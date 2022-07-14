@@ -4,3 +4,27 @@ SELECT sname, grade, prof FROM student, enroll, section WHERE sid = student_id A
 SELECT sname, grade, prof, grad_year FROM student, enroll, einstein WHERE sid = student_id AND sect_id = section_id AND grad_year = 2022 AND grade = 'A+';
 SELECT sid, sname, dname, title, prof FROM student, dept, course, section WHERE did = major_id AND did = dept_id AND cid = course_id AND sname = 'name-2';
 SELECT sid, sname, dname, grad_year, birth, sex_name FROM student, dept, sex WHERE did = major_id AND sex = value;
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-5';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-7';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-1';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-3';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-6';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-2';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-9';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-4';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-8';
+UPDATE student SET birth = '1999-12-31' WHERE sname = 'name-2';
+UPDATE student SET birth = '1999-12-31' WHERE sname = 'name-4';
+UPDATE student SET birth = '1999-12-31' WHERE sname = 'name-6';
+UPDATE student SET birth = '1999-12-31' WHERE sname = 'name-8';
+SELECT sid, sname, grad_year, birth FROM student WHERE birth = '1999-12-31';
+SELECT sid, sname, dname, grad_year, birth FROM student, dept WHERE did = major_id AND birth = '1999-12-31'
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-5';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-7';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-1';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-3';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-6';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-2';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-9';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-4';
+SELECT sid, sname, grad_year, birth FROM student WHERE sname = 'name-8';
