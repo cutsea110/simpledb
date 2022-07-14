@@ -27,7 +27,7 @@ QUERY_SQL=`cat query.sql` # This query must be independent of DBSIZE.
 #
 case "${DBSIZE}" in
     "tiny")
-	BUFFER_MANAGERS_STR='"naive","naiveup","naivebis","fifo","lru","clock"'
+	BUFFER_MANAGERS_STR='"naive","naiveup","naivebis","naivebisup","fifo","fifoup","lru","lruup","clock"'
 	QUERY_PLANNERS_STR='"basic","heuristic"'
 	BLOCK_SIZES_STR='400,800,1200,2000,4000'
 	BUFFER_SIZES_STR='8,16,32,64,128'

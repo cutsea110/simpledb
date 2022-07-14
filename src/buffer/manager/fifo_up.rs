@@ -103,16 +103,16 @@ impl FifoUPBufferMgr {
         // hold the first modified page's index
         let mut first_modified: Option<(usize, Arc<Mutex<Buffer>>)> = None;
 
-        for i in 0..self.assigned_buffers.len() {
-            let buff = self.assigned_buffers[i].lock().unwrap();
+        for (i, b) in self.assigned_buffers.iter().enumerate() {
+            let buff = b.lock().unwrap();
 
             if !buff.is_pinned() {
                 if !buff.is_modified() {
                     // find unmodified page
-                    return Some((i, Arc::clone(&self.assigned_buffers[i])));
+                    return Some((i, Arc::clone(b)));
                 } else if first_modified.is_none() {
                     // hold first modified page
-                    first_modified = Some((i, Arc::clone(&self.assigned_buffers[i])));
+                    first_modified = Some((i, Arc::clone(b)));
                 }
             }
         }
