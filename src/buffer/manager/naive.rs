@@ -82,15 +82,10 @@ impl NaiveBufferMgr {
     }
     // The Naive Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
-        for i in 0..self.bufferpool.len() {
-            let buff = self.bufferpool[i].lock().unwrap();
-
-            if !buff.is_pinned() {
-                return Some(Arc::clone(&self.bufferpool[i]));
-            }
-        }
-
-        None
+        self.bufferpool
+            .iter()
+            .find(|x| !x.lock().unwrap().is_pinned())
+            .map(|x| Arc::clone(x))
     }
 }
 impl BufferMgr for NaiveBufferMgr {

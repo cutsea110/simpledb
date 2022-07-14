@@ -92,16 +92,16 @@ impl NaiveBisUPBufferMgr {
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
         let mut first_modified: Option<Arc<Mutex<Buffer>>> = None;
 
-        for i in 0..self.bufferpool.len() {
-            let buff = self.bufferpool[i].lock().unwrap();
+        for b in self.bufferpool.iter() {
+            let buff = b.lock().unwrap();
 
             if !buff.is_pinned() {
                 if !buff.is_modified() {
                     // find unmodified page
-                    return Some(Arc::clone(&self.bufferpool[i]));
+                    return Some(Arc::clone(b));
                 } else if first_modified.is_none() {
                     // hold first modified page
-                    first_modified = Some(Arc::clone(&self.bufferpool[i]));
+                    first_modified = Some(Arc::clone(b));
                 }
             }
         }
