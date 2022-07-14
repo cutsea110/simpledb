@@ -94,8 +94,7 @@ impl ClockUPBufferMgr {
     // The Clock with Unmodified Preferd Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
         // hold the first modified page's index
-        let mut first_modified: Option<Arc<Mutex<Buffer>>> = None;
-        let mut clock_hands_of_modified: Option<usize> = None;
+        let mut first_modified: Option<(usize, Arc<Mutex<Buffer>>)> = None;
 
         let buffsize = self.bufferpool.len();
 
@@ -113,16 +112,16 @@ impl ClockUPBufferMgr {
                     return Some(Arc::clone(b));
                 } else if first_modified.is_none() {
                     // hold first modified page
-                    clock_hands_of_modified = Some(idx);
-                    first_modified = Some(Arc::clone(b));
+                    first_modified = Some((idx, Arc::clone(b)));
                 }
             }
         }
 
-        if let Some(idx) = clock_hands_of_modified {
-            self.clock_hands = idx + 1;
-        }
-        first_modified
+        first_modified.map(|(idx, b)| {
+            self.clock_hands = idx + 1; // next call will start from after the replaced page.
+
+            return b;
+        })
     }
 }
 impl BufferMgr for ClockUPBufferMgr {
