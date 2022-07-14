@@ -9,9 +9,10 @@ use std::{
 use super::config::{self, SimpleDBConfig};
 use crate::{
     buffer::manager::{
-        clock::ClockBufferMgr, fifo::FifoBufferMgr, fifo_up::FifoUPBufferMgr, lru::LruBufferMgr,
-        lru_up::LruUPBufferMgr, naive::NaiveBufferMgr, naive_up::NaiveUPBufferMgr,
-        naivebis::NaiveBisBufferMgr, naivebis_up::NaiveBisUPBufferMgr, BufferMgr,
+        clock::ClockBufferMgr, clock_up::ClockUPBufferMgr, fifo::FifoBufferMgr,
+        fifo_up::FifoUPBufferMgr, lru::LruBufferMgr, lru_up::LruUPBufferMgr, naive::NaiveBufferMgr,
+        naive_up::NaiveUPBufferMgr, naivebis::NaiveBisBufferMgr, naivebis_up::NaiveBisUPBufferMgr,
+        BufferMgr,
     },
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
@@ -192,6 +193,9 @@ impl SimpleDB {
                 }
                 config::BufferMgr::Clock => {
                     Arc::new(Mutex::new(ClockBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::ClockUp => {
+                    Arc::new(Mutex::new(ClockUPBufferMgr::new(bm_fm, bm_lm, numsbuff)))
                 }
             };
 
