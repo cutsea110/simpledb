@@ -28,6 +28,7 @@ arg_enum! {
         LRU,
         LRUUp,
         Clock,
+        ClockUp,
     }
 }
 
