@@ -9,8 +9,9 @@ use std::{
 use super::config::{self, SimpleDBConfig};
 use crate::{
     buffer::manager::{
-        clock::ClockBufferMgr, fifo::FifoBufferMgr, lru::LruBufferMgr, naive::NaiveBufferMgr,
-        naive_up::NaiveUPBufferMgr, naivebis::NaiveBisBufferMgr, BufferMgr,
+        clock::ClockBufferMgr, fifo::FifoBufferMgr, fifo_up::FifoUPBufferMgr, lru::LruBufferMgr,
+        lru_up::LruUPBufferMgr, naive::NaiveBufferMgr, naive_up::NaiveUPBufferMgr,
+        naivebis::NaiveBisBufferMgr, naivebis_up::NaiveBisUPBufferMgr, BufferMgr,
     },
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
@@ -174,11 +175,20 @@ impl SimpleDB {
                 config::BufferMgr::NaiveBis => {
                     Arc::new(Mutex::new(NaiveBisBufferMgr::new(bm_fm, bm_lm, numsbuff)))
                 }
+                config::BufferMgr::NaiveBisUp => {
+                    Arc::new(Mutex::new(NaiveBisUPBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
                 config::BufferMgr::FIFO => {
                     Arc::new(Mutex::new(FifoBufferMgr::new(bm_fm, bm_lm, numsbuff)))
                 }
+                config::BufferMgr::FIFOUp => {
+                    Arc::new(Mutex::new(FifoUPBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
                 config::BufferMgr::LRU => {
                     Arc::new(Mutex::new(LruBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::LRUUp => {
+                    Arc::new(Mutex::new(LruUPBufferMgr::new(bm_fm, bm_lm, numsbuff)))
                 }
                 config::BufferMgr::Clock => {
                     Arc::new(Mutex::new(ClockBufferMgr::new(bm_fm, bm_lm, numsbuff)))

@@ -22,8 +22,11 @@ arg_enum! {
         Naive,
         NaiveUp,
         NaiveBis,
+        NaiveBisUp,
         FIFO,
+        FIFOUp,
         LRU,
+        LRUUp,
         Clock,
     }
 }
