@@ -13,6 +13,7 @@ pub mod clock; // by exercise 4.14
 pub mod fifo; // by exercise 4.14
 pub mod fifo_up; // with unmodified preferd
 pub mod lru; // by exercise 4.14
+pub mod lru_up; // with unmodified preferd
 pub mod naive;
 pub mod naive_up; // with unmodified preferd
 pub mod naivebis; // by exercise 4.17

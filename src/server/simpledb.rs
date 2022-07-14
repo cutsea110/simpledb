@@ -68,7 +68,7 @@ pub struct SimpleDB {
     // managers
     fm: Arc<Mutex<FileMgr>>,
     lm: Arc<Mutex<LogMgr>>,
-    bm: Arc<Mutex<dyn BufferMgr>>,
+    bm: Arc<Mutex<dyn BufferMgr + Send>>,
     mdm: Option<Arc<Mutex<MetadataMgr>>>,
     qp: Option<Arc<Mutex<dyn QueryPlanner>>>,
     up: Option<Arc<Mutex<dyn UpdatePlanner>>>,
@@ -130,7 +130,7 @@ impl SimpleDB {
     pub fn log_mgr(&self) -> Arc<Mutex<LogMgr>> {
         Arc::clone(&self.lm)
     }
-    pub fn buffer_mgr(&self) -> Arc<Mutex<dyn BufferMgr>> {
+    pub fn buffer_mgr(&self) -> Arc<Mutex<dyn BufferMgr + Send>> {
         Arc::clone(&self.bm)
     }
     pub fn metadata_mgr(&self) -> Option<Arc<Mutex<MetadataMgr>>> {
@@ -164,7 +164,7 @@ impl SimpleDB {
             ));
             let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), LOG_FILE).unwrap()));
             let (bm_fm, bm_lm, numsbuff) = (Arc::clone(&fm), Arc::clone(&lm), cfg.num_of_buffers);
-            let bm: Arc<Mutex<dyn BufferMgr>> = match cfg.buffer_manager {
+            let bm: Arc<Mutex<dyn BufferMgr + Send>> = match cfg.buffer_manager {
                 config::BufferMgr::Naive => {
                     Arc::new(Mutex::new(NaiveBufferMgr::new(bm_fm, bm_lm, numsbuff)))
                 }

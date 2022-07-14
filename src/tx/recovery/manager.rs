@@ -1,7 +1,10 @@
 use anyhow::Result;
 use chrono::NaiveDate;
 use core::fmt;
-use std::sync::{Arc, Mutex};
+use std::{
+    fmt::Debug,
+    sync::{Arc, Mutex},
+};
 
 use super::logrecord::{
     self, checkpoint_record::CheckpointRecord, commit_record::CommitRecord,
@@ -32,12 +35,18 @@ impl fmt::Display for RecoveryMgrError {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RecoveryMgr {
     lm: Arc<Mutex<LogMgr>>,
-    bm: Arc<Mutex<dyn BufferMgr>>,
+    bm: Arc<Mutex<dyn BufferMgr + Send>>,
     tx: Arc<Mutex<Transaction>>,
     txnum: i32,
+}
+
+impl fmt::Debug for RecoveryMgr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "RecoveryMgr(Tx = {})", self.txnum)
+    }
 }
 
 impl RecoveryMgr {
@@ -45,7 +54,7 @@ impl RecoveryMgr {
         tx: Arc<Mutex<Transaction>>,
         txnum: i32,
         lm: Arc<Mutex<LogMgr>>,
-        bm: Arc<Mutex<dyn BufferMgr>>,
+        bm: Arc<Mutex<dyn BufferMgr + Send>>,
     ) -> Result<Self> {
         StartRecord::write_to_log(Arc::clone(&lm), txnum)?;
 
