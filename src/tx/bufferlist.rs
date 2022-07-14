@@ -1,7 +1,6 @@
 use anyhow::Result;
 use std::{
     collections::HashMap,
-    fmt,
     sync::{Arc, Mutex},
 };
 
@@ -10,21 +9,15 @@ use crate::{
     file::block_id::BlockId,
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct BufferList {
     buffers: HashMap<BlockId, Arc<Mutex<Buffer>>>,
     pins: Vec<BlockId>,
-    bm: Arc<Mutex<dyn BufferMgr + Send>>,
-}
-
-impl fmt::Debug for BufferList {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "BufferList")
-    }
+    bm: Arc<Mutex<dyn BufferMgr>>,
 }
 
 impl BufferList {
-    pub fn new(bm: Arc<Mutex<dyn BufferMgr + Send>>) -> Self {
+    pub fn new(bm: Arc<Mutex<dyn BufferMgr>>) -> Self {
         Self {
             buffers: HashMap::new(),
             pins: vec![],

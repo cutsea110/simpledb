@@ -1,7 +1,6 @@
 use anyhow::Result;
 use chrono::NaiveDate;
 use std::{
-    fmt,
     sync::{Arc, Mutex},
     usize,
 };
@@ -19,23 +18,17 @@ use crate::{
 
 static END_OF_FILE: i32 = -1;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Transaction {
     // static member (shared by all Transaction)
     next_tx_num: Arc<Mutex<i32>>,
 
     recovery_mgr: Option<Arc<Mutex<RecoveryMgr>>>,
     concur_mgr: ConcurrencyMgr,
-    bm: Arc<Mutex<dyn BufferMgr + Send>>,
+    bm: Arc<Mutex<dyn BufferMgr>>,
     fm: Arc<Mutex<FileMgr>>,
     txnum: i32,
     mybuffers: BufferList,
-}
-
-impl fmt::Debug for Transaction {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Tx: {}", self.txnum)
-    }
 }
 
 impl Transaction {
@@ -45,7 +38,7 @@ impl Transaction {
 
         fm: Arc<Mutex<FileMgr>>,
         lm: Arc<Mutex<LogMgr>>,
-        bm: Arc<Mutex<dyn BufferMgr + Send>>,
+        bm: Arc<Mutex<dyn BufferMgr>>,
     ) -> Result<Self> {
         let mut tran = Self {
             next_tx_num,

@@ -20,7 +20,6 @@ mod tests {
         },
         driver::EmbeddedDriver,
     };
-    use crate::server::config::{self, SimpleDBConfig};
 
     #[test]
     fn unit_test() -> Result<()> {
@@ -75,13 +74,7 @@ mod tests {
         ];
 
         // driver
-        let db_config = SimpleDBConfig {
-            block_size: 400,
-            num_of_buffers: 8,
-            buffer_manager: config::BufferMgr::LRU,
-            query_planner: config::QueryPlanner::Heuristic,
-        };
-        let d = EmbeddedDriver::new(db_config);
+        let d = EmbeddedDriver::new();
         // connect database
         let mut conn = d.connect("_test/rdbc")?;
         // init database
