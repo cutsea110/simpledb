@@ -58,9 +58,9 @@ QUERY_PLANNERS=`echo ${QUERY_PLANNERS_STR} | sed 's/"//g' | tr "," "\n"`
 BLOCK_SIZES=`echo ${BLOCK_SIZES_STR} | sed 's/"//g' | tr "," "\n"`
 BUFFER_SIZES=`echo ${BUFFER_SIZES_STR} | sed 's/"//g' | tr "," "\n"`
 
-for bm in ${BUFFER_MANAGERS}
+for qp in ${QUERY_PLANNERS}
 do
-    for qp in ${QUERY_PLANNERS}
+    for bm in ${BUFFER_MANAGERS}
     do
 	for blksz in ${BLOCK_SIZES}
 	do
@@ -106,15 +106,15 @@ EOM
     done
 done
 
-for bm in ${BUFFER_MANAGERS}
+for qp in ${QUERY_PLANNERS}
 do
-    for qp in ${QUERY_PLANNERS}
+    for bm in ${BUFFER_MANAGERS}
     do
 	# merge over the same buffer-manager and query-planner
-	cat ${JSON_DIR}/${bm}_${qp}_*.json | \
+	cat `ls --color=never -rt ${JSON_DIR}/${bm}_${qp}_*.json` | \
 	    \jq -s '[.[] |
+                     .config."query-planner"          as $qp    |
                      .config."buffer-manager"         as $bm    |
-		     .config."query-planner"          as $qp    |
                      (.config."block-size"|tostring)  as $blksz |
                      (.config."buffer-size"|tostring) as $bfsz  |
                      ($blksz+"x"+$bfsz)               as $nm    |
@@ -154,10 +154,10 @@ do
     for bfsz in ${BUFFER_SIZES}
     do
 	# merge over the same block-size and buffer-size
-	cat ${JSON_DIR}/*_${blksz}x${bfsz}.json | \
+	cat `ls --color=never -rt ${JSON_DIR}/*_${blksz}x${bfsz}.json` | \
 	    \jq -s '[.[] |
+                     .config."query-planner"          as $qp    |
                      .config."buffer-manager"         as $bm    |
-		     .config."query-planner"          as $qp    |
                      (.config."block-size"|tostring)  as $blksz |
                      (.config."buffer-size"|tostring) as $bfsz  |
                      ($bm+"-"+$qp)                    as $nm    |
