@@ -26,8 +26,8 @@
 	  $.when(
 	      $.getJSON(`./${DBSIZE}/summary/parameters.json`)
 	  ).then(function (params) {
-	      $.each(params["buffer_managers"], function(i, bm) {
-		  $.each(params["query_planners"], function(j, qp) {
+	      $.each(params["query_planners"], function(j, qp) {
+		  $.each(params["buffer_managers"], function(i, bm) {
 
 		      var tr = $('<tr></tr>');
 		      tr.append($('<td></td>').append($('<div></div>').attr('id', `rw_${bm}_${qp}`)));
