@@ -90,17 +90,22 @@ impl LruUPBufferMgr {
         drop(b); // release lock
         Ok(buff.unwrap())
     }
-    fn try_to_unpin(&mut self, blk: &BlockId) -> Result<()> {
-        if let Some((i, b)) = self
-            .unassigned_buffers
-            .iter()
-            .enumerate()
-            .find(|(_, x)| x.lock().unwrap().block() == Some(blk))
-            .map(|(i, x)| (i, Arc::clone(x)))
-        {
-            self.unassigned_buffers.remove(i);
-            self.unassigned_buffers.push(b);
+    fn try_to_unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
+        let blk: Option<BlockId> = buff.lock().unwrap().block().map(|b| b.clone());
+
+        if let Some(blk) = blk {
+            if let Some(i) = self
+                .unassigned_buffers
+                .iter()
+                .enumerate()
+                .find(|(_, x)| x.lock().unwrap().block() == Some(&blk))
+                .map(|(i, _)| i)
+            {
+                self.unassigned_buffers.remove(i);
+            }
         }
+
+        self.unassigned_buffers.push(buff);
 
         Ok(())
     }
@@ -149,10 +154,7 @@ impl BufferMgr for LruUPBufferMgr {
     fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
         // The LRU strategy
         // update unassigned_buffers
-        let blk = buff.lock().unwrap().block().map(|b: &BlockId| b.clone());
-        if blk.is_some() {
-            self.try_to_unpin(&blk.unwrap())?;
-        }
+        self.try_to_unpin(Arc::clone(&buff))?;
 
         let mut b = buff.lock().unwrap();
 
