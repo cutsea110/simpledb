@@ -91,14 +91,14 @@ impl LruBufferMgr {
         Ok(buff.unwrap())
     }
     fn try_to_unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
-        let blk = buff.lock().unwrap().block().map(|b| b.clone());
+        let blk: Option<BlockId> = buff.lock().unwrap().block().map(|b| b.clone());
 
-        if blk.is_some() {
+        if let Some(blk) = blk {
             if let Some(i) = self
                 .unassigned_buffers
                 .iter()
                 .enumerate()
-                .find(|(_, x)| x.lock().unwrap().block() == Some(&blk.as_ref().unwrap()))
+                .find(|(_, x)| x.lock().unwrap().block() == Some(&blk))
                 .map(|(i, _)| i)
             {
                 self.unassigned_buffers.remove(i);
