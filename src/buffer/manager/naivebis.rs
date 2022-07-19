@@ -45,22 +45,21 @@ impl NaiveBisBufferMgr {
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
-        let mut buff = self.find_existing_buffer(blk);
-        match buff {
+        let mut found = self.find_existing_buffer(blk);
+        match found {
             Some(_) => {
                 // for statistics
                 self.num_of_cache_hits += 1;
             }
             None => {
-                let found = self.choose_unpinned_buffer();
+                found = self.choose_unpinned_buffer();
                 match found {
                     None => {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
-                    Some((i, b)) => {
-                        buff = Some(Arc::clone(&b));
+                    Some((i, ref b)) => {
                         // release blk
-                        if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
+                        if let Some(blk) = b.lock().unwrap().block() {
                             self.assigned_buffers.remove(blk);
                         }
                         // add blk
@@ -68,26 +67,26 @@ impl NaiveBisBufferMgr {
                     }
                 }
 
-                let mut b = buff.as_ref().unwrap().lock().unwrap();
+                let mut b = found.as_ref().unwrap().1.lock().unwrap();
                 b.assign_to_block(blk.clone())?;
                 // for statistics
                 self.num_of_buffer_assigned += 1;
             }
         }
 
-        let mut b = buff.as_ref().unwrap().lock().unwrap();
+        let mut b = found.as_ref().unwrap().1.lock().unwrap();
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) -= 1;
         }
         b.pin();
 
         drop(b); // release lock
-        Ok(buff.unwrap())
+        Ok(found.unwrap().1)
     }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
+    fn find_existing_buffer(&self, blk: &BlockId) -> Option<(usize, Arc<Mutex<Buffer>>)> {
         self.assigned_buffers
             .get(blk)
-            .map(|i: &usize| Arc::clone(&self.bufferpool[*i]))
+            .map(|i: &usize| (*i, Arc::clone(&self.bufferpool[*i])))
     }
     // The Naive Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<(usize, Arc<Mutex<Buffer>>)> {
