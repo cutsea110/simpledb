@@ -24,7 +24,7 @@ pub struct NaiveBisBufferMgr {
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
-    assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
+    assigned_buffers: HashMap<BlockId, usize>,
 }
 
 impl NaiveBisBufferMgr {
@@ -40,7 +40,7 @@ impl NaiveBisBufferMgr {
             num_of_total_unpinned: 0,
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
-            assigned_block_ids: HashMap::new(),
+            assigned_buffers: HashMap::new(),
         }
     }
     // TODO: fix for thread safe
@@ -57,15 +57,14 @@ impl NaiveBisBufferMgr {
                     None => {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
-                    Some(b) => {
+                    Some((i, b)) => {
                         buff = Some(Arc::clone(&b));
                         // release blk
                         if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
-                            self.assigned_block_ids.remove(blk);
+                            self.assigned_buffers.remove(blk);
                         }
                         // add blk
-                        self.assigned_block_ids
-                            .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+                        self.assigned_buffers.insert(blk.clone(), i);
                     }
                 }
 
@@ -86,14 +85,17 @@ impl NaiveBisBufferMgr {
         Ok(buff.unwrap())
     }
     fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
-        self.assigned_block_ids.get(blk).map(|b| Arc::clone(b))
+        self.assigned_buffers
+            .get(blk)
+            .map(|i: &usize| Arc::clone(&self.bufferpool[*i]))
     }
     // The Naive Strategy
-    fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
+    fn choose_unpinned_buffer(&mut self) -> Option<(usize, Arc<Mutex<Buffer>>)> {
         self.bufferpool
             .iter()
-            .find(|x| !x.lock().unwrap().is_pinned())
-            .map(|x| Arc::clone(x))
+            .enumerate()
+            .find(|(_, x)| !x.lock().unwrap().is_pinned())
+            .map(|(i, x)| (i, Arc::clone(x)))
     }
 }
 impl BufferMgr for NaiveBisBufferMgr {
