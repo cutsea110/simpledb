@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -25,6 +25,7 @@ pub struct NaiveBisBufferMgr {
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
     assigned_buffers: HashMap<BlockId, usize>,
+    unassigned_buffers: BTreeSet<usize>,
 }
 
 impl NaiveBisBufferMgr {
@@ -32,6 +33,10 @@ impl NaiveBisBufferMgr {
         let bufferpool = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
+        let mut unassigned_buffers = BTreeSet::new();
+        for i in 0..numbuffs {
+            unassigned_buffers.insert(i);
+        }
 
         Self {
             bufferpool,
@@ -41,13 +46,18 @@ impl NaiveBisBufferMgr {
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
             assigned_buffers: HashMap::new(),
+            unassigned_buffers,
         }
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         let mut found = self.find_existing_buffer(blk);
         match found {
-            Some(_) => {
+            Some((i, ref b)) => {
+                if !b.lock().unwrap().is_pinned() {
+                    self.unassigned_buffers.remove(&i);
+                }
+
                 // for statistics
                 self.num_of_cache_hits += 1;
             }
@@ -90,11 +100,9 @@ impl NaiveBisBufferMgr {
     }
     // The Naive Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<(usize, Arc<Mutex<Buffer>>)> {
-        self.bufferpool
-            .iter()
-            .enumerate()
-            .find(|(_, x)| !x.lock().unwrap().is_pinned())
-            .map(|(i, x)| (i, Arc::clone(x)))
+        self.unassigned_buffers
+            .pop_first()
+            .map(|i: usize| (i, Arc::clone(&self.bufferpool[i])))
     }
 }
 impl BufferMgr for NaiveBisBufferMgr {
@@ -123,6 +131,12 @@ impl BufferMgr for NaiveBisBufferMgr {
 
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) += 1;
+
+            if let Some(blk) = b.block() {
+                if let Some(idx) = self.assigned_buffers.get(blk) {
+                    self.unassigned_buffers.insert(*idx);
+                }
+            }
         }
 
         Ok(())

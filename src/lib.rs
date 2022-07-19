@@ -1,3 +1,5 @@
+#![feature(map_first_last)]
+
 pub mod buffer;
 pub mod file;
 pub mod index;
