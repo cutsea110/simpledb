@@ -13,6 +13,41 @@ use crate::{
     log::manager::LogMgr,
 };
 
+// State Transition Diagram
+// ========================
+//
+//   Initialized
+// +--------------+   choose (3)  +---------------+  find (1)
+// | unpinned     |-------------->| pinned        |----------,
+// | blk: -       |               | blk: #3       |          |
+// |              |    ,----------|               |<---------'
+// +--------------+    |          +---------------+
+//                     |              A       A
+//                     |   choose (4) |       | find (2)
+//                     |              |       |
+//           unpin (5) |          +---------------+
+//                     |          | unpinned      |
+//                     `--------->| blk: #5       |
+//                                |               |
+//                                +---------------+
+//
+//  (1) find
+//      don't care.
+//
+//  (2) find
+//      remove from unassigned_buffers.
+//
+//  (3) choose
+//      insert into assigned_buffers.
+//      remove from unassigned_buffers.
+//
+//  (4) choose
+//      reset to assigned_buffers.
+//      remove from unassigned_buffers.
+//
+//  (5) unpin
+//      insert into unassigned_buffers, if the buffer hasn't pinned.
+//
 #[derive(Debug, Clone)]
 pub struct NaiveBisBufferMgr {
     bufferpool: Vec<Arc<Mutex<Buffer>>>,
