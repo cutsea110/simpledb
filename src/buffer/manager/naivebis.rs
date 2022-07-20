@@ -88,11 +88,7 @@ impl NaiveBisBufferMgr {
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
         let mut found = self.find_existing_buffer(blk);
         match found {
-            Some((i, ref b)) => {
-                if !b.lock().unwrap().is_pinned() {
-                    self.unassigned_buffers.remove(&i);
-                }
-
+            Some(_) => {
                 // for statistics
                 self.num_of_cache_hits += 1;
             }
@@ -102,42 +98,51 @@ impl NaiveBisBufferMgr {
                     None => {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
-                    Some((i, ref b)) => {
-                        // release blk
-                        if let Some(blk) = b.lock().unwrap().block() {
-                            self.assigned_buffers.remove(blk);
-                        }
+                    Some(i) => {
                         // add blk
                         self.assigned_buffers.insert(blk.clone(), i);
+
+                        let mut b = self.bufferpool[i].lock().unwrap();
+                        b.assign_to_block(blk.clone())?;
+                        // for statistics
+                        self.num_of_buffer_assigned += 1;
                     }
                 }
-
-                let mut b = found.as_ref().unwrap().1.lock().unwrap();
-                b.assign_to_block(blk.clone())?;
-                // for statistics
-                self.num_of_buffer_assigned += 1;
             }
         }
 
-        let mut b = found.as_ref().unwrap().1.lock().unwrap();
+        let i = found.unwrap();
+        let mut b = self.bufferpool[i].lock().unwrap();
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) -= 1;
         }
         b.pin();
 
         drop(b); // release lock
-        Ok(found.unwrap().1)
+        Ok(Arc::clone(&self.bufferpool[i]))
     }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<(usize, Arc<Mutex<Buffer>>)> {
-        self.assigned_buffers
-            .get(blk)
-            .map(|i: &usize| (*i, Arc::clone(&self.bufferpool[*i])))
+    fn find_existing_buffer(&mut self, blk: &BlockId) -> Option<usize> {
+        if let Some(i) = self.assigned_buffers.get(blk) {
+            if !self.bufferpool[*i].lock().unwrap().is_pinned() {
+                self.unassigned_buffers.remove(i);
+            }
+            return Some(*i);
+        }
+
+        None
     }
     // The Naive Strategy
-    fn choose_unpinned_buffer(&mut self) -> Option<(usize, Arc<Mutex<Buffer>>)> {
-        self.unassigned_buffers
-            .pop_first()
-            .map(|i: usize| (i, Arc::clone(&self.bufferpool[i])))
+    fn choose_unpinned_buffer(&mut self) -> Option<usize> {
+        if let Some(i) = self.unassigned_buffers.pop_first() {
+            // release blk
+            if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
+                self.assigned_buffers.remove(blk);
+            }
+
+            return Some(i);
+        }
+
+        None
     }
 }
 impl BufferMgr for NaiveBisBufferMgr {
