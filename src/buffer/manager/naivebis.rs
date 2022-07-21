@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -13,6 +13,41 @@ use crate::{
     log::manager::LogMgr,
 };
 
+// State Transition Diagram
+// ========================
+//
+//   Initialized
+// +--------------+   choose (3)  +---------------+  find (1)
+// | unpinned     |-------------->| pinned        |----------,
+// | blk: -       |               | blk: #3       |          |
+// |              |    ,----------|               |<---------'
+// +--------------+    |          +---------------+
+//                     |              A       A
+//                     |   choose (4) |       | find (2)
+//                     |              |       |
+//           unpin (5) |          +---------------+
+//                     |          | unpinned      |
+//                     `--------->| blk: #5       |
+//                                |               |
+//                                +---------------+
+//
+//  (1) find
+//      don't care.
+//
+//  (2) find
+//      remove from unassigned_buffers.
+//
+//  (3) choose
+//      insert into assigned_buffers.
+//      remove from unassigned_buffers.
+//
+//  (4) choose
+//      reset to assigned_buffers.
+//      remove from unassigned_buffers.
+//
+//  (5) unpin
+//      insert into unassigned_buffers, if the buffer hasn't pinned.
+//
 #[derive(Debug, Clone)]
 pub struct NaiveBisBufferMgr {
     bufferpool: Vec<Arc<Mutex<Buffer>>>,
@@ -24,7 +59,8 @@ pub struct NaiveBisBufferMgr {
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
-    assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
+    assigned_buffers: HashMap<BlockId, usize>,
+    unassigned_buffers: BTreeSet<usize>,
 }
 
 impl NaiveBisBufferMgr {
@@ -32,6 +68,10 @@ impl NaiveBisBufferMgr {
         let bufferpool = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
+        let mut unassigned_buffers = BTreeSet::new();
+        for i in 0..numbuffs {
+            unassigned_buffers.insert(i);
+        }
 
         Self {
             bufferpool,
@@ -40,60 +80,69 @@ impl NaiveBisBufferMgr {
             num_of_total_unpinned: 0,
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
-            assigned_block_ids: HashMap::new(),
+            assigned_buffers: HashMap::new(),
+            unassigned_buffers,
         }
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
-        let mut buff = self.find_existing_buffer(blk);
-        match buff {
+        let mut found = self.find_existing_buffer(blk);
+        match found {
             Some(_) => {
                 // for statistics
                 self.num_of_cache_hits += 1;
             }
             None => {
-                let found = self.choose_unpinned_buffer();
+                found = self.choose_unpinned_buffer();
                 match found {
                     None => {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
-                    Some(b) => {
-                        buff = Some(Arc::clone(&b));
-                        // release blk
-                        if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
-                            self.assigned_block_ids.remove(blk);
-                        }
+                    Some(i) => {
                         // add blk
-                        self.assigned_block_ids
-                            .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+                        self.assigned_buffers.insert(blk.clone(), i);
+
+                        let mut b = self.bufferpool[i].lock().unwrap();
+                        b.assign_to_block(blk.clone())?;
+                        // for statistics
+                        self.num_of_buffer_assigned += 1;
                     }
                 }
-
-                let mut b = buff.as_ref().unwrap().lock().unwrap();
-                b.assign_to_block(blk.clone())?;
-                // for statistics
-                self.num_of_buffer_assigned += 1;
             }
         }
 
-        let mut b = buff.as_ref().unwrap().lock().unwrap();
+        let i = found.unwrap();
+        let mut b = self.bufferpool[i].lock().unwrap();
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) -= 1;
         }
         b.pin();
 
         drop(b); // release lock
-        Ok(buff.unwrap())
+        Ok(Arc::clone(&self.bufferpool[i]))
     }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
-        self.assigned_block_ids.get(blk).map(|b| Arc::clone(b))
+    fn find_existing_buffer(&mut self, blk: &BlockId) -> Option<usize> {
+        if let Some(i) = self.assigned_buffers.get(blk) {
+            if !self.bufferpool[*i].lock().unwrap().is_pinned() {
+                self.unassigned_buffers.remove(i);
+            }
+            return Some(*i);
+        }
+
+        None
     }
     // The Naive Strategy
-    fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
-        self.bufferpool
-            .iter()
-            .find(|x| !x.lock().unwrap().is_pinned())
-            .map(|x| Arc::clone(x))
+    fn choose_unpinned_buffer(&mut self) -> Option<usize> {
+        if let Some(i) = self.unassigned_buffers.pop_first() {
+            // release blk
+            if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
+                self.assigned_buffers.remove(blk);
+            }
+
+            return Some(i);
+        }
+
+        None
     }
 }
 impl BufferMgr for NaiveBisBufferMgr {
@@ -122,6 +171,12 @@ impl BufferMgr for NaiveBisBufferMgr {
 
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) += 1;
+
+            if let Some(blk) = b.block() {
+                if let Some(idx) = self.assigned_buffers.get(blk) {
+                    self.unassigned_buffers.insert(*idx);
+                }
+            }
         }
 
         Ok(())
