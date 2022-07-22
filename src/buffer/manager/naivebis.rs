@@ -59,7 +59,9 @@ pub struct NaiveBisBufferMgr {
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
+    // Maps of the block_id to the index of the assigned self.bufferpool.
     assigned_block_ids: HashMap<BlockId, usize>,
+    // unassigned/unpinned indeces of self.bufferpool.
     unassigned_buffers: BTreeSet<usize>,
 }
 
