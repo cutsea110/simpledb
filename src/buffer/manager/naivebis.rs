@@ -59,7 +59,9 @@ pub struct NaiveBisBufferMgr {
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
-    assigned_buffers: HashMap<BlockId, usize>,
+    // Maps of the block_id to the index of the assigned self.bufferpool.
+    assigned_block_ids: HashMap<BlockId, usize>,
+    // unassigned/unpinned indeces of self.bufferpool.
     unassigned_buffers: BTreeSet<usize>,
 }
 
@@ -80,7 +82,7 @@ impl NaiveBisBufferMgr {
             num_of_total_unpinned: 0,
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
-            assigned_buffers: HashMap::new(),
+            assigned_block_ids: HashMap::new(),
             unassigned_buffers,
         }
     }
@@ -100,7 +102,7 @@ impl NaiveBisBufferMgr {
                     }
                     Some(i) => {
                         // add blk
-                        self.assigned_buffers.insert(blk.clone(), i);
+                        self.assigned_block_ids.insert(blk.clone(), i);
 
                         let mut b = self.bufferpool[i].lock().unwrap();
                         b.assign_to_block(blk.clone())?;
@@ -122,7 +124,7 @@ impl NaiveBisBufferMgr {
         Ok(Arc::clone(&self.bufferpool[i]))
     }
     fn find_existing_buffer(&mut self, blk: &BlockId) -> Option<usize> {
-        if let Some(i) = self.assigned_buffers.get(blk) {
+        if let Some(i) = self.assigned_block_ids.get(blk) {
             if !self.bufferpool[*i].lock().unwrap().is_pinned() {
                 self.unassigned_buffers.remove(i);
             }
@@ -136,7 +138,7 @@ impl NaiveBisBufferMgr {
         if let Some(i) = self.unassigned_buffers.pop_first() {
             // release blk
             if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
-                self.assigned_buffers.remove(blk);
+                self.assigned_block_ids.remove(blk);
             }
 
             return Some(i);
@@ -173,7 +175,7 @@ impl BufferMgr for NaiveBisBufferMgr {
             *(self.num_available.lock().unwrap()) += 1;
 
             if let Some(blk) = b.block() {
-                if let Some(idx) = self.assigned_buffers.get(blk) {
+                if let Some(idx) = self.assigned_block_ids.get(blk) {
                     self.unassigned_buffers.insert(*idx);
                 }
             }
