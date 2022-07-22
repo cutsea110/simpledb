@@ -67,19 +67,14 @@ impl FifoBufferMgr {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
                     Some(i) => {
-                        // update assigned_block_ids
-                        if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
-                            self.assigned_block_ids.remove(blk);
-                        }
                         self.assigned_block_ids.insert(blk.clone(), i);
+
+                        let mut b = self.bufferpool[i].lock().unwrap();
+                        b.assign_to_block(blk.clone())?;
+                        // for statistics
+                        self.num_of_buffer_assigned += 1;
                     }
                 }
-
-                let i = found.unwrap();
-                let mut b = self.bufferpool[i].lock().unwrap();
-                b.assign_to_block(blk.clone())?;
-                // for statistics
-                self.num_of_buffer_assigned += 1;
             }
         }
 
@@ -106,6 +101,11 @@ impl FifoBufferMgr {
             .map(|(i, j)| (i, *j));
 
         if let Some((i, j)) = found {
+            // release blk
+            if let Some(blk) = self.bufferpool[j].lock().unwrap().block() {
+                self.assigned_block_ids.remove(blk);
+            }
+
             self.assigned_buffers.remove(i);
             self.assigned_buffers.push_back(j);
         }
