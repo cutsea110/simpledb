@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -28,7 +28,7 @@ pub struct FifoBufferMgr {
     assigned_block_ids: HashMap<BlockId, usize>,
     // extends by exercise 4.14
     // assigned indexes of the self.bufferpool
-    assigned_buffers: VecDeque<usize>,
+    assigned_buffers: Vec<usize>,
 }
 
 impl FifoBufferMgr {
@@ -36,10 +36,7 @@ impl FifoBufferMgr {
         let bufferpool: Vec<Arc<Mutex<Buffer>>> = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
-        let mut assigned_buffers = VecDeque::new();
-        for i in 0..numbuffs {
-            assigned_buffers.push_back(i);
-        }
+        let assigned_buffers = (0..numbuffs).into_iter().collect();
 
         Self {
             bufferpool,
@@ -107,7 +104,7 @@ impl FifoBufferMgr {
             }
 
             self.assigned_buffers.remove(i);
-            self.assigned_buffers.push_back(j);
+            self.assigned_buffers.push(j);
         }
 
         found.map(|(_, j)| j)
