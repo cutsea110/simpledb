@@ -61,10 +61,6 @@ impl ClockBufferMgr {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
                     Some(i) => {
-                        // release blk
-                        if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
-                            self.assigned_block_ids.remove(blk);
-                        }
                         // add blk
                         self.assigned_block_ids.insert(blk.clone(), i);
 
@@ -96,7 +92,13 @@ impl ClockBufferMgr {
 
         for i in self.clock_hands..self.clock_hands + buffsize {
             let idx = i % buffsize;
-            if !self.bufferpool[idx].lock().unwrap().is_pinned() {
+            let buff = self.bufferpool[idx].lock().unwrap();
+            if !buff.is_pinned() {
+                // release blk
+                if let Some(blk) = buff.block() {
+                    self.assigned_block_ids.remove(blk);
+                }
+
                 // Update the hands for the next time this function is called
                 self.clock_hands = idx + 1; // next call will start from after the replaced page.
 
