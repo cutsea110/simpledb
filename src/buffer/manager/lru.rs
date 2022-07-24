@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -26,7 +26,7 @@ pub struct LruBufferMgr {
     // Let only try_to_pin to handle this HashMap.
     assigned_block_ids: HashMap<BlockId, usize>,
     // extends by exercise 4.14
-    unassigned_buffers: Vec<usize>,
+    unassigned_buffers: VecDeque<usize>,
 }
 
 impl LruBufferMgr {
@@ -96,7 +96,7 @@ impl LruBufferMgr {
                 .map(|(i, j)| (i, *j))
             {
                 self.unassigned_buffers.remove(i);
-                self.unassigned_buffers.push(j);
+                self.unassigned_buffers.push_back(j);
             }
         }
 
