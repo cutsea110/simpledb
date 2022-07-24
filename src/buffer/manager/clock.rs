@@ -24,7 +24,7 @@ pub struct ClockBufferMgr {
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
-    assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
+    assigned_block_ids: HashMap<BlockId, usize>,
     // extends by exercise 4.14
     clock_hands: usize,
 }
@@ -48,51 +48,50 @@ impl ClockBufferMgr {
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
-        let mut buff = self.find_existing_buffer(blk);
-        match buff {
+        let mut found = self.find_existing_buffer(blk);
+        match found {
             Some(_) => {
                 // for statistics
                 self.num_of_cache_hits += 1;
             }
             None => {
-                let found = self.choose_unpinned_buffer();
+                found = self.choose_unpinned_buffer();
                 match found {
                     None => {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
-                    Some(b) => {
-                        buff = Some(Arc::clone(&b));
+                    Some(i) => {
                         // release blk
-                        if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
+                        if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
                             self.assigned_block_ids.remove(blk);
                         }
                         // add blk
-                        self.assigned_block_ids
-                            .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
+                        self.assigned_block_ids.insert(blk.clone(), i);
+
+                        let mut b = self.bufferpool[i].lock().unwrap();
+                        b.assign_to_block(blk.clone())?;
+                        // for statistics
+                        self.num_of_buffer_assigned += 1;
                     }
                 }
-
-                let mut b = buff.as_ref().unwrap().lock().unwrap();
-                b.assign_to_block(blk.clone())?;
-                // for statistics
-                self.num_of_buffer_assigned += 1;
             }
         }
 
-        let mut b = buff.as_ref().unwrap().lock().unwrap();
+        let i = found.unwrap();
+        let mut b = self.bufferpool[i].lock().unwrap();
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) -= 1;
         }
         b.pin();
 
         drop(b); // release lock
-        Ok(buff.unwrap())
+        Ok(Arc::clone(&self.bufferpool[i]))
     }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
-        self.assigned_block_ids.get(blk).map(|b| Arc::clone(b))
+    fn find_existing_buffer(&self, blk: &BlockId) -> Option<usize> {
+        self.assigned_block_ids.get(blk).map(|i| *i)
     }
     // The Clock Strategy
-    fn choose_unpinned_buffer(&mut self) -> Option<Arc<Mutex<Buffer>>> {
+    fn choose_unpinned_buffer(&mut self) -> Option<usize> {
         let buffsize = self.bufferpool.len();
 
         for i in self.clock_hands..self.clock_hands + buffsize {
@@ -101,7 +100,7 @@ impl ClockBufferMgr {
                 // Update the hands for the next time this function is called
                 self.clock_hands = idx + 1; // next call will start from after the replaced page.
 
-                return Some(Arc::clone(&self.bufferpool[idx]));
+                return Some(idx);
             }
         }
 
