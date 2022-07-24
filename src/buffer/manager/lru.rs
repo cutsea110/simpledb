@@ -63,10 +63,6 @@ impl LruBufferMgr {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
                     Some(i) => {
-                        // update assigned_block_ids
-                        if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
-                            self.assigned_block_ids.remove(blk);
-                        }
                         self.assigned_block_ids.insert(blk.clone(), i);
 
                         let mut b = self.bufferpool[i].lock().unwrap();
@@ -111,11 +107,21 @@ impl LruBufferMgr {
     }
     // The LRU Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<usize> {
-        self.unassigned_buffers
+        let found = self
+            .unassigned_buffers
             .iter()
             .enumerate()
             .find(|(_, j)| !self.bufferpool[**j].lock().unwrap().is_pinned())
-            .map(|(_, j)| *j)
+            .map(|(_, j)| *j);
+
+        if let Some(i) = found {
+            // release blk
+            if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
+                self.assigned_block_ids.remove(blk);
+            }
+        }
+
+        found
     }
 }
 impl BufferMgr for LruBufferMgr {
