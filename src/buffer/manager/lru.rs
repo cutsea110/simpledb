@@ -63,6 +63,7 @@ impl LruBufferMgr {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
                     Some(i) => {
+                        // add blk
                         self.assigned_block_ids.insert(blk.clone(), i);
 
                         let mut b = self.bufferpool[i].lock().unwrap();
@@ -84,44 +85,28 @@ impl LruBufferMgr {
         drop(b); // release lock
         Ok(Arc::clone(&self.bufferpool[i]))
     }
-    fn try_to_unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
-        let blk: Option<BlockId> = buff.lock().unwrap().block().map(|b| b.clone());
-
-        if let Some(blk) = blk {
-            if let Some((i, j)) = self
-                .unassigned_buffers
-                .iter()
-                .enumerate()
-                .find(|(_, j)| self.bufferpool[**j].lock().unwrap().block() == Some(&blk))
-                .map(|(i, j)| (i, *j))
-            {
-                self.unassigned_buffers.remove(i);
-                self.unassigned_buffers.push_back(j);
+    fn find_existing_buffer(&mut self, blk: &BlockId) -> Option<usize> {
+        if let Some(i) = self.assigned_block_ids.get(blk) {
+            if !self.bufferpool[*i].lock().unwrap().is_pinned() {
+                self.unassigned_buffers.retain(|x| *x != *i);
             }
+            return Some(*i);
         }
 
-        Ok(())
-    }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<usize> {
-        self.assigned_block_ids.get(blk).map(|i| *i)
+        None
     }
     // The LRU Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<usize> {
-        let found = self
-            .unassigned_buffers
-            .iter()
-            .enumerate()
-            .find(|(_, j)| !self.bufferpool[**j].lock().unwrap().is_pinned())
-            .map(|(_, j)| *j);
-
-        if let Some(i) = found {
+        if let Some(i) = self.unassigned_buffers.pop_front() {
             // release blk
             if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
                 self.assigned_block_ids.remove(blk);
             }
+
+            return Some(i);
         }
 
-        found
+        None
     }
 }
 impl BufferMgr for LruBufferMgr {
@@ -142,10 +127,6 @@ impl BufferMgr for LruBufferMgr {
     }
     // synchronized
     fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
-        // The LRU strategy
-        // update unassigned_buffers
-        self.try_to_unpin(Arc::clone(&buff))?;
-
         let mut b = buff.lock().unwrap();
 
         b.unpin();
@@ -155,6 +136,13 @@ impl BufferMgr for LruBufferMgr {
 
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) += 1;
+
+            if let Some(blk) = b.block() {
+                if let Some(i) = self.assigned_block_ids.get(&blk) {
+                    self.unassigned_buffers.retain(|x| *x != *i);
+                    self.unassigned_buffers.push_back(*i);
+                }
+            }
         }
         Ok(())
     }
