@@ -24,9 +24,11 @@ pub struct FifoBufferMgr {
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
-    assigned_block_ids: HashMap<BlockId, Arc<Mutex<Buffer>>>,
+    // Maps of the block_id to the index of the assigned self.bufferpool
+    assigned_block_ids: HashMap<BlockId, usize>,
     // extends by exercise 4.14
-    assigned_buffers: Vec<Arc<Mutex<Buffer>>>,
+    // assigned indexes of the self.bufferpool
+    assigned_buffers: Vec<usize>,
 }
 
 impl FifoBufferMgr {
@@ -34,8 +36,7 @@ impl FifoBufferMgr {
         let bufferpool: Vec<Arc<Mutex<Buffer>>> = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
-        // Initially all buffers are unpinned.
-        let assigned_buffers = (0..numbuffs).map(|i| Arc::clone(&bufferpool[i])).collect();
+        let assigned_buffers = (0..numbuffs).into_iter().collect();
 
         Self {
             bufferpool,
@@ -50,61 +51,63 @@ impl FifoBufferMgr {
     }
     // TODO: fix for thread safe
     fn try_to_pin(&mut self, blk: &BlockId) -> Result<Arc<Mutex<Buffer>>> {
-        let mut buff = self.find_existing_buffer(blk);
-        match buff {
+        let mut found = self.find_existing_buffer(blk);
+        match found {
             Some(_) => {
                 // for statistics
                 self.num_of_cache_hits += 1;
             }
             None => {
-                let found = self.choose_unpinned_buffer();
+                found = self.choose_unpinned_buffer();
                 match found {
                     None => {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
-                    Some((i, b)) => {
-                        buff = Some(Arc::clone(&b));
+                    Some(i) => {
+                        self.assigned_block_ids.insert(blk.clone(), i);
 
-                        // update assigned_block_ids
-                        if let Some(blk) = buff.as_ref().unwrap().lock().unwrap().block() {
-                            self.assigned_block_ids.remove(blk);
-                        }
-                        self.assigned_block_ids
-                            .insert(blk.clone(), Arc::clone(&buff.as_ref().unwrap()));
-
-                        // update assigned_buffers
-                        self.assigned_buffers.remove(i);
-                        self.assigned_buffers
-                            .push(Arc::clone(&buff.as_ref().unwrap()));
+                        let mut b = self.bufferpool[i].lock().unwrap();
+                        b.assign_to_block(blk.clone())?;
+                        // for statistics
+                        self.num_of_buffer_assigned += 1;
                     }
                 }
-
-                let mut b = buff.as_ref().unwrap().lock().unwrap();
-                b.assign_to_block(blk.clone())?;
-                // for statistics
-                self.num_of_buffer_assigned += 1;
             }
         }
 
-        let mut b = buff.as_ref().unwrap().lock().unwrap();
+        let i = found.unwrap();
+        let mut b = self.bufferpool[i].lock().unwrap();
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) -= 1;
         }
         b.pin();
 
         drop(b); // release lock
-        Ok(buff.unwrap())
+        Ok(Arc::clone(&self.bufferpool[i]))
     }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
-        self.assigned_block_ids.get(blk).map(|b| Arc::clone(b))
+    fn find_existing_buffer(&self, blk: &BlockId) -> Option<usize> {
+        self.assigned_block_ids.get(blk).map(|i| *i)
     }
     // The FIFO Strategy
-    fn choose_unpinned_buffer(&mut self) -> Option<(usize, Arc<Mutex<Buffer>>)> {
-        self.assigned_buffers
+    fn choose_unpinned_buffer(&mut self) -> Option<usize> {
+        let found = self
+            .assigned_buffers
             .iter()
             .enumerate()
-            .find(|(_, x)| !x.lock().unwrap().is_pinned())
-            .map(|(i, x)| (i, Arc::clone(x)))
+            .find(|(_, j)| !self.bufferpool[**j].lock().unwrap().is_pinned())
+            .map(|(i, j)| (i, *j));
+
+        if let Some((i, j)) = found {
+            // release blk
+            if let Some(blk) = self.bufferpool[j].lock().unwrap().block() {
+                self.assigned_block_ids.remove(blk);
+            }
+
+            self.assigned_buffers.remove(i);
+            self.assigned_buffers.push(j);
+        }
+
+        found.map(|(_, j)| j)
     }
 }
 impl BufferMgr for FifoBufferMgr {
