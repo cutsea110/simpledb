@@ -1,6 +1,9 @@
 use anyhow::Result;
 use core::fmt;
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    time::SystemTime,
+};
 
 use crate::{
     file::{block_id::BlockId, manager::FileMgr, page::Page},
@@ -31,6 +34,12 @@ pub struct Buffer {
     pins: u64,
     txnum: i32,
     lsn: i32,
+    // extends by exercise 4.15
+    // These timestamps are retained down to nanoseconds.
+    // That is, it is assumed that there are no other buffers with the same timestamp for each field.
+    // They are also expected to be sortable.
+    pinned_at: SystemTime,
+    unpinned_at: SystemTime,
 }
 
 impl Buffer {
@@ -46,6 +55,8 @@ impl Buffer {
             pins: 0,
             txnum: -1,
             lsn: -1,
+            pinned_at: SystemTime::UNIX_EPOCH, // epoch means unset
+            unpinned_at: SystemTime::UNIX_EPOCH, // epoch means unset
         }
     }
     pub fn contents(&mut self) -> &mut Page {
@@ -96,9 +107,13 @@ impl Buffer {
     }
     pub fn pin(&mut self) {
         self.pins += 1;
+        // extends by exercise 4.15
+        self.pinned_at = SystemTime::now();
     }
     pub fn unpin(&mut self) {
         self.pins -= 1;
+        // extends by exercise 4.15
+        self.unpinned_at = SystemTime::now();
     }
     // my own extends
     pub fn is_modified(&self) -> bool {
