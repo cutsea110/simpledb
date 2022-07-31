@@ -103,16 +103,16 @@ impl FifoTsBufferMgr {
     }
     // The FIFO Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<usize> {
-        let found = self.unassigned_buffers.pop_first();
-
-        if let Some((_, i)) = found {
+        if let Some((_, i)) = self.unassigned_buffers.pop_first() {
             // release blk
             if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
                 self.assigned_block_ids.remove(blk);
             }
+
+            return Some(i);
         }
 
-        found.map(|(_, i)| i)
+        None
     }
 }
 impl BufferMgr for FifoTsBufferMgr {
