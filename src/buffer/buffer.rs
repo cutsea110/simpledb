@@ -119,6 +119,14 @@ impl Buffer {
     pub fn is_modified(&self) -> bool {
         self.txnum != -1
     }
+    // extends by exercise 4.14
+    pub fn pinned_at(&self) -> SystemTime {
+        self.pinned_at
+    }
+    // extends by exercise 4.14
+    pub fn unpinned_at(&self) -> SystemTime {
+        self.unpinned_at
+    }
 }
 
 #[cfg(test)]
