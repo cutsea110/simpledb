@@ -83,16 +83,23 @@ impl FifoTsBufferMgr {
         let mut b = self.bufferpool[i].lock().unwrap();
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) -= 1;
-
-            self.unassigned_buffers.remove(&b.pinned_at());
         }
         b.pin();
 
         drop(b); // release lock
         Ok(Arc::clone(&self.bufferpool[i]))
     }
-    fn find_existing_buffer(&self, blk: &BlockId) -> Option<usize> {
-        self.assigned_block_ids.get(blk).map(|i| *i)
+    fn find_existing_buffer(&mut self, blk: &BlockId) -> Option<usize> {
+        if let Some(i) = self.assigned_block_ids.get(blk) {
+            let b = self.bufferpool[*i].lock().unwrap();
+            if !b.is_pinned() {
+                self.unassigned_buffers.remove(&b.pinned_at());
+            }
+
+            return Some(*i);
+        }
+
+        None
     }
     // The FIFO Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<usize> {
