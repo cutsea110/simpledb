@@ -106,14 +106,20 @@ impl Buffer {
         Ok(())
     }
     pub fn pin(&mut self) {
-        self.pins += 1;
         // extends by exercise 4.14
-        self.pinned_at = SystemTime::now();
+        if !self.is_pinned() {
+            self.pinned_at = SystemTime::now();
+        }
+
+        self.pins += 1;
     }
     pub fn unpin(&mut self) {
         self.pins -= 1;
+
         // extends by exercise 4.14
-        self.unpinned_at = SystemTime::now();
+        if !self.is_pinned() {
+            self.unpinned_at = SystemTime::now();
+        }
     }
     // my own extends
     pub fn is_modified(&self) -> bool {

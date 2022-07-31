@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -27,8 +27,8 @@ pub struct FifoTsBufferMgr {
     // Maps of the block_id to the index of the assigned self.bufferpool
     assigned_block_ids: HashMap<BlockId, usize>,
     // extends by exercise 4.14
-    // assigned indexes of the self.bufferpool
-    assigned_buffers: Vec<usize>,
+    // unassigned buffers sorted by pinned timestamp
+    unassigned_buffers: BTreeMap<SystemTime, usize>,
 }
 
 impl FifoTsBufferMgr {
@@ -36,7 +36,11 @@ impl FifoTsBufferMgr {
         let bufferpool: Vec<Arc<Mutex<Buffer>>> = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
-        let assigned_buffers = (0..numbuffs).into_iter().collect();
+        let mut unassigned_buffers = BTreeMap::new();
+        for i in 0..numbuffs {
+            let ts = SystemTime::now();
+            unassigned_buffers.insert(ts, i);
+        }
 
         Self {
             bufferpool,
@@ -46,7 +50,7 @@ impl FifoTsBufferMgr {
             num_of_cache_hits: 0,
             num_of_buffer_assigned: 0,
             assigned_block_ids: HashMap::new(),
-            assigned_buffers,
+            unassigned_buffers,
         }
     }
     // TODO: fix for thread safe
@@ -79,6 +83,8 @@ impl FifoTsBufferMgr {
         let mut b = self.bufferpool[i].lock().unwrap();
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) -= 1;
+
+            self.unassigned_buffers.remove(&b.pinned_at());
         }
         b.pin();
 
@@ -90,24 +96,16 @@ impl FifoTsBufferMgr {
     }
     // The FIFO Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<usize> {
-        let found = self
-            .assigned_buffers
-            .iter()
-            .enumerate()
-            .find(|(_, j)| !self.bufferpool[**j].lock().unwrap().is_pinned())
-            .map(|(i, j)| (i, *j));
+        let found = self.unassigned_buffers.pop_first();
 
-        if let Some((i, j)) = found {
+        if let Some((_, i)) = found {
             // release blk
-            if let Some(blk) = self.bufferpool[j].lock().unwrap().block() {
+            if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
                 self.assigned_block_ids.remove(blk);
             }
-
-            self.assigned_buffers.remove(i);
-            self.assigned_buffers.push(j);
         }
 
-        found.map(|(_, j)| j)
+        found.map(|(_, i)| i)
     }
 }
 impl BufferMgr for FifoTsBufferMgr {
@@ -136,6 +134,12 @@ impl BufferMgr for FifoTsBufferMgr {
 
         if !b.is_pinned() {
             *(self.num_available.lock().unwrap()) += 1;
+
+            if let Some(blk) = b.block() {
+                if let Some(i) = self.assigned_block_ids.get(&blk) {
+                    self.unassigned_buffers.insert(b.pinned_at(), *i);
+                }
+            }
         }
 
         Ok(())
