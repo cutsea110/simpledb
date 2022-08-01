@@ -24,6 +24,7 @@ arg_enum! {
         NaiveBis,
         NaiveBisUp,
         FIFO,
+        FIFOTs,
         FIFOUp,
         LRU,
         LRUUp,

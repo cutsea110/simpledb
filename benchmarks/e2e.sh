@@ -27,13 +27,13 @@ QUERY_SQL=`cat query.sql` # This query must be independent of DBSIZE.
 #
 case "${DBSIZE}" in
     "tiny")
-	BUFFER_MANAGERS_STR='"naive","naiveup","naivebis","naivebisup","fifo","fifoup","lru","lruup","clock","clockup"'
+	BUFFER_MANAGERS_STR='"naive","naiveup","naivebis","naivebisup","fifo","fifots","fifoup","lru","lruup","clock","clockup"'
 	QUERY_PLANNERS_STR='"basic","heuristic"'
 	BLOCK_SIZES_STR='400,800,1200,2000,4000'
 	BUFFER_SIZES_STR='8,16,32,64,128'
 	;;
     "small")
-	BUFFER_MANAGERS_STR='"naive","naiveup","naivebis","naivebisup","fifo","fifoup","lru","lruup","clock","clockup"'
+	BUFFER_MANAGERS_STR='"naive","naiveup","naivebis","naivebisup","fifo","fifots","fifoup","lru","lruup","clock","clockup"'
 	QUERY_PLANNERS_STR='"basic","heuristic"'
 	BLOCK_SIZES_STR='400,800,1200,2000,4000'
 	BUFFER_SIZES_STR='8,16,32,64,128'

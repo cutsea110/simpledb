@@ -12,6 +12,7 @@ use crate::file::block_id::BlockId;
 pub mod clock; // by exercise 4.14
 pub mod clock_up; // with unmodified preferd
 pub mod fifo; // by exercise 4.14
+pub mod fifo_ts; // by exercise 4.14
 pub mod fifo_up; // with unmodified preferd
 pub mod lru; // by exercise 4.14
 pub mod lru_up; // with unmodified preferd
