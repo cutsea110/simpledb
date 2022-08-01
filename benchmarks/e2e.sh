@@ -39,7 +39,7 @@ case "${DBSIZE}" in
 	BUFFER_SIZES_STR='8,16,32,64,128'
 	;;
     "medium")
-	BUFFER_MANAGERS_STR='"naivebis","fifo","lru","clock"'
+	BUFFER_MANAGERS_STR='"naivebis","fifo","fifots","fifoup","lru","lruup","clock","clockup"'
 	QUERY_PLANNERS_STR='"heuristic"'
 	BLOCK_SIZES_STR='400,1000,2000'
 	BUFFER_SIZES_STR='8,16,32'

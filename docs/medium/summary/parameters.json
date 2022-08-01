@@ -1,4 +1,4 @@
-{ "buffer_managers": ["naivebis","fifo","lru","clock"]
+{ "buffer_managers": ["naivebis","fifo","fifots","fifoup","lru","lruup","clock","clockup"]
 , "query_planners":  ["heuristic"]
 , "block_sizes":     [400,1000,2000]
 , "buffer_sizes":    [8,16,32]
