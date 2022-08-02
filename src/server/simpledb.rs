@@ -11,8 +11,9 @@ use crate::{
     buffer::manager::{
         clock::ClockBufferMgr, clock_up::ClockUPBufferMgr, fifo::FifoBufferMgr,
         fifo_ts::FifoTsBufferMgr, fifo_up::FifoUPBufferMgr, lru::LruBufferMgr,
-        lru_up::LruUPBufferMgr, naive::NaiveBufferMgr, naive_up::NaiveUPBufferMgr,
-        naivebis::NaiveBisBufferMgr, naivebis_up::NaiveBisUPBufferMgr, BufferMgr,
+        lru_ts::LruTsBufferMgr, lru_up::LruUPBufferMgr, naive::NaiveBufferMgr,
+        naive_up::NaiveUPBufferMgr, naivebis::NaiveBisBufferMgr, naivebis_up::NaiveBisUPBufferMgr,
+        BufferMgr,
     },
     file::manager::FileMgr,
     index::planner::indexupdateplanner::IndexUpdatePlanner,
@@ -190,6 +191,9 @@ impl SimpleDB {
                 }
                 config::BufferMgr::LRU => {
                     Arc::new(Mutex::new(LruBufferMgr::new(bm_fm, bm_lm, numsbuff)))
+                }
+                config::BufferMgr::LRUTs => {
+                    Arc::new(Mutex::new(LruTsBufferMgr::new(bm_fm, bm_lm, numsbuff)))
                 }
                 config::BufferMgr::LRUUp => {
                     Arc::new(Mutex::new(LruUPBufferMgr::new(bm_fm, bm_lm, numsbuff)))

@@ -27,6 +27,7 @@ arg_enum! {
         FIFOTs,
         FIFOUp,
         LRU,
+        LRUTs,
         LRUUp,
         Clock,
         ClockUp,
