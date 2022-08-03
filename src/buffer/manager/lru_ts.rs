@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-pub struct FifoTsBufferMgr {
+pub struct LruTsBufferMgr {
     bufferpool: Vec<Arc<Mutex<Buffer>>>,
     num_available: Arc<Mutex<usize>>,
     // extends statistics by exercise 4.18
@@ -27,11 +27,11 @@ pub struct FifoTsBufferMgr {
     // Maps of the block_id to the index of the assigned self.bufferpool
     assigned_block_ids: HashMap<BlockId, usize>,
     // extends by exercise 4.14
-    // unassigned buffers sorted by pinned timestamp
+    // unassigned buffers sorted by unpinned timestamp
     unassigned_buffers: BTreeMap<SystemTime, usize>,
 }
 
-impl FifoTsBufferMgr {
+impl LruTsBufferMgr {
     pub fn new(fm: Arc<Mutex<FileMgr>>, lm: Arc<Mutex<LogMgr>>, numbuffs: usize) -> Self {
         let bufferpool: Vec<Arc<Mutex<Buffer>>> = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
@@ -68,6 +68,7 @@ impl FifoTsBufferMgr {
                         return Err(From::from(BufferMgrError::BufferAbort));
                     }
                     Some(i) => {
+                        // add blk
                         self.assigned_block_ids.insert(blk.clone(), i);
 
                         let mut b = self.bufferpool[i].lock().unwrap();
@@ -93,15 +94,14 @@ impl FifoTsBufferMgr {
         if let Some(i) = self.assigned_block_ids.get(blk) {
             let b = self.bufferpool[*i].lock().unwrap();
             if !b.is_pinned() {
-                self.unassigned_buffers.remove(&b.pinned_at());
+                self.unassigned_buffers.remove(&b.unpinned_at());
             }
-
             return Some(*i);
         }
 
         None
     }
-    // The FIFO Strategy
+    // The LRU Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<usize> {
         if let Some((_, i)) = self.unassigned_buffers.pop_first() {
             // release blk
@@ -115,7 +115,7 @@ impl FifoTsBufferMgr {
         None
     }
 }
-impl BufferMgr for FifoTsBufferMgr {
+impl BufferMgr for LruTsBufferMgr {
     // synchronized
     fn available(&self) -> usize {
         *(self.num_available.lock().unwrap())
@@ -135,6 +135,8 @@ impl BufferMgr for FifoTsBufferMgr {
     fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
         let mut b = buff.lock().unwrap();
 
+        let old_ts = b.unpinned_at();
+
         b.unpin();
 
         // for statistics
@@ -145,11 +147,11 @@ impl BufferMgr for FifoTsBufferMgr {
 
             if let Some(blk) = b.block() {
                 if let Some(i) = self.assigned_block_ids.get(&blk) {
-                    self.unassigned_buffers.insert(b.pinned_at(), *i);
+                    self.unassigned_buffers.remove(&old_ts);
+                    self.unassigned_buffers.insert(b.unpinned_at(), *i);
                 }
             }
         }
-
         Ok(())
     }
     // synchronized
@@ -195,14 +197,14 @@ mod tests {
 
     #[test]
     fn unit_test() -> Result<()> {
-        if Path::new("_test/buffermgrtest/fifots").exists() {
-            fs::remove_dir_all("_test/buffermgrtest/fifots")?;
+        if Path::new("_test/buffermgrtest/lruts").exists() {
+            fs::remove_dir_all("_test/buffermgrtest/lruts")?;
         }
 
-        let fm = Arc::new(Mutex::new(FileMgr::new("_test/buffermgrtest/fifots", 400)?));
+        let fm = Arc::new(Mutex::new(FileMgr::new("_test/buffermgrtest/lruts", 400)?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
 
-        let mut bm = FifoTsBufferMgr::new(fm, lm, 3);
+        let mut bm = LruTsBufferMgr::new(fm, lm, 3);
 
         let mut buff: Vec<Option<Arc<Mutex<Buffer>>>> = vec![None; 6];
         buff[0] = bm.pin(&BlockId::new("testfile", 0))?.into();
@@ -271,17 +273,17 @@ mod tests {
 
     #[test]
     fn replace_strategy_test() -> Result<()> {
-        if Path::new("_test/buffermgrtest/fifotsstrategy").exists() {
-            fs::remove_dir_all("_test/buffermgrtest/fifotsstrategy")?;
+        if Path::new("_test/buffermgrtest/lrutsstrategy").exists() {
+            fs::remove_dir_all("_test/buffermgrtest/lrutsstrategy")?;
         }
 
         let fm = Arc::new(Mutex::new(FileMgr::new(
-            "_test/buffermgrtest/fifotsstrategy",
+            "_test/buffermgrtest/lrutsstrategy",
             400,
         )?));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), "simpledb.log")?));
 
-        let mut bm = FifoTsBufferMgr::new(fm, lm, 4);
+        let mut bm = LruTsBufferMgr::new(fm, lm, 4);
 
         // p91 senario
         // pin(10); pin(20); pin(30); pin(40); unpin(20);
@@ -311,17 +313,17 @@ mod tests {
         println!("Final buffer Allocation:");
         // bufferpool
         let b = bm.bufferpool[0].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
         assert_eq!(b.is_pinned(), true);
         let b = bm.bufferpool[1].lock().unwrap();
         assert_eq!(b.block(), Some(&BlockId::new("testfile", 50)));
         assert_eq!(b.is_pinned(), false);
         let b = bm.bufferpool[2].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 70)));
-        assert_eq!(b.is_pinned(), true);
-        let b = bm.bufferpool[3].lock().unwrap();
-        assert_eq!(b.block(), Some(&BlockId::new("testfile", 40)));
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 30)));
         assert_eq!(b.is_pinned(), false);
+        let b = bm.bufferpool[3].lock().unwrap();
+        assert_eq!(b.block(), Some(&BlockId::new("testfile", 60)));
+        assert_eq!(b.is_pinned(), true);
 
         Ok(())
     }
