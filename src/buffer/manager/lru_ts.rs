@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, SystemTime},
@@ -24,9 +24,11 @@ pub struct LruTsBufferMgr {
     num_of_buffer_assigned: u32,
     // extends by exercise 4.17
     // Let only try_to_pin to handle this HashMap.
+    // Maps of the block_id to the index of the assigned self.bufferpool
     assigned_block_ids: HashMap<BlockId, usize>,
     // extends by exercise 4.14
-    unassigned_buffers: VecDeque<usize>,
+    // unassigned buffers sorted by unpinned timestamp
+    unassigned_buffers: BTreeMap<SystemTime, usize>,
 }
 
 impl LruTsBufferMgr {
@@ -34,8 +36,11 @@ impl LruTsBufferMgr {
         let bufferpool: Vec<Arc<Mutex<Buffer>>> = (0..numbuffs)
             .map(|_| Arc::new(Mutex::new(Buffer::new(Arc::clone(&fm), Arc::clone(&lm)))))
             .collect();
-        // Initially all buffers are unpinned.
-        let unassigned_buffers = (0..numbuffs).into_iter().collect();
+        let mut unassigned_buffers = BTreeMap::new();
+        for i in 0..numbuffs {
+            let ts = SystemTime::now();
+            unassigned_buffers.insert(ts, i);
+        }
 
         Self {
             bufferpool,
@@ -87,8 +92,9 @@ impl LruTsBufferMgr {
     }
     fn find_existing_buffer(&mut self, blk: &BlockId) -> Option<usize> {
         if let Some(i) = self.assigned_block_ids.get(blk) {
-            if !self.bufferpool[*i].lock().unwrap().is_pinned() {
-                self.unassigned_buffers.retain(|x| *x != *i);
+            let b = self.bufferpool[*i].lock().unwrap();
+            if !b.is_pinned() {
+                self.unassigned_buffers.remove(&b.unpinned_at());
             }
             return Some(*i);
         }
@@ -97,7 +103,7 @@ impl LruTsBufferMgr {
     }
     // The LRU Strategy
     fn choose_unpinned_buffer(&mut self) -> Option<usize> {
-        if let Some(i) = self.unassigned_buffers.pop_front() {
+        if let Some((_, i)) = self.unassigned_buffers.pop_first() {
             // release blk
             if let Some(blk) = self.bufferpool[i].lock().unwrap().block() {
                 self.assigned_block_ids.remove(blk);
@@ -129,6 +135,8 @@ impl BufferMgr for LruTsBufferMgr {
     fn unpin(&mut self, buff: Arc<Mutex<Buffer>>) -> Result<()> {
         let mut b = buff.lock().unwrap();
 
+        let old_ts = b.unpinned_at();
+
         b.unpin();
 
         // for statistics
@@ -139,8 +147,8 @@ impl BufferMgr for LruTsBufferMgr {
 
             if let Some(blk) = b.block() {
                 if let Some(i) = self.assigned_block_ids.get(&blk) {
-                    self.unassigned_buffers.retain(|x| *x != *i);
-                    self.unassigned_buffers.push_back(*i);
+                    self.unassigned_buffers.remove(&old_ts);
+                    self.unassigned_buffers.insert(b.unpinned_at(), *i);
                 }
             }
         }
