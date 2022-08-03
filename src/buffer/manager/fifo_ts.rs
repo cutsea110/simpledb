@@ -136,6 +136,7 @@ impl BufferMgr for FifoTsBufferMgr {
         let mut b = buff.lock().unwrap();
 
         b.unpin();
+
         // for statistics
         self.num_of_total_unpinned += 1;
 
