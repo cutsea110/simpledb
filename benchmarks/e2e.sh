@@ -58,32 +58,31 @@ QUERY_PLANNERS=`echo ${QUERY_PLANNERS_STR} | sed 's/"//g' | tr "," "\n"`
 BLOCK_SIZES=`echo ${BLOCK_SIZES_STR} | sed 's/"//g' | tr "," "\n"`
 BUFFER_SIZES=`echo ${BUFFER_SIZES_STR} | sed 's/"//g' | tr "," "\n"`
 
-for qp in ${QUERY_PLANNERS}
+for blksz in ${BLOCK_SIZES}
 do
-    for bm in ${BUFFER_MANAGERS}
-    do
-	for blksz in ${BLOCK_SIZES}
-	do
-	    for bfsz in ${BUFFER_SIZES}
-	    do
-		# clear db
-		rm -rf data
+    # clear db
+    rm -rf data
 
-		CONSTRUCT=${bm}_${qp}_${blksz}x${bfsz}
-		# init db
-		RUST_LOG=trace \
-			${ESQL} -d demo \
-			--buffer-manager ${bm} \
-			--query-planner ${qp} \
-			--block-size ${blksz} \
-			--buffer-size ${bfsz} \
-			2> ${LOG_DIR}/${CONSTRUCT}_init.log <<EOM
+    # init db
+    RUST_LOG=trace \
+	    ${ESQL} -d demo \
+	    --block-size ${blksz} \
+	    --buffer-size 8 \
+	    2> ${LOG_DIR}/${blksz}_init.log <<EOM
 yes
 
 ${INIT_SQL}
 
 :q
 EOM
+		
+    for qp in ${QUERY_PLANNERS}
+    do
+	for bm in ${BUFFER_MANAGERS}
+	do
+	    for bfsz in ${BUFFER_SIZES}
+	    do
+		CONSTRUCT=${bm}_${qp}_${blksz}x${bfsz}
 		# query db
 		# couldn't use view, because basic query planner can't correctly handle view table.
 		RUST_LOG=trace \
