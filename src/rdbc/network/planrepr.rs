@@ -24,7 +24,7 @@ impl<'a> From<remote_statement::constant::Reader<'a>> for Constant {
                 let year = v.get_year() as i32;
                 let month = v.get_month() as u32;
                 let day = v.get_day() as u32;
-                Self::Date(NaiveDate::from_ymd(year, month, day))
+                Self::Date(NaiveDate::from_ymd_opt(year, month, day).unwrap())
             }
         }
     }

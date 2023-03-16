@@ -201,7 +201,7 @@ impl Page {
             let y = ymd >> 16;
             let m = (ymd >> 8) & 255;
             let d = ymd & 255;
-            NaiveDate::from_ymd(y as i32, m, d)
+            NaiveDate::from_ymd_opt(y as i32, m, d).unwrap()
         })
     }
     // extends by exercise 3.17

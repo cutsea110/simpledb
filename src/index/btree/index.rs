@@ -58,7 +58,7 @@ impl BTreeIndex {
                 FieldType::INTEGER => Constant::new_i32(i32::MIN),
                 FieldType::VARCHAR => Constant::new_string("".to_string()),
                 FieldType::BOOL => Constant::new_bool(false),
-                FieldType::DATE => Constant::new_date(NaiveDate::from_ymd(0, 1, 1)), // NOTE: default 0000-01-01
+                FieldType::DATE => Constant::new_date(NaiveDate::from_ymd_opt(0, 1, 1).unwrap()), // NOTE: default 0000-01-01
             };
             node.insert_dir(0, minval, 0)?;
             node.close()?;

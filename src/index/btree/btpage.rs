@@ -146,7 +146,7 @@ impl BTPage {
                     tx.set_date(
                         blk,
                         (pos + offset) as i32,
-                        NaiveDate::from_ymd(0, 1, 1), // NOTE: default 0000-01-01
+                        NaiveDate::from_ymd_opt(0, 1, 1).unwrap(), // NOTE: default 0000-01-01
                         false,
                     )?;
                 }

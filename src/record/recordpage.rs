@@ -105,7 +105,7 @@ impl RecordPage {
                         tx.set_date(
                             &self.blk,
                             fldpos,
-                            NaiveDate::from_ymd(0, 1, 1), // NOTE: default 0000-01-01
+                            NaiveDate::from_ymd_opt(0, 1, 1).unwrap(), // NOTE: default 0000-01-01
                             false,
                         )?;
                     }

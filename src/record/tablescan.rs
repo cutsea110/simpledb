@@ -103,7 +103,7 @@ impl Scan for TableScan {
             )),
             FieldType::DATE => Ok(Constant::new_date(
                 self.get_date(fldname)
-                    .unwrap_or(NaiveDate::from_ymd(0, 1, 1)), // NOTE: default 0000-01-01
+                    .unwrap_or(NaiveDate::from_ymd_opt(0, 1, 1).unwrap()), // NOTE: default 0000-01-01
             )),
         };
     }

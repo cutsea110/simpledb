@@ -90,7 +90,7 @@ impl DateValueImpl {
         let month = val.get_month() as u32;
         let day = val.get_day() as u32;
 
-        Ok(NaiveDate::from_ymd(year, month, day))
+        Ok(NaiveDate::from_ymd_opt(year, month, day).unwrap())
     }
 }
 
@@ -220,7 +220,7 @@ impl NetworkResultSet {
                     let year = v.get_year() as i32;
                     let month = v.get_month() as u32;
                     let day = v.get_day() as u32;
-                    Value::Date(NaiveDate::from_ymd(year, month, day))
+                    Value::Date(NaiveDate::from_ymd_opt(year, month, day).unwrap())
                 }
             };
             result.insert(key, val);
