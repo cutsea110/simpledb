@@ -11,21 +11,21 @@ build = "capnp/build.rs"
 capnpc = "0.14.9"
 
 [dependencies]
-anyhow = "1.0.59"
-capnp = "0.14.8"
+anyhow = "1.0.75"
+capnp = "0.14.11"
 capnp-rpc = "0.14.1"
-chrono = "0.4.20"
-combine = "4.6.4"
-env_logger = "0.9.0"
-futures = "0.3.21"
-itertools = "0.10.3"
-log = "0.4.17"
+chrono = "0.4.28"
+combine = "4.6.6"
+env_logger = "0.9.3"
+futures = "0.3.28"
+itertools = "0.10.5"
+log = "0.4.20"
 num-derive = "0.3.3"
-num-traits = "0.2.15"
+num-traits = "0.2.16"
 rand = "0.8.5"
 structopt = "0.3.26"
-tokio = {version = "1.20.1", features = ["full"]}
-tokio-util = {version = "0.7.3", features = ["compat"]}
+tokio = {version = "1.32.0", features = ["full"]}
+tokio-util = {version = "0.7.8", features = ["compat"]}
 
 [lib]
 name = "simpledb"

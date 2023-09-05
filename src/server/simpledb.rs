@@ -103,9 +103,7 @@ impl SimpleDB {
     pub fn new_with(db_directory: &str, blocksize: i32, numbuffs: usize) -> Self {
         let next_tx_num = Arc::new(Mutex::new(0));
         let locktbl = Arc::new(Mutex::new(LockTable::new()));
-        let fm = Arc::new(Mutex::new(
-            FileMgr::new(&db_directory.clone(), blocksize).unwrap(),
-        ));
+        let fm = Arc::new(Mutex::new(FileMgr::new(&db_directory, blocksize).unwrap()));
         let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), LOG_FILE).unwrap()));
         let bm = Arc::new(Mutex::new(LruBufferMgr::new(
             Arc::clone(&fm),
@@ -163,7 +161,7 @@ impl SimpleDB {
             let next_tx_num = Arc::new(Mutex::new(0));
             let locktbl = Arc::new(Mutex::new(LockTable::new()));
             let fm = Arc::new(Mutex::new(
-                FileMgr::new(&db_directory.clone(), cfg.block_size).unwrap(),
+                FileMgr::new(&db_directory, cfg.block_size).unwrap(),
             ));
             let lm = Arc::new(Mutex::new(LogMgr::new(Arc::clone(&fm), LOG_FILE).unwrap()));
             let (bm_fm, bm_lm, numsbuff) = (Arc::clone(&fm), Arc::clone(&lm), cfg.num_of_buffers);
