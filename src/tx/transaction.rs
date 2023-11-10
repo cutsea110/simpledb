@@ -318,7 +318,12 @@ mod tests {
         tx1.set_i32(&blk, 50, 1234567890, false)?;
         tx1.set_bool(&blk, 70, true, false)?;
         tx1.set_bool(&blk, 80, false, false)?;
-        tx1.set_date(&blk, 90, NaiveDate::from_ymd(2022, 6, 14), false)?;
+        tx1.set_date(
+            &blk,
+            90,
+            NaiveDate::from_ymd_opt(2022, 6, 14).unwrap(),
+            false,
+        )?;
         tx1.commit()?;
 
         let mut tx2 = simpledb.new_tx()?;
@@ -327,7 +332,10 @@ mod tests {
         assert_eq!(1234567890, tx2.get_i32(&blk, 50)?);
         assert_eq!(true, tx2.get_bool(&blk, 70)?);
         assert_eq!(false, tx2.get_bool(&blk, 80)?);
-        assert_eq!(NaiveDate::from_ymd(2022, 6, 14), tx2.get_date(&blk, 90)?);
+        assert_eq!(
+            NaiveDate::from_ymd_opt(2022, 6, 14).unwrap(),
+            tx2.get_date(&blk, 90)?
+        );
 
         Ok(())
     }

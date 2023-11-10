@@ -12,6 +12,7 @@ mod tests {
 
     use super::{
         super::{
+            super::server::config::{BufferMgr, QueryPlanner, SimpleDBConfig},
             connectionadapter::ConnectionAdapter,
             driveradapter::DriverAdapter,
             resultsetadapter::ResultSetAdapter,
@@ -74,7 +75,12 @@ mod tests {
         ];
 
         // driver
-        let d = EmbeddedDriver::new();
+        let d = EmbeddedDriver::new(SimpleDBConfig {
+            block_size: 400,
+            num_of_buffers: 8,
+            buffer_manager: BufferMgr::Naive,
+            query_planner: QueryPlanner::Basic,
+        });
         // connect database
         let mut conn = d.connect("_test/rdbc")?;
         // init database

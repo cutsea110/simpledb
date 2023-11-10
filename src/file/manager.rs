@@ -256,7 +256,7 @@ mod tests {
 
         let pos7 = pos6 + size;
         let size = p1
-            .set_date(pos7, NaiveDate::from_ymd(2022, 6, 14))
+            .set_date(pos7, NaiveDate::from_ymd_opt(2022, 6, 14).unwrap())
             .expect("set date");
 
         let pos8 = pos7 + size;
@@ -282,7 +282,7 @@ mod tests {
         assert_eq!(true, p2.get_bool(pos5).expect("get bool"));
         assert_eq!(false, p2.get_bool(pos6).expect("get bool"));
         assert_eq!(
-            NaiveDate::from_ymd(2022, 6, 14),
+            NaiveDate::from_ymd_opt(2022, 6, 14).unwrap(),
             p2.get_date(pos7).expect("get bool")
         );
         assert_eq!(
