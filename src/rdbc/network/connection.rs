@@ -41,7 +41,7 @@ impl NetworkConnection {
         let entries = sch.get_info()?.get_entries()?;
         for i in 0..entries.len() {
             let entry = entries.get(i as u32);
-            let fldname = entry.get_key()?;
+            let fldname = entry.get_key()?.to_str().unwrap();
             let val = entry.get_value()?;
             match val.get_type()? {
                 remote_capnp::FieldType::SmallInt => {
@@ -63,7 +63,7 @@ impl NetworkConnection {
         }
         let fields = sch.get_fields()?;
         for i in 0..fields.len() {
-            let fldname = fields.get(i as u32)?;
+            let fldname = fields.get(i as u32)?.to_str().unwrap();
             if let Some((t, l)) = map.get(fldname) {
                 schema.add_field(fldname, t.clone(), *l as usize);
             }
@@ -78,8 +78,8 @@ impl NetworkConnection {
         let viewdef = reply.get()?.get_vwdef()?;
 
         Ok((
-            viewdef.reborrow().get_vwname()?.to_string(),
-            viewdef.reborrow().get_vwdef()?.to_string(),
+            viewdef.reborrow().get_vwname()?.to_string().unwrap(),
+            viewdef.reborrow().get_vwdef()?.to_string().unwrap(),
         ))
     }
     pub async fn get_index_info(&self, tblname: &str) -> Result<HashMap<String, IndexInfo>> {
@@ -92,8 +92,8 @@ impl NetworkConnection {
         let entries = ii.get_entries()?;
         for i in 0..entries.len() {
             let val = entries.get(i as u32).get_value()?;
-            let fldname = val.get_fldname()?;
-            let idxname = val.get_idxname()?;
+            let fldname = val.get_fldname()?.to_str().unwrap();
+            let idxname = val.get_idxname()?.to_str().unwrap();
             let info = IndexInfo::new(fldname, idxname);
             map.insert(fldname.to_string(), info);
         }

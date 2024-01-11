@@ -40,11 +40,11 @@ impl<'a> From<remote_capnp::schema::Reader<'a>> for Schema {
             .get_fields()
             .unwrap()
             .into_iter()
-            .map(|s| s.unwrap().to_string())
+            .map(|s| s.unwrap().to_string().unwrap())
             .collect_vec();
         let mut info = HashMap::new();
         for kv in sch.get_info().unwrap().get_entries().unwrap().into_iter() {
-            let key = kv.get_key().unwrap().to_string();
+            let key = kv.get_key().unwrap().to_string().unwrap();
             let fi = FieldInfo::from(kv.get_value().unwrap());
             info.insert(key, fi);
         }

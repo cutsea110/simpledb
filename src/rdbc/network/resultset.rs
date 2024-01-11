@@ -59,7 +59,7 @@ impl StringValueImpl {
     }
     pub async fn get_value(&self) -> Result<String> {
         let reply = self.client.read_request().send().promise.await?;
-        Ok(reply.get()?.get_val()?.to_string())
+        Ok(reply.get()?.get_val()?.to_string().unwrap())
     }
 }
 
@@ -209,11 +209,13 @@ impl NetworkResultSet {
             .expect("get entries");
         let mut result = HashMap::new();
         for kv in entries.into_iter() {
-            let key = kv.get_key().expect("get key");
+            let key = kv.get_key().expect("get key").to_str().unwrap();
             let val = match kv.get_value().unwrap().which().expect("match value type") {
                 remote_result_set::value::Int16(v) => Value::Int16(v),
                 remote_result_set::value::Int32(v) => Value::Int32(v),
-                remote_result_set::value::String(s) => Value::String(s.unwrap().to_string()),
+                remote_result_set::value::String(s) => {
+                    Value::String(s.unwrap().to_string().unwrap())
+                }
                 remote_result_set::value::Bool(v) => Value::Bool(v),
                 remote_result_set::value::Date(v) => {
                     let v = v.unwrap();

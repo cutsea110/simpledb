@@ -52,7 +52,7 @@ impl remote_driver::Server for RemoteDriverImpl {
         mut results: remote_driver::ConnectResults,
     ) -> Promise<(), capnp::Error> {
         trace!("connecting");
-        let dbname = pry!(pry!(params.get()).get_dbname());
+        let dbname = pry!(pry!(params.get()).get_dbname()).to_str().unwrap();
         info!("connect db: {}", dbname);
         let db = self.server.lock().unwrap().get_database(dbname);
         let conn: remote_connection::Client = capnp_rpc::new_client(RemoteConnectionImpl::new(db));
@@ -382,7 +382,7 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::CreateStatementResults,
     ) -> Promise<(), capnp::Error> {
         trace!("create statement");
-        let sql = pry!(pry!(params.get()).get_sql());
+        let sql = pry!(pry!(params.get()).get_sql()).to_str().unwrap();
         info!("SQL: {}", sql);
         let planner = self
             .conn
@@ -449,7 +449,7 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::GetTableSchemaResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get table schema");
-        let tblname = pry!(pry!(params.get()).get_tblname());
+        let tblname = pry!(pry!(params.get()).get_tblname()).to_str().unwrap();
         let schema = self
             .conn
             .borrow()
@@ -469,7 +469,7 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::GetViewDefinitionResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get view definition");
-        let viewname = pry!(pry!(params.get()).get_viewname());
+        let viewname = pry!(pry!(params.get()).get_viewname()).to_str().unwrap();
         let (_, def) = self
             .conn
             .borrow()
@@ -490,7 +490,7 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::GetIndexInfoResults,
     ) -> Promise<(), capnp::Error> {
         trace!("get index info");
-        let tblname = pry!(pry!(params.get()).get_tblname());
+        let tblname = pry!(pry!(params.get()).get_tblname()).to_str().unwrap();
         let indexinfo = self
             .conn
             .borrow()
@@ -947,7 +947,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         params: remote_result_set::GetInt16Params,
         mut results: remote_result_set::GetInt16Results,
     ) -> Promise<(), capnp::Error> {
-        let fldname = pry!(pry!(params.get()).get_fldname());
+        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get int16 value: {}", fldname);
         let val = self
             .scan
@@ -965,7 +965,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         params: remote_result_set::GetInt32Params,
         mut results: remote_result_set::GetInt32Results,
     ) -> Promise<(), capnp::Error> {
-        let fldname = pry!(pry!(params.get()).get_fldname());
+        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get int32 value: {}", fldname);
         let val = self
             .scan
@@ -983,7 +983,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         params: remote_result_set::GetStringParams,
         mut results: remote_result_set::GetStringResults,
     ) -> Promise<(), capnp::Error> {
-        let fldname = pry!(pry!(params.get()).get_fldname());
+        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get string value: {}", fldname);
         let val = self
             .scan
@@ -1001,7 +1001,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         params: remote_result_set::GetBoolParams,
         mut results: remote_result_set::GetBoolResults,
     ) -> Promise<(), capnp::Error> {
-        let fldname = pry!(pry!(params.get()).get_fldname());
+        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get bool value: {}", fldname);
         let val = self
             .scan
@@ -1019,7 +1019,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         params: remote_result_set::GetDateParams,
         mut results: remote_result_set::GetDateResults,
     ) -> Promise<(), capnp::Error> {
-        let fldname = pry!(pry!(params.get()).get_fldname());
+        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get date value: {}", fldname);
         let val = self
             .scan

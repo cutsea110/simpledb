@@ -17,7 +17,7 @@ impl<'a> From<remote_statement::constant::Reader<'a>> for Constant {
         match c.which().unwrap() {
             remote_statement::constant::Int16(v) => Self::I16(v),
             remote_statement::constant::Int32(v) => Self::I32(v),
-            remote_statement::constant::String(s) => Self::String(s.unwrap().to_string()),
+            remote_statement::constant::String(s) => Self::String(s.unwrap().to_string().unwrap()),
             remote_statement::constant::Bool(v) => Self::Bool(v),
             remote_statement::constant::Date(v) => {
                 let v = v.unwrap();
@@ -94,7 +94,7 @@ impl<'a> From<remote_statement::expression::Reader<'a>> for Expression {
                 Self::Val(c)
             }
             remote_statement::expression::Fldname(s) => {
-                let s = s.unwrap().to_string();
+                let s = s.unwrap().to_string().unwrap();
                 Self::Fldname(s)
             }
         }
@@ -148,9 +148,9 @@ impl<'a> From<remote_statement::plan_repr::operation::Reader<'a>> for Operation 
         match op.which().unwrap() {
             remote_statement::plan_repr::operation::IndexJoinScan(v) => {
                 let v = v.unwrap();
-                let idxname = v.get_idxname().unwrap().to_string();
-                let idxfldname = v.get_idxfldname().unwrap().to_string();
-                let joinfld = v.get_joinfld().unwrap().to_string();
+                let idxname = v.get_idxname().unwrap().to_string().unwrap();
+                let idxfldname = v.get_idxfldname().unwrap().to_string().unwrap();
+                let joinfld = v.get_joinfld().unwrap().to_string().unwrap();
                 Self::IndexJoinScan {
                     idxname,
                     idxfldname,
@@ -159,8 +159,8 @@ impl<'a> From<remote_statement::plan_repr::operation::Reader<'a>> for Operation 
             }
             remote_statement::plan_repr::operation::IndexSelectScan(v) => {
                 let v = v.unwrap();
-                let idxname = v.get_idxname().unwrap().to_string();
-                let idxfldname = v.get_idxfldname().unwrap().to_string();
+                let idxname = v.get_idxname().unwrap().to_string().unwrap();
+                let idxfldname = v.get_idxfldname().unwrap().to_string().unwrap();
                 let val = Constant::from(v.get_val().unwrap());
                 Self::IndexSelectScan {
                     idxname,
@@ -174,14 +174,14 @@ impl<'a> From<remote_statement::plan_repr::operation::Reader<'a>> for Operation 
                     .get_fields()
                     .unwrap()
                     .into_iter()
-                    .map(|s| s.unwrap().to_string())
+                    .map(|s| s.unwrap().to_string().unwrap())
                     .collect_vec();
                 let aggfns = v
                     .get_aggfns()
                     .unwrap()
                     .into_iter()
                     .map(|f| {
-                        let fst = f.get_fst().unwrap().to_string();
+                        let fst = f.get_fst().unwrap().to_string().unwrap();
                         let snd = Constant::from(f.get_snd().unwrap());
                         (fst, snd)
                     })
@@ -191,8 +191,8 @@ impl<'a> From<remote_statement::plan_repr::operation::Reader<'a>> for Operation 
             remote_statement::plan_repr::operation::Materialize(_) => Self::Materialize,
             remote_statement::plan_repr::operation::MergeJoinScan(v) => {
                 let v = v.unwrap();
-                let fldname1 = v.get_fldname1().unwrap().to_string();
-                let fldname2 = v.get_fldname2().unwrap().to_string();
+                let fldname1 = v.get_fldname1().unwrap().to_string().unwrap();
+                let fldname2 = v.get_fldname2().unwrap().to_string().unwrap();
                 Self::MergeJoinScan { fldname1, fldname2 }
             }
             remote_statement::plan_repr::operation::SortScan(v) => {
@@ -201,7 +201,7 @@ impl<'a> From<remote_statement::plan_repr::operation::Reader<'a>> for Operation 
                     .get_compflds()
                     .unwrap()
                     .into_iter()
-                    .map(|s| s.unwrap().to_string())
+                    .map(|s| s.unwrap().to_string().unwrap())
                     .collect_vec();
                 Self::SortScan { compflds }
             }
@@ -216,7 +216,7 @@ impl<'a> From<remote_statement::plan_repr::operation::Reader<'a>> for Operation 
                 Self::SelectScan { pred }
             }
             remote_statement::plan_repr::operation::TableScan(v) => {
-                let tblname = v.unwrap().get_tblname().unwrap().to_string();
+                let tblname = v.unwrap().get_tblname().unwrap().to_string().unwrap();
                 Self::TableScan { tblname }
             }
         }
