@@ -66,6 +66,66 @@ http-server -p 3000
 and then open browser http://localhost:3000?scale=tiny.
 At this url, query parameter scale can has tiny/small/medium/large.
 
+## Query tips
+
+check table catalogs.
+
+```
+SQL> :t tblcat
+* table: tblcat has 2 fields.
+
+#   name             type
+--------------------------------------
+   1 tblname          varchar(16)
+   2 slotsize         integer
+
+SQL> SELECT tblname FROM tblcat;
+tblname
+------------------
+tblcat
+fldcat
+viewcat
+idxcat
+student
+dept
+course
+section
+enroll
+sex
+transaction 6 committed
+Rows 10 (0.000s)
+
+SQL>
+```
+
+check field catalogs.
+
+```
+SQL> :t fldcat
+* table: fldcat has 5 fields.
+
+#   name             type
+--------------------------------------
+   1 tblname          varchar(16)
+   2 fldname          varchar(16)
+   3 type             integer
+   4 length           integer
+   5 offset           integer
+
+SQL> SELECT tblname, fldname, type, length FROM fldcat;
+tblname           fldname           type    length
+----------------------------------------------------
+...
+student           sid                     2       0
+student           sname                   3      10
+student           grad_year               1       0
+student           major_id                2       0
+student           birth                   5       0
+student           sex                     4       0
+transaction 9 committed
+Rows 33 (0.001s)
+```
+
 ### Benchmark results
 
 - [tiny](https://cutsea110.github.io/simpledb/?scale=tiny)
