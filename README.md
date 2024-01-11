@@ -126,6 +126,19 @@ transaction 9 committed
 Rows 33 (0.001s)
 ```
 
+check view catalog
+
+```
+SQL> SELECT viewname, viewdef FROM viewcat;
+viewname          viewdef
+------------------------------------------------------------------------------------------------------------------------
+einstein          select sect_id from section where prof='einstein'
+transaction 3 committed
+Rows 1 (0.000s)
+
+SQL>
+```
+
 ### Benchmark results
 
 - [tiny](https://cutsea110.github.io/simpledb/?scale=tiny)
