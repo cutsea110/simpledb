@@ -68,9 +68,15 @@ At this url, query parameter scale can has tiny/small/medium/large.
 
 ## Query tips
 
+use rlwrap in order to edit query prettier.
+
+```bash
+$ rlwrap cargo run --bin esql -- -d <dbname>
+```
+
 check table catalogs.
 
-```
+```sql
 SQL> :t tblcat
 * table: tblcat has 2 fields.
 
@@ -100,7 +106,7 @@ SQL>
 
 check field catalogs.
 
-```
+```sql
 SQL> :t fldcat
 * table: fldcat has 5 fields.
 
@@ -128,7 +134,7 @@ Rows 33 (0.001s)
 
 check view catalog
 
-```
+```sql
 SQL> SELECT viewname, viewdef FROM viewcat;
 viewname          viewdef
 ------------------------------------------------------------------------------------------------------------------------
