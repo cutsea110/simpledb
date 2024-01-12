@@ -22,7 +22,8 @@ do
     if [ -d ./${scale} ]; then
 	rm -rf ./${scale}
     fi
-    ./gen-sql-for-db.sh ${scale} > ./init-${scale}.sql
+    mkdir ${scale}
+    ./gen-sql-for-db.sh ${scale} > ./${scale}/init-data.sql
     ./e2e.sh ${scale}
 done
 

@@ -19,7 +19,7 @@ mkdir -p ${SUMMARY_DIR}
 # See benchmarks.sh.
 ESQL=./esql
 
-INIT_SQL=`cat init-${DBSIZE}.sql`
+INIT_SQL=`cat ${DBSIZE}/init-data.sql`
 QUERY_SQL=`cat query.sql` # This query must be independent of DBSIZE.
 
 #
