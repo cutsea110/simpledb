@@ -33,6 +33,7 @@ pub fn exec_meta_cmd(conn: &mut EmbeddedConnection, qry: &str) {
         }
         ":t" | ":table" => {
             if args.is_empty() {
+                // TODO: show all tables.
                 println!(
                     r#"table name is required.
 If you want to show all tables, try:
@@ -54,6 +55,7 @@ SELECT tblname FROM tblcat;"#
         }
         ":v" | ":view" => {
             if args.is_empty() {
+                // TODO: show all views.
                 println!(
                     r#"view name is required.
 If you want to show all views, try:
