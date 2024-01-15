@@ -41,7 +41,12 @@ pub async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
         }
         ":t" | ":table" => {
             if args.is_empty() {
-                println!("table name is required.");
+                // TODO: show all tables.
+                println!(
+                    r#"table name is required.
+If you want to show all tables, try:
+SELECT tblname FROM tblcat;"#
+                );
                 return;
             }
             let tblname = args[0];
@@ -53,7 +58,12 @@ pub async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
         }
         ":v" | ":view" => {
             if args.is_empty() {
-                println!("view name is required.");
+                // TODO: show all views.
+                println!(
+                    r#"view name is required.
+If you want to show all views, try:
+SELECT viewname, viewdef FROM viewcat;"#
+                );
                 return;
             }
             let viewname = args[0];
