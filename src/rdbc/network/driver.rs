@@ -25,7 +25,7 @@ impl<'a> DriverAdapter<'a> for NetworkDriver {
 
     fn connect(&self, dbname: &str) -> Result<Self::Con> {
         let mut request = self.driver.connect_request();
-        request.get().set_dbname(dbname.into());
+        request.get().set_dbname(dbname);
         let conn = request.send().pipeline.get_conn();
 
         Ok(Self::Con::new(conn))

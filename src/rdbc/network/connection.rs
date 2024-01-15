@@ -33,7 +33,7 @@ impl NetworkConnection {
         let mut schema = Schema::new();
 
         let mut request = self.conn.get_table_schema_request();
-        request.get().set_tblname(tblname.into());
+        request.get().set_tblname(tblname);
         let reply = request.send().promise.await?;
         let sch = reply.get()?.get_sch()?;
 
@@ -73,7 +73,7 @@ impl NetworkConnection {
     }
     pub async fn get_view_definition(&self, viewname: &str) -> Result<(String, String)> {
         let mut request = self.conn.get_view_definition_request();
-        request.get().set_viewname(viewname.into());
+        request.get().set_viewname(viewname);
         let reply = request.send().promise.await?;
         let viewdef = reply.get()?.get_vwdef()?;
 
@@ -86,7 +86,7 @@ impl NetworkConnection {
         let mut map = HashMap::new();
 
         let mut request = self.conn.get_index_info_request();
-        request.get().set_tblname(tblname.into());
+        request.get().set_tblname(tblname);
         let reply = request.send().promise.await?;
         let ii = reply.get()?.get_ii()?;
         let entries = ii.get_entries()?;
@@ -153,7 +153,7 @@ impl<'a> ConnectionAdapter<'a> for NetworkConnection {
 
     fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt> {
         let mut request = self.conn.create_statement_request();
-        request.get().set_sql(sql.into());
+        request.get().set_sql(sql);
         let stmt = request.send().pipeline.get_stmt();
 
         Ok(Self::Stmt::new(stmt))

@@ -199,7 +199,7 @@ fn set_schema(schema: Arc<Schema>, sch: &mut schema::Builder) {
     let mut fields = sch.reborrow().init_fields(schema.fields().len() as u32);
     for i in 0..schema.fields().len() {
         let fldname = schema.fields()[i].as_str();
-        fields.set(i as u32, fldname.into());
+        fields.set(i as u32, fldname);
     }
     let mut info = sch.reborrow().init_info();
     let mut entries = info
@@ -207,11 +207,7 @@ fn set_schema(schema: Arc<Schema>, sch: &mut schema::Builder) {
         .init_entries(schema.info().keys().len() as u32);
     for (i, (k, fi)) in schema.info().into_iter().enumerate() {
         let fldname = k.as_str();
-        entries
-            .reborrow()
-            .get(i as u32)
-            .set_key(fldname.into())
-            .unwrap();
+        entries.reborrow().get(i as u32).set_key(fldname).unwrap();
         let mut val = entries.reborrow().get(i as u32).init_value();
         val.reborrow().set_length(fi.length as i32);
         let t = match fi.fld_type {
@@ -233,7 +229,7 @@ fn set_constant(cnst: &Constant, c: &mut remote_statement::constant::Builder) {
             c.set_int32(*v);
         }
         Constant::String(s) => {
-            c.set_string(s.as_str().into());
+            c.set_string(s.as_str());
         }
         Constant::Bool(b) => {
             c.set_bool(*b);
@@ -249,7 +245,7 @@ fn set_constant(cnst: &Constant, c: &mut remote_statement::constant::Builder) {
 fn set_expression(expr: &Expression, e: &mut remote_statement::expression::Builder) {
     match expr {
         Expression::Fldname(f) => {
-            e.reborrow().set_fldname(f.as_str().into());
+            e.reborrow().set_fldname(f.as_str());
         }
         Expression::Val(c) => {
             let mut v = e.reborrow().init_val();
@@ -271,9 +267,9 @@ fn set_operation(
             joinfld,
         } => {
             let mut op = op.init_index_join_scan();
-            op.set_idxname(idxname.as_str().into());
-            op.set_idxfldname(idxfldname.as_str().into());
-            op.set_joinfld(joinfld.as_str().into());
+            op.set_idxname(idxname.as_str());
+            op.set_idxfldname(idxfldname.as_str());
+            op.set_joinfld(joinfld.as_str());
         }
         repr::planrepr::Operation::IndexSelectScan {
             idxname,
@@ -281,8 +277,8 @@ fn set_operation(
             val,
         } => {
             let mut op = op.init_index_select_scan();
-            op.set_idxname(idxname.as_str().into());
-            op.set_idxfldname(idxfldname.as_str().into());
+            op.set_idxname(idxname.as_str());
+            op.set_idxfldname(idxfldname.as_str());
             let mut v = op.init_val();
             set_constant(&val, &mut v);
         }
@@ -290,12 +286,12 @@ fn set_operation(
             let mut op = op.init_group_by_scan();
             let mut flds = op.reborrow().init_fields(fields.len() as u32);
             for (i, f) in fields.into_iter().enumerate() {
-                flds.set(i as u32, f.as_str().into());
+                flds.set(i as u32, f.as_str());
             }
             let mut fns = op.reborrow().init_aggfns(aggfns.len() as u32);
             for (i, (f, c)) in aggfns.into_iter().enumerate() {
                 let mut tpl = fns.reborrow().get(i as u32);
-                tpl.set_fst(f.as_str().into()).unwrap();
+                tpl.set_fst(f.as_str()).unwrap();
                 let mut v = tpl.init_snd();
                 set_constant(&c, &mut v);
             }
@@ -305,14 +301,14 @@ fn set_operation(
         }
         repr::planrepr::Operation::MergeJoinScan { fldname1, fldname2 } => {
             let mut op = op.init_merge_join_scan();
-            op.set_fldname1(fldname1.as_str().into());
-            op.set_fldname2(fldname2.as_str().into());
+            op.set_fldname1(fldname1.as_str());
+            op.set_fldname2(fldname2.as_str());
         }
         repr::planrepr::Operation::SortScan { compflds } => {
             let op = op.init_sort_scan();
             let mut flds = op.init_compflds(compflds.len() as u32);
             for (i, f) in compflds.into_iter().enumerate() {
-                flds.set(i as u32, f.as_str().into());
+                flds.set(i as u32, f.as_str());
             }
         }
         repr::planrepr::Operation::MultibufferProductScan => {
@@ -337,7 +333,7 @@ fn set_operation(
             }
         }
         repr::planrepr::Operation::TableScan { tblname } => {
-            op.init_table_scan().set_tblname(tblname.as_str().into());
+            op.init_table_scan().set_tblname(tblname.as_str());
         }
     }
 }
@@ -479,8 +475,8 @@ impl remote_connection::Server for RemoteConnectionImpl {
             .get_view_definitoin(viewname, Arc::clone(&self.conn.borrow().current_tx))
             .expect("get view definition");
         let mut viewdef = results.get().init_vwdef();
-        viewdef.set_vwname(viewname.into());
-        viewdef.set_vwdef(def.as_str().into());
+        viewdef.set_vwname(viewname);
+        viewdef.set_vwdef(def.as_str());
 
         Promise::ok(())
     }
@@ -505,8 +501,8 @@ impl remote_connection::Server for RemoteConnectionImpl {
             let idxname = ii.index_name();
             let fldname = ii.field_name();
             let mut val = entries.reborrow().get(i as u32).init_value();
-            val.reborrow().set_idxname(idxname.into());
-            val.reborrow().set_fldname(fldname.into());
+            val.reborrow().set_idxname(idxname);
+            val.reborrow().set_fldname(fldname);
         }
 
         Promise::ok(())
@@ -638,7 +634,7 @@ impl string_box::Server for StringBoxImpl {
         _: string_box::ReadParams,
         mut results: string_box::ReadResults,
     ) -> Promise<(), capnp::Error> {
-        results.get().set_val(self.val.as_str().into());
+        results.get().set_val(self.val.as_str());
         Promise::ok(())
     }
 }
@@ -839,7 +835,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
             entries
                 .reborrow()
                 .get(i as u32)
-                .set_key(k.as_str().into())
+                .set_key(k.as_str())
                 .unwrap();
             let mut val = entries.reborrow().get(i as u32).init_value();
             match fi.fld_type {
@@ -855,7 +851,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                 }
                 FieldType::VARCHAR => {
                     if let Ok(s) = self.scan.lock().unwrap().get_string(k) {
-                        val.reborrow().set_string(s.as_str().into());
+                        val.reborrow().set_string(s.as_str());
                     }
                 }
                 FieldType::BOOL => {
@@ -895,7 +891,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                     entries
                         .reborrow()
                         .get(i as u32)
-                        .set_key(k.as_str().into())
+                        .set_key(k.as_str())
                         .unwrap();
                     let mut val = entries.reborrow().get(i as u32).init_value();
                     match fi.fld_type {
@@ -911,7 +907,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                         }
                         FieldType::VARCHAR => {
                             if let Ok(s) = self.scan.lock().unwrap().get_string(k) {
-                                val.reborrow().set_string(s.as_str().into());
+                                val.reborrow().set_string(s.as_str());
                             }
                         }
                         FieldType::BOOL => {

@@ -249,35 +249,35 @@ impl ResultSetAdapter for NetworkResultSet {
     }
     fn get_i16(&mut self, fldname: &str) -> Result<Self::Int16Value> {
         let mut request = self.resultset.get_int16_request();
-        request.get().set_fldname(fldname.into());
+        request.get().set_fldname(fldname);
         let val = request.send().pipeline.get_val();
 
         Ok(Self::Int16Value::new(val))
     }
     fn get_i32(&mut self, fldname: &str) -> Result<Self::Int32Value> {
         let mut request = self.resultset.get_int32_request();
-        request.get().set_fldname(fldname.into());
+        request.get().set_fldname(fldname);
         let val = request.send().pipeline.get_val();
 
         Ok(Self::Int32Value::new(val))
     }
     fn get_string(&mut self, fldname: &str) -> Result<Self::StringValue> {
         let mut request = self.resultset.get_string_request();
-        request.get().set_fldname(fldname.into());
+        request.get().set_fldname(fldname);
         let val = request.send().pipeline.get_val();
 
         Ok(Self::StringValue::new(val))
     }
     fn get_bool(&mut self, fldname: &str) -> Result<Self::BoolValue> {
         let mut request = self.resultset.get_bool_request();
-        request.get().set_fldname(fldname.into());
+        request.get().set_fldname(fldname);
         let val = request.send().pipeline.get_val();
 
         Ok(Self::BoolValue::new(val))
     }
     fn get_date(&mut self, fldname: &str) -> Result<Self::DateValue> {
         let mut request = self.resultset.get_date_request();
-        request.get().set_fldname(fldname.into());
+        request.get().set_fldname(fldname);
         let val = request.send().pipeline.get_val();
 
         Ok(Self::DateValue::new(val))
