@@ -119,12 +119,9 @@ impl ProjectScan {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::{fs, path::Path};
 
-    use crate::{
-        metadata::manager::MetadataMgr, record::tablescan::TableScan, server::simpledb::SimpleDB,
-    };
+    use crate::{metadata::manager::MetadataMgr, server::simpledb::SimpleDB};
 
     use super::super::tests;
     use super::*;

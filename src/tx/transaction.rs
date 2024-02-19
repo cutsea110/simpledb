@@ -245,7 +245,6 @@ mod tests {
     use super::*;
     use crate::server::simpledb::SimpleDB;
 
-    use anyhow::Result;
     use std::fs;
     use std::path::Path;
 

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use env_logger::{self, Env};
+use env_logger::Env;
 use log::info;
 use std::{
     io::{stdout, Write},

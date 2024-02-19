@@ -135,13 +135,11 @@ impl SelectScan {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::{fs, path::Path};
 
     use crate::{
         metadata::manager::MetadataMgr,
         query::{expression::Expression, term::Term},
-        record::tablescan::TableScan,
         server::simpledb::SimpleDB,
     };
 

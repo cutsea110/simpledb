@@ -88,14 +88,11 @@ impl ProductPlan {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::{fs, path::Path};
 
     use super::*;
     use crate::{
-        metadata::manager::MetadataMgr,
-        plan::{plan::Plan, tableplan::TablePlan},
-        query::tests,
+        metadata::manager::MetadataMgr, plan::tableplan::TablePlan, query::tests,
         server::simpledb::SimpleDB,
     };
 

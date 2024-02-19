@@ -88,13 +88,12 @@ impl SelectPlan {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::{fs, path::Path};
 
     use super::*;
     use crate::{
         metadata::manager::MetadataMgr,
-        plan::{plan::Plan, tableplan::TablePlan},
+        plan::tableplan::TablePlan,
         query::{constant::Constant, expression::Expression, term::Term, tests},
         server::simpledb::SimpleDB,
     };

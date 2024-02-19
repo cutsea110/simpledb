@@ -158,13 +158,8 @@ impl RecordPage {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use rand::Rng;
-    use std::{
-        fs,
-        path::Path,
-        sync::{Arc, Mutex},
-    };
+    use std::{fs, path::Path};
 
     use super::*;
     use crate::{record::schema::Schema, server::simpledb::SimpleDB};

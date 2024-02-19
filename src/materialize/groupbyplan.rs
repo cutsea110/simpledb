@@ -127,16 +127,12 @@ impl PlanRepr for GroupByPlanRepr {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::{fs, path::Path};
 
     use super::*;
     use crate::{
-        materialize::aggregationfn::maxfn::MaxFn,
-        metadata::manager::MetadataMgr,
-        plan::{plan::Plan, tableplan::TablePlan},
-        query::tests,
-        server::simpledb::SimpleDB,
+        materialize::aggregationfn::maxfn::MaxFn, metadata::manager::MetadataMgr,
+        plan::tableplan::TablePlan, query::tests, server::simpledb::SimpleDB,
     };
 
     #[test]

@@ -57,7 +57,6 @@ impl ViewMgr {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::{fs, path::Path};
 
     use super::*;

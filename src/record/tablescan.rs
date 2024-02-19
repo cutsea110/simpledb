@@ -274,7 +274,6 @@ impl TableScan {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use rand::Rng;
     use std::{fs, path::Path};
 

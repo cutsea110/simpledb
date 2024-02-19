@@ -185,7 +185,6 @@ fn waiting_too_long(starttime: SystemTime) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::fs;
     use std::path::Path;
 

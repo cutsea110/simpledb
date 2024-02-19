@@ -666,7 +666,6 @@ mod tests {
     use super::*;
 
     use combine::error::StringStreamError;
-    use combine::Parser;
 
     #[test]
     fn id_tok_test() {

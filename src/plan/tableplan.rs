@@ -95,16 +95,10 @@ impl TablePlan {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
     use std::{fs, path::Path};
 
     use super::*;
-    use crate::{
-        metadata::manager::MetadataMgr,
-        plan::{plan::Plan, tableplan::TablePlan},
-        query::tests,
-        server::simpledb::SimpleDB,
-    };
+    use crate::{query::tests, server::simpledb::SimpleDB};
 
     #[test]
     fn unit_test() -> Result<()> {

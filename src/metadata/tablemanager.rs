@@ -106,12 +106,7 @@ impl TableMgr {
 
 #[cfg(test)]
 mod tests {
-    use anyhow::Result;
-    use std::{
-        fs,
-        path::Path,
-        sync::{Arc, Mutex},
-    };
+    use std::{fs, path::Path};
 
     use super::*;
     use crate::record::schema::FieldType;

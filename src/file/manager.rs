@@ -185,7 +185,6 @@ impl FileMgr {
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDate;
-    use std::fs;
 
     use super::*;
     use crate::server::simpledb::SimpleDB;
