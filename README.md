@@ -1,5 +1,7 @@
 # SimpleDB
 
+[![Rust](https://github.com/cutsea110/simpledb/actions/workflows/rust.yml/badge.svg)](https://github.com/cutsea110/simpledb/actions/workflows/rust.yml)
+
 This is a project to develop SimpleDB in Rust.
 
 text: [Database Design and Implementation: Second Edition](https://www.amazon.co.jp/gp/product/3030338355/)
