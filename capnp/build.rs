@@ -1,4 +1,4 @@
-extern crate capnpc;
+pub use capnpc;
 
 fn main() {
     ::capnpc::CompilerCommand::new()
