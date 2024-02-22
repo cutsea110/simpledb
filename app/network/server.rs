@@ -1,5 +1,5 @@
-extern crate capnp_rpc;
-extern crate simpledb;
+pub use capnp_rpc;
+pub use simpledb;
 
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use env_logger::Env;

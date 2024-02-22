@@ -17,7 +17,7 @@ pub mod tx;
 // my own extends
 pub mod repr;
 // for rpc
-extern crate capnp_rpc;
+pub use capnp_rpc;
 pub mod remote_capnp {
     include!(concat!(env!("OUT_DIR"), "/capnp/remote_capnp.rs"));
 }
