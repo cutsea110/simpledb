@@ -11,7 +11,7 @@ build = "capnp/build.rs"
 capnpc = "0.19.0"
 
 [dependencies]
-anyhow = "1.0.80"
+anyhow = "1.0.81"
 capnp = "0.19.2"
 capnp-rpc = "0.19.0"
 chrono = "0.4.35"
