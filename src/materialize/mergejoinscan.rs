@@ -88,44 +88,44 @@ impl Scan for MergeJoinScan {
     }
     fn get_i16(&mut self, fldname: &str) -> Result<i16> {
         if self.s1.lock().unwrap().has_field(fldname) {
-            return self.s1.lock().unwrap().get_i16(fldname);
+            self.s1.lock().unwrap().get_i16(fldname)
         } else {
-            return self.s2.lock().unwrap().get_i16(fldname);
+            self.s2.lock().unwrap().get_i16(fldname)
         }
     }
     fn get_i32(&mut self, fldname: &str) -> Result<i32> {
         if self.s1.lock().unwrap().has_field(fldname) {
-            return self.s1.lock().unwrap().get_i32(fldname);
+            self.s1.lock().unwrap().get_i32(fldname)
         } else {
-            return self.s2.lock().unwrap().get_i32(fldname);
+            self.s2.lock().unwrap().get_i32(fldname)
         }
     }
     fn get_string(&mut self, fldname: &str) -> Result<String> {
         if self.s1.lock().unwrap().has_field(fldname) {
-            return self.s1.lock().unwrap().get_string(fldname);
+            self.s1.lock().unwrap().get_string(fldname)
         } else {
-            return self.s2.lock().unwrap().get_string(fldname);
+            self.s2.lock().unwrap().get_string(fldname)
         }
     }
     fn get_bool(&mut self, fldname: &str) -> Result<bool> {
         if self.s1.lock().unwrap().has_field(fldname) {
-            return self.s1.lock().unwrap().get_bool(fldname);
+            self.s1.lock().unwrap().get_bool(fldname)
         } else {
-            return self.s2.lock().unwrap().get_bool(fldname);
+            self.s2.lock().unwrap().get_bool(fldname)
         }
     }
     fn get_date(&mut self, fldname: &str) -> Result<NaiveDate> {
         if self.s1.lock().unwrap().has_field(fldname) {
-            return self.s1.lock().unwrap().get_date(fldname);
+            self.s1.lock().unwrap().get_date(fldname)
         } else {
-            return self.s2.lock().unwrap().get_date(fldname);
+            self.s2.lock().unwrap().get_date(fldname)
         }
     }
     fn get_val(&mut self, fldname: &str) -> Result<Constant> {
         if self.s1.lock().unwrap().has_field(fldname) {
-            return self.s1.lock().unwrap().get_val(fldname);
+            self.s1.lock().unwrap().get_val(fldname)
         } else {
-            return self.s2.lock().unwrap().get_val(fldname);
+            self.s2.lock().unwrap().get_val(fldname)
         }
     }
     fn has_field(&self, fldname: &str) -> bool {

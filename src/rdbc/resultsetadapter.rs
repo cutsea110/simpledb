@@ -25,7 +25,7 @@ impl fmt::Display for ResultSetError {
                 write!(f, "failed to close")
             }
             ResultSetError::UnknownField(fldname) => {
-                write!(f, "unknown field {}", fldname)
+                write!(f, "unknown field '{}'", fldname)
             }
         }
     }

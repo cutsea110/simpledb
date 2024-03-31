@@ -112,7 +112,8 @@ impl Scan for SortScan {
 
         if !self.hasmore1 && !self.hasmore2 {
             return false;
-        } else if self.hasmore1 && self.hasmore2 {
+        }
+        if self.hasmore1 && self.hasmore2 {
             let s1 = self.s1.lock().unwrap().to_scan().unwrap();
             let s2 = self.s2.as_ref().unwrap().lock().unwrap().to_scan().unwrap();
             if self.comp.compare(s1, s2).is_lt() {
