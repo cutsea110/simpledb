@@ -12,7 +12,7 @@ capnpc = "0.19.0"
 
 [dependencies]
 anyhow = "1.0.81"
-capnp = "0.19.2"
+capnp = "0.19.3"
 capnp-rpc = "0.19.0"
 chrono = "0.4.37"
 combine = "4.6.6"
@@ -24,7 +24,7 @@ num-derive = "0.4.2"
 num-traits = "0.2.18"
 rand = "0.8.5"
 structopt = "0.3.26"
-tokio = {version = "1.36.0", features = ["full"]}
+tokio = {version = "1.37.0", features = ["full"]}
 tokio-util = {version = "0.7.10", features = ["compat"]}
 
 [lib]
