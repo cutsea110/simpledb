@@ -40,7 +40,7 @@ cargo run --bin esql -- -d <dbname>
 How to run simpledb-server.
 
 ``` shell
-cargo run --bin simpledb server program.
+cargo run --bin simpledb-server
 ```
 
 How to run sql as simpledb client program.
