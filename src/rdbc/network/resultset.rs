@@ -201,7 +201,7 @@ impl NetworkResultSet {
         Ok(results)
     }
 
-    fn to_hashmap(row: remote_result_set::row::Reader) -> HashMap<&str, Value> {
+    fn to_hashmap(row: remote_result_set::row::Reader<'_>) -> HashMap<&str, Value> {
         let entries = row
             .get_map()
             .expect("get row map")
