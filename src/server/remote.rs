@@ -4,6 +4,7 @@ use chrono::{Datelike, NaiveDate};
 use log::{debug, info, trace};
 use std::{
     cell::RefCell,
+    future::Future,
     rc::Rc,
     sync::{Arc, Mutex},
 };
@@ -47,10 +48,10 @@ impl RemoteDriverImpl {
 
 impl remote_driver::Server for RemoteDriverImpl {
     fn connect(
-        &mut self,
+        self: Rc<RemoteDriverImpl>,
         params: remote_driver::ConnectParams,
         mut results: remote_driver::ConnectResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("connecting");
         let dbname = pry!(pry!(params.get()).get_dbname()).to_str().unwrap();
         info!("connect db: {}", dbname);
@@ -62,10 +63,10 @@ impl remote_driver::Server for RemoteDriverImpl {
         Promise::ok(())
     }
     fn get_version(
-        &mut self,
+        self: Rc<RemoteDriverImpl>,
         _: remote_driver::GetVersionParams,
         mut results: remote_driver::GetVersionResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get version");
         let mut ver = results.get().init_ver();
         ver.set_major_ver(self.major_ver);
@@ -362,10 +363,10 @@ impl TxImpl {
 }
 impl tx_box::Server for TxImpl {
     fn read(
-        &mut self,
+        self: Rc<TxImpl>,
         _: tx_box::ReadParams,
         mut results: tx_box::ReadResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         results.get().set_tx(self.tx);
         Promise::ok(())
     }
@@ -373,10 +374,10 @@ impl tx_box::Server for TxImpl {
 
 impl remote_connection::Server for RemoteConnectionImpl {
     fn create_statement(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         params: remote_connection::CreateStatementParams,
         mut results: remote_connection::CreateStatementResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("create statement");
         let sql = pry!(pry!(params.get()).get_sql()).to_str().unwrap();
         info!("SQL: {}", sql);
@@ -398,10 +399,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
         Promise::ok(())
     }
     fn close(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         _: remote_connection::CloseParams,
         mut results: remote_connection::CloseResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
         let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
@@ -411,10 +412,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
         Promise::ok(())
     }
     fn commit(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         _: remote_connection::CommitParams,
         mut results: remote_connection::CommitResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let tx_num = self.conn.borrow_mut().current_tx.lock().unwrap().tx_num();
         trace!("commit tx: {}", tx_num);
 
@@ -426,10 +427,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
         Promise::ok(())
     }
     fn rollback(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         _: remote_connection::RollbackParams,
         mut results: remote_connection::RollbackResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let tx_num = self.conn.borrow_mut().current_tx.lock().unwrap().tx_num();
         trace!("rollback tx: {}", tx_num);
         self.conn.borrow_mut().rollback().expect("rollback");
@@ -440,10 +441,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
         Promise::ok(())
     }
     fn get_table_schema(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         params: remote_connection::GetTableSchemaParams,
         mut results: remote_connection::GetTableSchemaResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get table schema");
         let tblname = pry!(pry!(params.get()).get_tblname()).to_str().unwrap();
         let schema = self
@@ -460,10 +461,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
         Promise::ok(())
     }
     fn get_view_definition(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         params: remote_connection::GetViewDefinitionParams,
         mut results: remote_connection::GetViewDefinitionResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get view definition");
         let viewname = pry!(pry!(params.get()).get_viewname()).to_str().unwrap();
         let (_, def) = self
@@ -481,10 +482,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
         Promise::ok(())
     }
     fn get_index_info(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         params: remote_connection::GetIndexInfoParams,
         mut results: remote_connection::GetIndexInfoResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get index info");
         let tblname = pry!(pry!(params.get()).get_tblname()).to_str().unwrap();
         let indexinfo = self
@@ -510,10 +511,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
 
     // extends for statistics by exercise 3.15
     fn nums_of_read_written_blocks(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         _: remote_connection::NumsOfReadWrittenBlocksParams,
         mut results: remote_connection::NumsOfReadWrittenBlocksResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("nums of read/written blocks");
         let (r, w) = self.conn.borrow().numbers_of_read_written_blocks();
         results.get().set_r(r);
@@ -523,10 +524,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
     }
     // extends for statistics by exercise 4.18
     fn nums_of_total_pinned_unpinned(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         _: remote_connection::NumsOfTotalPinnedUnpinnedParams,
         mut results: remote_connection::NumsOfTotalPinnedUnpinnedResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("nums of total pinned/unpinned buffers");
         let (pinned, unpinned) = self.conn.borrow().numbers_of_total_pinned_unpinned();
         results.get().set_pinned(pinned);
@@ -536,10 +537,10 @@ impl remote_connection::Server for RemoteConnectionImpl {
     }
     // extends for statistics by exercise 4.18
     fn buffer_cache_hit_assigned(
-        &mut self,
+        self: Rc<RemoteConnectionImpl>,
         _: remote_connection::BufferCacheHitAssignedParams,
         mut results: remote_connection::BufferCacheHitAssignedResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("buffer cache hit/assigned");
         let (hit, assigned) = self.conn.borrow().buffer_cache_hit_assigned();
         results.get().set_hit(hit);
@@ -563,18 +564,18 @@ impl AffectedImpl {
 }
 impl affected::Server for AffectedImpl {
     fn read(
-        &mut self,
+        self: Rc<AffectedImpl>,
         _: affected::ReadParams,
         mut results: affected::ReadResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         results.get().set_affected(self.affected);
         Promise::ok(())
     }
     fn committed_tx(
-        &mut self,
+        self: Rc<AffectedImpl>,
         _: affected::CommittedTxParams,
         mut results: affected::CommittedTxResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         results.get().set_tx(self.committed_tx);
         Promise::ok(())
     }
@@ -590,10 +591,10 @@ impl Int16BoxImpl {
 }
 impl int16_box::Server for Int16BoxImpl {
     fn read(
-        &mut self,
+        self: Rc<Int16BoxImpl>,
         _: int16_box::ReadParams,
         mut results: int16_box::ReadResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         results.get().set_val(self.val);
         Promise::ok(())
     }
@@ -609,10 +610,10 @@ impl Int32BoxImpl {
 }
 impl int32_box::Server for Int32BoxImpl {
     fn read(
-        &mut self,
+        self: Rc<Int32BoxImpl>,
         _: int32_box::ReadParams,
         mut results: int32_box::ReadResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         results.get().set_val(self.val);
         Promise::ok(())
     }
@@ -630,10 +631,10 @@ impl StringBoxImpl {
 }
 impl string_box::Server for StringBoxImpl {
     fn read(
-        &mut self,
+        self: Rc<StringBoxImpl>,
         _: string_box::ReadParams,
         mut results: string_box::ReadResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         results.get().set_val(self.val.as_str());
         Promise::ok(())
     }
@@ -649,10 +650,10 @@ impl BoolBoxImpl {
 }
 impl bool_box::Server for BoolBoxImpl {
     fn read(
-        &mut self,
+        self: Rc<BoolBoxImpl>,
         _: bool_box::ReadParams,
         mut results: bool_box::ReadResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         results.get().set_val(self.exists);
         Promise::ok(())
     }
@@ -668,10 +669,10 @@ impl DateBoxImpl {
 }
 impl date_box::Server for DateBoxImpl {
     fn read(
-        &mut self,
+        self: Rc<DateBoxImpl>,
         _: date_box::ReadParams,
         mut results: date_box::ReadResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let mut val = results.get().init_val();
         val.set_year(self.date.year() as i16);
         val.set_month(self.date.month() as u8);
@@ -682,14 +683,14 @@ impl date_box::Server for DateBoxImpl {
 
 pub struct RemoteStatementImpl {
     sql: String,
-    planner: Planner,
+    planner: RefCell<Planner>,
     conn: Rc<RefCell<ConnectionInternal>>,
 }
 impl RemoteStatementImpl {
     pub fn new(sql: &str, planner: Planner, conn: Rc<RefCell<ConnectionInternal>>) -> Self {
         Self {
             sql: sql.to_string(),
-            planner,
+            planner: planner.into(),
             conn,
         }
     }
@@ -697,13 +698,14 @@ impl RemoteStatementImpl {
 
 impl remote_statement::Server for RemoteStatementImpl {
     fn execute_query(
-        &mut self,
+        self: Rc<RemoteStatementImpl>,
         _: remote_statement::ExecuteQueryParams,
         mut results: remote_statement::ExecuteQueryResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("execute query: {}", self.sql);
         match self
             .planner
+            .borrow_mut()
             .create_query_plan(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
         {
             Ok(plan) => {
@@ -723,13 +725,14 @@ impl remote_statement::Server for RemoteStatementImpl {
         }
     }
     fn execute_update(
-        &mut self,
+        self: Rc<RemoteStatementImpl>,
         _: remote_statement::ExecuteUpdateParams,
         mut results: remote_statement::ExecuteUpdateResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("execute update: {}", self.sql);
         let affected = self
             .planner
+            .borrow_mut()
             .execute_update(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
             .expect("execute update");
         let tx_num = self.conn.borrow().current_tx_num();
@@ -740,10 +743,10 @@ impl remote_statement::Server for RemoteStatementImpl {
         Promise::ok(())
     }
     fn close(
-        &mut self,
+        self: Rc<RemoteStatementImpl>,
         _: remote_statement::CloseParams,
         mut results: remote_statement::CloseResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
         let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
@@ -753,13 +756,14 @@ impl remote_statement::Server for RemoteStatementImpl {
         Promise::ok(())
     }
     fn explain_plan(
-        &mut self,
+        self: Rc<RemoteStatementImpl>,
         _: remote_statement::ExplainPlanParams,
         mut results: remote_statement::ExplainPlanResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("explain plan");
         let planrepr = self
             .planner
+            .borrow_mut()
             .create_query_plan(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
             .unwrap()
             .repr();
@@ -786,10 +790,10 @@ impl RemoteResultSetImpl {
 
 impl remote_result_set::Server for RemoteResultSetImpl {
     fn next(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         _: remote_result_set::NextParams,
         mut results: remote_result_set::NextResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let has_next = self.scan.lock().unwrap().next();
         trace!("next: {}", has_next);
         let next: bool_box::Client = capnp_rpc::new_client(BoolBoxImpl::new(has_next));
@@ -798,10 +802,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn close(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         _: remote_result_set::CloseParams,
         mut results: remote_result_set::CloseResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
         let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
@@ -811,10 +815,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_metadata(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         _: remote_result_set::GetMetadataParams,
         mut results: remote_result_set::GetMetadataResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get metadata");
         let client: remote_meta_data::Client =
             capnp_rpc::new_client(RemoteMetaDataImpl::new(Arc::clone(&self.sch)));
@@ -823,10 +827,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_row(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         _: remote_result_set::GetRowParams,
         mut results: remote_result_set::GetRowResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get_row");
         let row = results.get().init_row();
         let mut map = row.init_map();
@@ -873,10 +877,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_rows(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         params: remote_result_set::GetRowsParams,
         mut results: remote_result_set::GetRowsResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let limit = pry!(params.get()).get_limit();
         trace!("get_rows with limit: {}", limit);
         let mut rows = results.get().init_rows(limit);
@@ -939,10 +943,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_int16(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         params: remote_result_set::GetInt16Params,
         mut results: remote_result_set::GetInt16Results,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get int16 value: {}", fldname);
         let val = self
@@ -957,10 +961,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_int32(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         params: remote_result_set::GetInt32Params,
         mut results: remote_result_set::GetInt32Results,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get int32 value: {}", fldname);
         let val = self
@@ -975,10 +979,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_string(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         params: remote_result_set::GetStringParams,
         mut results: remote_result_set::GetStringResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get string value: {}", fldname);
         let val = self
@@ -993,10 +997,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_bool(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         params: remote_result_set::GetBoolParams,
         mut results: remote_result_set::GetBoolResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get bool value: {}", fldname);
         let val = self
@@ -1011,10 +1015,10 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         Promise::ok(())
     }
     fn get_date(
-        &mut self,
+        self: Rc<RemoteResultSetImpl>,
         params: remote_result_set::GetDateParams,
         mut results: remote_result_set::GetDateResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
         debug!("get date value: {}", fldname);
         let val = self
@@ -1040,10 +1044,10 @@ impl RemoteMetaDataImpl {
 }
 impl remote_meta_data::Server for RemoteMetaDataImpl {
     fn get_schema(
-        &mut self,
+        self: Rc<RemoteMetaDataImpl>,
         _: remote_meta_data::GetSchemaParams,
         mut results: remote_meta_data::GetSchemaResults,
-    ) -> Promise<(), capnp::Error> {
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get schema");
         let mut schema = results.get().init_sch();
         set_schema(Arc::clone(&self.sch), &mut schema);
