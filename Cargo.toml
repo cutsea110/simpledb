@@ -24,7 +24,7 @@ num-derive = "0.4.2"
 num-traits = "0.2.19"
 rand = "0.8.7"
 structopt = "0.3.26"
-tokio = {version = "1.52.3", features = ["full"]}
+tokio = {version = "1.53.0", features = ["full"]}
 tokio-util = {version = "0.7.18", features = ["compat"]}
 
 [lib]
