@@ -5,7 +5,10 @@ use anyhow::Result;
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use core::fmt;
 use env_logger::Env;
-use futures::{AsyncReadExt, FutureExt};
+use futures::{
+    io::{BufReader, BufWriter},
+    AsyncReadExt, FutureExt,
+};
 use log::debug;
 use std::{
     io::{stdout, Write},
@@ -15,11 +18,7 @@ use std::{
 use structopt::{clap, StructOpt};
 
 use simpledb::{
-    rdbc::{
-        connectionadapter::ConnectionAdapter,
-        driveradapter::DriverAdapter,
-        network::{connection::NetworkConnection, driver::NetworkDriver},
-    },
+    rdbc::network::{connection::NetworkConnection, driver::NetworkDriver},
     remote_capnp::remote_driver,
 };
 
@@ -98,7 +97,7 @@ async fn exec(conn: &mut NetworkConnection, qry: &str) {
         return;
     }
 
-    let mut stmt = conn.create_statement(&qry).expect("create statement");
+    let mut stmt = conn.create_statement(qry).await.expect("create statement");
     let words: Vec<&str> = qry.split_whitespace().collect();
     if !words.is_empty() {
         let cmd = words[0].trim().to_ascii_lowercase();
@@ -117,8 +116,8 @@ async fn try_main<'a>(cfg: Config) -> Result<(), Box<dyn std::error::Error>> {
     stream.set_nodelay(true)?;
     let (reader, writer) = tokio_util::compat::TokioAsyncReadCompatExt::compat(stream).split();
     let rpc_network = Box::new(twoparty::VatNetwork::new(
-        reader,
-        writer,
+        BufReader::new(reader),
+        BufWriter::new(writer),
         rpc_twoparty_capnp::Side::Client,
         Default::default(),
     ));
@@ -130,7 +129,7 @@ async fn try_main<'a>(cfg: Config) -> Result<(), Box<dyn std::error::Error>> {
     if let Ok((major_ver, minor_ver)) = driver.get_server_version().await {
         println!("simpledb server version {}.{}\n", major_ver, minor_ver);
     }
-    let mut conn = driver.connect(&cfg.dbname).unwrap_or_else(|_| {
+    let mut conn = driver.connect(&cfg.dbname).await.unwrap_or_else(|_| {
         println!("couldn't connect database.");
         process::exit(1);
     });

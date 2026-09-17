@@ -181,9 +181,9 @@ impl<'a> From<remote_statement::plan_repr::operation::Reader<'a>> for Operation 
                     .unwrap()
                     .into_iter()
                     .map(|f| {
-                        let fst = f.get_fst().unwrap().to_string().unwrap();
-                        let snd = Constant::from(f.get_snd().unwrap());
-                        (fst, snd)
+                        let field = f.get_field().unwrap().to_string().unwrap();
+                        let value = Constant::from(f.get_value().unwrap());
+                        (field, value)
                     })
                     .collect_vec();
                 Self::GroupByScan { fields, aggfns }

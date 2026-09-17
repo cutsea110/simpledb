@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::collections::HashMap;
 
 use crate::{metadata, record, remote_capnp};
@@ -36,17 +35,19 @@ impl Schema {
 
 impl<'a> From<remote_capnp::schema::Reader<'a>> for Schema {
     fn from(sch: remote_capnp::schema::Reader<'a>) -> Self {
-        let fields = sch
-            .get_fields()
-            .unwrap()
-            .into_iter()
-            .map(|s| s.unwrap().to_string().unwrap())
-            .collect_vec();
+        let columns = sch.get_columns().unwrap();
+        let mut fields = Vec::with_capacity(columns.len() as usize);
         let mut info = HashMap::new();
-        for kv in sch.get_info().unwrap().get_entries().unwrap().into_iter() {
-            let key = kv.get_key().unwrap().to_string().unwrap();
-            let fi = FieldInfo::from(kv.get_value().unwrap());
-            info.insert(key, fi);
+        for column in columns {
+            let name = column.get_name().unwrap().to_string().unwrap();
+            fields.push(name.clone());
+            info.insert(
+                name,
+                FieldInfo {
+                    fld_type: column.get_type().unwrap().into(),
+                    length: column.get_length() as usize,
+                },
+            );
         }
         Self { fields, info }
     }
@@ -83,14 +84,6 @@ impl FieldInfo {
         Self {
             fld_type: FieldType::VARCHAR,
             length,
-        }
-    }
-}
-impl<'a> From<remote_capnp::field_info::Reader<'a>> for FieldInfo {
-    fn from(fi: remote_capnp::field_info::Reader<'a>) -> Self {
-        Self {
-            fld_type: fi.get_type().unwrap().into(),
-            length: fi.get_length() as usize,
         }
     }
 }

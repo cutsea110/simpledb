@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use super::connection::NetworkConnection;
-use crate::{rdbc::driveradapter::DriverAdapter, remote_capnp};
+use crate::remote_capnp;
 
 pub struct NetworkDriver {
     driver: remote_capnp::remote_driver::Client,
@@ -18,22 +18,10 @@ impl NetworkDriver {
 
         Ok((ver.get_major_ver(), ver.get_minor_ver()))
     }
-}
-
-impl<'a> DriverAdapter<'a> for NetworkDriver {
-    type Con = NetworkConnection;
-
-    fn connect(&self, dbname: &str) -> Result<Self::Con> {
+    pub async fn connect(&self, dbname: &str) -> Result<NetworkConnection> {
         let mut request = self.driver.connect_request();
         request.get().set_dbname(dbname);
-        let conn = request.send().pipeline.get_conn();
-
-        Ok(Self::Con::new(conn))
-    }
-    fn get_major_version(&self) -> i32 {
-        0
-    }
-    fn get_minor_version(&self) -> i32 {
-        1
+        let response = request.send().promise.await?;
+        Ok(NetworkConnection::new(response.get()?.get_conn()?))
     }
 }

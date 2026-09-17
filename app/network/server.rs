@@ -3,7 +3,10 @@ pub use simpledb;
 
 use capnp_rpc::{rpc_twoparty_capnp, twoparty, RpcSystem};
 use env_logger::Env;
-use futures::{AsyncReadExt, FutureExt};
+use futures::{
+    io::{BufReader, BufWriter},
+    AsyncReadExt, FutureExt,
+};
 use log::{debug, info};
 use std::{
     collections::HashMap,
@@ -151,8 +154,8 @@ async fn try_main(cfg: Config) -> Result<(), Box<dyn Error>> {
         stream.set_nodelay(true)?;
         let (reader, writer) = tokio_util::compat::TokioAsyncReadCompatExt::compat(stream).split();
         let rpc_network = Box::new(twoparty::VatNetwork::new(
-            reader,
-            writer,
+            BufReader::new(reader),
+            BufWriter::new(writer),
             rpc_twoparty_capnp::Side::Server,
             Default::default(),
         ));

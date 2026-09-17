@@ -1,7 +1,7 @@
 use capnp::capability::Promise;
 use capnp_rpc::pry;
-use chrono::{Datelike, NaiveDate};
-use log::{debug, info, trace};
+use chrono::Datelike;
+use log::{info, trace};
 use std::{
     cell::RefCell,
     future::Future,
@@ -15,8 +15,7 @@ use crate::{
     query::{constant::Constant, expression::Expression, scan::Scan},
     record::schema::{FieldType, Schema},
     remote_capnp::{
-        self, affected, bool_box, date_box, int16_box, int32_box, remote_connection, remote_driver,
-        remote_meta_data, remote_result_set, remote_statement, schema, string_box, tx_box,
+        self, remote_connection, remote_driver, remote_result_set, remote_statement, schema,
     },
     repr,
     repr::planrepr::PlanRepr,
@@ -197,28 +196,19 @@ impl RemoteConnectionImpl {
 }
 
 fn set_schema(schema: Arc<Schema>, sch: &mut schema::Builder) {
-    let mut fields = sch.reborrow().init_fields(schema.fields().len() as u32);
-    for i in 0..schema.fields().len() {
-        let fldname = schema.fields()[i].as_str();
-        fields.set(i as u32, fldname);
-    }
-    let mut info = sch.reborrow().init_info();
-    let mut entries = info
-        .reborrow()
-        .init_entries(schema.info().keys().len() as u32);
-    for (i, (k, fi)) in schema.info().into_iter().enumerate() {
-        let fldname = k.as_str();
-        entries.reborrow().get(i as u32).set_key(fldname).unwrap();
-        let mut val = entries.reborrow().get(i as u32).init_value();
-        val.reborrow().set_length(fi.length as i32);
-        let t = match fi.fld_type {
+    let mut columns = sch.reborrow().init_columns(schema.fields().len() as u32);
+    for (i, fldname) in schema.fields().iter().enumerate() {
+        let mut column = columns.reborrow().get(i as u32);
+        column.set_name(fldname);
+        column.set_length(schema.length(fldname) as u32);
+        let t = match schema.field_type(fldname) {
             FieldType::SMALLINT => remote_capnp::FieldType::SmallInt,
             FieldType::INTEGER => remote_capnp::FieldType::Integer,
             FieldType::VARCHAR => remote_capnp::FieldType::Varchar,
             FieldType::BOOL => remote_capnp::FieldType::Bool,
             FieldType::DATE => remote_capnp::FieldType::Date,
         };
-        val.reborrow().set_type(t);
+        column.set_type(t);
     }
 }
 fn set_constant(cnst: &Constant, c: &mut remote_statement::constant::Builder) {
@@ -291,9 +281,9 @@ fn set_operation(
             }
             let mut fns = op.reborrow().init_aggfns(aggfns.len() as u32);
             for (i, (f, c)) in aggfns.into_iter().enumerate() {
-                let mut tpl = fns.reborrow().get(i as u32);
-                tpl.set_fst(f.as_str()).unwrap();
-                let mut v = tpl.init_snd();
+                let mut aggregation = fns.reborrow().get(i as u32);
+                aggregation.set_field(f.as_str());
+                let mut v = aggregation.init_value();
                 set_constant(&c, &mut v);
             }
         }
@@ -353,25 +343,6 @@ fn set_plan_repr(planrepr: Arc<dyn PlanRepr>, pr: &mut remote_statement::plan_re
     }
 }
 
-pub struct TxImpl {
-    tx: i32,
-}
-impl TxImpl {
-    pub fn new(tx: i32) -> Self {
-        Self { tx }
-    }
-}
-impl tx_box::Server for TxImpl {
-    fn read(
-        self: Rc<TxImpl>,
-        _: tx_box::ReadParams,
-        mut results: tx_box::ReadResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        results.get().set_tx(self.tx);
-        Promise::ok(())
-    }
-}
-
 impl remote_connection::Server for RemoteConnectionImpl {
     fn create_statement(
         self: Rc<RemoteConnectionImpl>,
@@ -406,8 +377,7 @@ impl remote_connection::Server for RemoteConnectionImpl {
         trace!("close");
         let tx_num = self.conn.borrow().current_tx_num();
         self.conn.borrow_mut().close().expect("close");
-        let client: tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
-        results.get().set_res(client);
+        results.get().set_tx(tx_num);
 
         Promise::ok(())
     }
@@ -496,14 +466,13 @@ impl remote_connection::Server for RemoteConnectionImpl {
             .unwrap()
             .get_index_info(tblname, Arc::clone(&self.conn.borrow().current_tx))
             .expect("get index info");
-        let mut ii = results.get().init_ii();
-        let mut entries = ii.reborrow().init_entries(indexinfo.keys().len() as u32);
+        let mut indexes = results.get().init_indexes(indexinfo.len() as u32);
         for (i, (_, ii)) in indexinfo.into_iter().enumerate() {
             let idxname = ii.index_name();
             let fldname = ii.field_name();
-            let mut val = entries.reborrow().get(i as u32).init_value();
-            val.reborrow().set_idxname(idxname);
-            val.reborrow().set_fldname(fldname);
+            let mut index = indexes.reborrow().get(i as u32);
+            index.set_idxname(idxname);
+            index.set_fldname(fldname);
         }
 
         Promise::ok(())
@@ -550,137 +519,6 @@ impl remote_connection::Server for RemoteConnectionImpl {
     }
 }
 
-pub struct AffectedImpl {
-    affected: i32,
-    committed_tx: i32,
-}
-impl AffectedImpl {
-    pub fn new(affected: i32, committed_tx: i32) -> Self {
-        Self {
-            affected,
-            committed_tx,
-        }
-    }
-}
-impl affected::Server for AffectedImpl {
-    fn read(
-        self: Rc<AffectedImpl>,
-        _: affected::ReadParams,
-        mut results: affected::ReadResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        results.get().set_affected(self.affected);
-        Promise::ok(())
-    }
-    fn committed_tx(
-        self: Rc<AffectedImpl>,
-        _: affected::CommittedTxParams,
-        mut results: affected::CommittedTxResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        results.get().set_tx(self.committed_tx);
-        Promise::ok(())
-    }
-}
-
-pub struct Int16BoxImpl {
-    val: i16,
-}
-impl Int16BoxImpl {
-    pub fn new(val: i16) -> Self {
-        Self { val }
-    }
-}
-impl int16_box::Server for Int16BoxImpl {
-    fn read(
-        self: Rc<Int16BoxImpl>,
-        _: int16_box::ReadParams,
-        mut results: int16_box::ReadResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        results.get().set_val(self.val);
-        Promise::ok(())
-    }
-}
-
-pub struct Int32BoxImpl {
-    val: i32,
-}
-impl Int32BoxImpl {
-    pub fn new(val: i32) -> Self {
-        Self { val }
-    }
-}
-impl int32_box::Server for Int32BoxImpl {
-    fn read(
-        self: Rc<Int32BoxImpl>,
-        _: int32_box::ReadParams,
-        mut results: int32_box::ReadResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        results.get().set_val(self.val);
-        Promise::ok(())
-    }
-}
-
-pub struct StringBoxImpl {
-    val: String,
-}
-impl StringBoxImpl {
-    pub fn new(val: String) -> Self {
-        Self {
-            val: val.to_string(),
-        }
-    }
-}
-impl string_box::Server for StringBoxImpl {
-    fn read(
-        self: Rc<StringBoxImpl>,
-        _: string_box::ReadParams,
-        mut results: string_box::ReadResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        results.get().set_val(self.val.as_str());
-        Promise::ok(())
-    }
-}
-
-pub struct BoolBoxImpl {
-    exists: bool,
-}
-impl BoolBoxImpl {
-    pub fn new(exists: bool) -> Self {
-        Self { exists }
-    }
-}
-impl bool_box::Server for BoolBoxImpl {
-    fn read(
-        self: Rc<BoolBoxImpl>,
-        _: bool_box::ReadParams,
-        mut results: bool_box::ReadResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        results.get().set_val(self.exists);
-        Promise::ok(())
-    }
-}
-
-pub struct DateBoxImpl {
-    date: NaiveDate,
-}
-impl DateBoxImpl {
-    pub fn new(date: NaiveDate) -> Self {
-        Self { date }
-    }
-}
-impl date_box::Server for DateBoxImpl {
-    fn read(
-        self: Rc<DateBoxImpl>,
-        _: date_box::ReadParams,
-        mut results: date_box::ReadResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let mut val = results.get().init_val();
-        val.set_year(self.date.year() as i16);
-        val.set_month(self.date.month() as u8);
-        val.set_day(self.date.day() as u8);
-        Promise::ok(())
-    }
-}
-
 pub struct RemoteStatementImpl {
     sql: String,
     planner: RefCell<Planner>,
@@ -710,9 +548,15 @@ impl remote_statement::Server for RemoteStatementImpl {
         {
             Ok(plan) => {
                 trace!("planned");
-                let resultset: remote_result_set::Client =
-                    capnp_rpc::new_client(RemoteResultSetImpl::new(plan, Rc::clone(&self.conn)));
-                results.get().set_result(resultset);
+                let schema = plan.schema();
+                let resultset = match RemoteResultSetImpl::new(plan, Rc::clone(&self.conn)) {
+                    Ok(resultset) => resultset,
+                    Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+                };
+                let resultset: remote_result_set::Client = capnp_rpc::new_client(resultset);
+                let mut result = results.get();
+                result.set_result(resultset);
+                set_schema(schema, &mut result.init_schema());
 
                 return Promise::ok(());
             }
@@ -730,15 +574,21 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::ExecuteUpdateResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("execute update: {}", self.sql);
-        let affected = self
+        let affected = match self
             .planner
             .borrow_mut()
             .execute_update(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
-            .expect("execute update");
+        {
+            Ok(affected) => affected,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         let tx_num = self.conn.borrow().current_tx_num();
-        self.conn.borrow_mut().close().expect("close");
-        let affected: affected::Client = capnp_rpc::new_client(AffectedImpl::new(affected, tx_num));
-        results.get().set_affected(affected);
+        if let Err(e) = self.conn.borrow_mut().close() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
+        let mut result = results.get();
+        result.set_affected(affected);
+        result.set_committed_tx(tx_num);
 
         Promise::ok(())
     }
@@ -749,9 +599,10 @@ impl remote_statement::Server for RemoteStatementImpl {
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
         let tx_num = self.conn.borrow().current_tx_num();
-        self.conn.borrow_mut().close().expect("close");
-        let client: tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
-        results.get().set_res(client);
+        if let Err(e) = self.conn.borrow_mut().close() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
+        results.get().set_tx(tx_num);
 
         Promise::ok(())
     }
@@ -781,26 +632,14 @@ pub struct RemoteResultSetImpl {
     conn: Rc<RefCell<ConnectionInternal>>,
 }
 impl RemoteResultSetImpl {
-    pub fn new(plan: Arc<dyn Plan>, conn: Rc<RefCell<ConnectionInternal>>) -> Self {
-        let scan = plan.open().expect("open plan");
+    pub fn new(plan: Arc<dyn Plan>, conn: Rc<RefCell<ConnectionInternal>>) -> anyhow::Result<Self> {
+        let scan = plan.open()?;
         let sch = plan.schema();
-        Self { scan, sch, conn }
+        Ok(Self { scan, sch, conn })
     }
 }
 
 impl remote_result_set::Server for RemoteResultSetImpl {
-    fn next(
-        self: Rc<RemoteResultSetImpl>,
-        _: remote_result_set::NextParams,
-        mut results: remote_result_set::NextResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let has_next = self.scan.lock().unwrap().next();
-        trace!("next: {}", has_next);
-        let next: bool_box::Client = capnp_rpc::new_client(BoolBoxImpl::new(has_next));
-        results.get().set_val(next);
-
-        Promise::ok(())
-    }
     fn close(
         self: Rc<RemoteResultSetImpl>,
         _: remote_result_set::CloseParams,
@@ -808,71 +647,13 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
         let tx_num = self.conn.borrow().current_tx_num();
-        self.conn.borrow_mut().close().expect("close");
-        let client: tx_box::Client = capnp_rpc::new_client(TxImpl::new(tx_num));
-        results.get().set_res(client);
-
-        Promise::ok(())
-    }
-    fn get_metadata(
-        self: Rc<RemoteResultSetImpl>,
-        _: remote_result_set::GetMetadataParams,
-        mut results: remote_result_set::GetMetadataResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        trace!("get metadata");
-        let client: remote_meta_data::Client =
-            capnp_rpc::new_client(RemoteMetaDataImpl::new(Arc::clone(&self.sch)));
-        results.get().set_metadata(client);
-
-        Promise::ok(())
-    }
-    fn get_row(
-        self: Rc<RemoteResultSetImpl>,
-        _: remote_result_set::GetRowParams,
-        mut results: remote_result_set::GetRowResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        trace!("get_row");
-        let row = results.get().init_row();
-        let mut map = row.init_map();
-        let mut entries = map.reborrow().init_entries(self.sch.fields().len() as u32);
-        for (i, (k, fi)) in self.sch.info().into_iter().enumerate() {
-            entries
-                .reborrow()
-                .get(i as u32)
-                .set_key(k.as_str())
-                .unwrap();
-            let mut val = entries.reborrow().get(i as u32).init_value();
-            match fi.fld_type {
-                FieldType::SMALLINT => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_i16(k) {
-                        val.reborrow().set_int16(v);
-                    }
-                }
-                FieldType::INTEGER => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_i32(k) {
-                        val.reborrow().set_int32(v);
-                    }
-                }
-                FieldType::VARCHAR => {
-                    if let Ok(s) = self.scan.lock().unwrap().get_string(k) {
-                        val.reborrow().set_string(s.as_str());
-                    }
-                }
-                FieldType::BOOL => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_bool(k) {
-                        val.reborrow().set_bool(v);
-                    }
-                }
-                FieldType::DATE => {
-                    if let Ok(v) = self.scan.lock().unwrap().get_date(k) {
-                        let mut dt = val.reborrow().init_date();
-                        dt.set_year(v.year() as i16);
-                        dt.set_month(v.month() as u8);
-                        dt.set_day(v.day() as u8);
-                    }
-                }
-            }
+        if let Err(e) = self.scan.lock().unwrap().close() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
         }
+        if let Err(e) = self.conn.borrow_mut().close() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
+        results.get().set_tx(tx_num);
 
         Promise::ok(())
     }
@@ -881,176 +662,65 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         params: remote_result_set::GetRowsParams,
         mut results: remote_result_set::GetRowsResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let limit = pry!(params.get()).get_limit();
-        trace!("get_rows with limit: {}", limit);
-        let mut rows = results.get().init_rows(limit);
-        let mut c = 0;
+        const MAX_ROWS_PER_BATCH: u16 = 1024;
 
-        for i in 0..limit {
-            let has_next = self.scan.lock().unwrap().next();
-            if has_next {
-                let mut map = rows.reborrow().get(i).init_map();
-                let mut entries = map.reborrow().init_entries(self.sch.fields().len() as u32);
-                for (i, (k, fi)) in self.sch.info().into_iter().enumerate() {
-                    entries
-                        .reborrow()
-                        .get(i as u32)
-                        .set_key(k.as_str())
-                        .unwrap();
-                    let mut val = entries.reborrow().get(i as u32).init_value();
-                    match fi.fld_type {
-                        FieldType::SMALLINT => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_i16(k) {
-                                val.reborrow().set_int16(v);
-                            }
-                        }
-                        FieldType::INTEGER => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_i32(k) {
-                                val.reborrow().set_int32(v);
-                            }
-                        }
-                        FieldType::VARCHAR => {
-                            if let Ok(s) = self.scan.lock().unwrap().get_string(k) {
-                                val.reborrow().set_string(s.as_str());
-                            }
-                        }
-                        FieldType::BOOL => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_bool(k) {
-                                val.reborrow().set_bool(v);
-                            }
-                        }
-                        FieldType::DATE => {
-                            if let Ok(v) = self.scan.lock().unwrap().get_date(k) {
-                                let mut dt = val.reborrow().init_date();
-                                dt.set_year(v.year() as i16);
-                                dt.set_month(v.month() as u8);
-                                dt.set_day(v.day() as u8);
-                            }
-                        }
+        let limit = pry!(params.get()).get_limit();
+        if limit > MAX_ROWS_PER_BATCH {
+            return Promise::err(capnp::Error::failed(format!(
+                "row batch limit {} exceeds maximum {}",
+                limit, MAX_ROWS_PER_BATCH
+            )));
+        }
+        trace!("get_rows with limit: {}", limit);
+
+        let mut batch = Vec::with_capacity(limit as usize);
+        {
+            let mut scan = self.scan.lock().unwrap();
+            for _ in 0..limit {
+                if !scan.next() {
+                    break;
+                }
+                let mut row = Vec::with_capacity(self.sch.fields().len());
+                for field in self.sch.fields() {
+                    let value = match self.sch.field_type(field) {
+                        FieldType::SMALLINT => scan.get_i16(field).map(Constant::I16),
+                        FieldType::INTEGER => scan.get_i32(field).map(Constant::I32),
+                        FieldType::VARCHAR => scan.get_string(field).map(Constant::String),
+                        FieldType::BOOL => scan.get_bool(field).map(Constant::Bool),
+                        FieldType::DATE => scan.get_date(field).map(Constant::Date),
+                    };
+                    match value {
+                        Ok(value) => row.push(value),
+                        Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
                     }
                 }
-                c += 1;
-            } else {
-                break;
+                batch.push(row);
             }
         }
-        // Set the true length.
-        // Because it is not possible to know before the iteration.
-        // Also, any blank space will cause an error in the next process.
-        trace!("get_rows count: {}", c);
-        results.get().set_count(c);
 
-        Promise::ok(())
-    }
-    fn get_int16(
-        self: Rc<RemoteResultSetImpl>,
-        params: remote_result_set::GetInt16Params,
-        mut results: remote_result_set::GetInt16Results,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
-        debug!("get int16 value: {}", fldname);
-        let val = self
-            .scan
-            .lock()
-            .unwrap()
-            .get_i16(fldname)
-            .expect("get int16");
-        let val: int16_box::Client = capnp_rpc::new_client(Int16BoxImpl::new(val));
-        results.get().set_val(val);
-
-        Promise::ok(())
-    }
-    fn get_int32(
-        self: Rc<RemoteResultSetImpl>,
-        params: remote_result_set::GetInt32Params,
-        mut results: remote_result_set::GetInt32Results,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
-        debug!("get int32 value: {}", fldname);
-        let val = self
-            .scan
-            .lock()
-            .unwrap()
-            .get_i32(fldname)
-            .expect("get int32");
-        let val: int32_box::Client = capnp_rpc::new_client(Int32BoxImpl::new(val));
-        results.get().set_val(val);
-
-        Promise::ok(())
-    }
-    fn get_string(
-        self: Rc<RemoteResultSetImpl>,
-        params: remote_result_set::GetStringParams,
-        mut results: remote_result_set::GetStringResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
-        debug!("get string value: {}", fldname);
-        let val = self
-            .scan
-            .lock()
-            .unwrap()
-            .get_string(fldname)
-            .expect("get string");
-        let val: string_box::Client = capnp_rpc::new_client(StringBoxImpl::new(val));
-        results.get().set_val(val);
-
-        Promise::ok(())
-    }
-    fn get_bool(
-        self: Rc<RemoteResultSetImpl>,
-        params: remote_result_set::GetBoolParams,
-        mut results: remote_result_set::GetBoolResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
-        debug!("get bool value: {}", fldname);
-        let val = self
-            .scan
-            .lock()
-            .unwrap()
-            .get_bool(fldname)
-            .expect("get bool");
-        let val: bool_box::Client = capnp_rpc::new_client(BoolBoxImpl::new(val));
-        results.get().set_val(val);
-
-        Promise::ok(())
-    }
-    fn get_date(
-        self: Rc<RemoteResultSetImpl>,
-        params: remote_result_set::GetDateParams,
-        mut results: remote_result_set::GetDateResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let fldname = pry!(pry!(params.get()).get_fldname()).to_str().unwrap();
-        debug!("get date value: {}", fldname);
-        let val = self
-            .scan
-            .lock()
-            .unwrap()
-            .get_date(fldname)
-            .expect("get date");
-        let val: date_box::Client = capnp_rpc::new_client(DateBoxImpl::new(val));
-        results.get().set_val(val);
-
-        Promise::ok(())
-    }
-}
-
-pub struct RemoteMetaDataImpl {
-    sch: Arc<Schema>,
-}
-impl RemoteMetaDataImpl {
-    pub fn new(sch: Arc<Schema>) -> Self {
-        Self { sch }
-    }
-}
-impl remote_meta_data::Server for RemoteMetaDataImpl {
-    fn get_schema(
-        self: Rc<RemoteMetaDataImpl>,
-        _: remote_meta_data::GetSchemaParams,
-        mut results: remote_meta_data::GetSchemaResults,
-    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        trace!("get schema");
-        let mut schema = results.get().init_sch();
-        set_schema(Arc::clone(&self.sch), &mut schema);
+        trace!("get_rows count: {}", batch.len());
+        let mut rows = results.get().init_rows(batch.len() as u32);
+        for (row_index, row) in batch.iter().enumerate() {
+            let mut values = rows
+                .reborrow()
+                .get(row_index as u32)
+                .init_values(row.len() as u32);
+            for (value_index, value) in row.iter().enumerate() {
+                let mut output = values.reborrow().get(value_index as u32);
+                match value {
+                    Constant::I16(value) => output.set_int16(*value),
+                    Constant::I32(value) => output.set_int32(*value),
+                    Constant::String(value) => output.set_string(value),
+                    Constant::Bool(value) => output.set_bool(*value),
+                    Constant::Date(value) => {
+                        let mut date = output.init_date();
+                        date.set_year(value.year() as i16);
+                        date.set_month(value.month() as u8);
+                        date.set_day(value.day() as u8);
+                    }
+                }
+            }
+        }
 
         Promise::ok(())
     }
