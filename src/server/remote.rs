@@ -52,10 +52,17 @@ impl remote_driver::Server for RemoteDriverImpl {
         mut results: remote_driver::ConnectResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("connecting");
-        let dbname = pry!(pry!(params.get()).get_dbname()).to_str().unwrap();
+        let dbname = match pry!(pry!(params.get()).get_dbname()).to_str() {
+            Ok(dbname) => dbname,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         info!("connect db: {}", dbname);
         let db = self.server.lock().unwrap().get_database(dbname);
-        let conn: remote_connection::Client = capnp_rpc::new_client(RemoteConnectionImpl::new(db));
+        let conn = match RemoteConnectionImpl::new(db) {
+            Ok(conn) => conn,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let conn: remote_connection::Client = capnp_rpc::new_client(conn);
         results.get().set_conn(conn);
         trace!("connected");
 
@@ -78,58 +85,73 @@ impl remote_driver::Server for RemoteDriverImpl {
 
 pub struct ConnectionInternal {
     db: Arc<Mutex<SimpleDB>>,
-    current_tx: Arc<Mutex<Transaction>>,
+    state: ConnectionState,
+}
+
+enum ConnectionState {
+    Active(Arc<Mutex<Transaction>>),
+    Failed(String),
 }
 impl ConnectionInternal {
     pub fn close(&mut self) -> anyhow::Result<()> {
         self.dump_statistics();
 
         // Essential body
-        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        let tx = self.current_tx()?;
+        let tx_num = tx.lock().unwrap().tx_num();
         trace!("close tx: {}", tx_num);
-        self.current_tx.lock().unwrap().commit()?;
+        let commit_result = tx.lock().unwrap().commit();
+        if let Err(e) = commit_result {
+            return Err(self.fail(format!("failed to commit transaction {}: {}", tx_num, e)));
+        }
         self.renew_tx()
     }
-    pub fn commit(&mut self) -> anyhow::Result<()> {
+    fn rollback(&mut self) -> anyhow::Result<()> {
         self.dump_statistics();
 
         // Essential body
-        let tx_num = self.current_tx.lock().unwrap().tx_num();
-        trace!("commit tx: {}", tx_num);
-        self.current_tx.lock().unwrap().commit()
-    }
-    pub fn rollback(&mut self) -> anyhow::Result<()> {
-        self.dump_statistics();
-
-        // Essential body
-        let tx_num = self.current_tx.lock().unwrap().tx_num();
+        let tx = self.current_tx()?;
+        let tx_num = tx.lock().unwrap().tx_num();
         trace!("rollback tx: {}", tx_num);
-        self.current_tx.lock().unwrap().rollback()
-    }
-    pub fn rollback_and_renew(&mut self) -> anyhow::Result<()> {
-        let rollback_result = self.rollback();
-        let renew_result = self.renew_tx();
-
-        match (rollback_result, renew_result) {
-            (Ok(()), Ok(())) => Ok(()),
-            (Err(e), Ok(())) | (Ok(()), Err(e)) => Err(e),
-            (Err(rollback_error), Err(renew_error)) => Err(anyhow::anyhow!(
-                "rollback failed: {}; transaction renewal also failed: {}",
-                rollback_error,
-                renew_error
-            )),
+        let rollback_result = tx.lock().unwrap().rollback();
+        match rollback_result {
+            Ok(()) => Ok(()),
+            Err(e) => Err(self.fail(format!("failed to roll back transaction {}: {}", tx_num, e))),
         }
     }
-    pub fn renew_tx(&mut self) -> anyhow::Result<()> {
-        let new_tx = self.db.lock().unwrap().new_tx()?;
-        trace!("start new tx: {}", new_tx.tx_num());
-        self.current_tx = Arc::new(Mutex::new(new_tx));
-
-        Ok(())
+    pub fn rollback_and_renew(&mut self) -> anyhow::Result<()> {
+        self.rollback()?;
+        self.renew_tx()
+    }
+    fn renew_tx(&mut self) -> anyhow::Result<()> {
+        let new_tx_result = { self.db.lock().unwrap().new_tx() };
+        match new_tx_result {
+            Ok(new_tx) => {
+                trace!("start new tx: {}", new_tx.tx_num());
+                self.state = ConnectionState::Active(Arc::new(Mutex::new(new_tx)));
+                Ok(())
+            }
+            Err(e) => Err(self.fail(format!("failed to start a new transaction: {}", e))),
+        }
+    }
+    fn current_tx(&self) -> anyhow::Result<Arc<Mutex<Transaction>>> {
+        match &self.state {
+            ConnectionState::Active(tx) => Ok(Arc::clone(tx)),
+            ConnectionState::Failed(reason) => {
+                Err(anyhow::anyhow!("connection is unusable: {}", reason))
+            }
+        }
+    }
+    fn ensure_active(&self) -> anyhow::Result<()> {
+        self.current_tx().map(|_| ())
+    }
+    fn fail(&mut self, reason: String) -> anyhow::Error {
+        self.state = ConnectionState::Failed(reason.clone());
+        anyhow::anyhow!(reason)
     }
     // my own extends
-    pub fn current_tx_num(&self) -> i32 {
-        self.current_tx.lock().unwrap().tx_num()
+    pub fn current_tx_num(&self) -> anyhow::Result<i32> {
+        Ok(self.current_tx()?.lock().unwrap().tx_num())
     }
 
     fn dump_statistics(&self) {
@@ -209,17 +231,17 @@ pub struct RemoteConnectionImpl {
 }
 
 impl RemoteConnectionImpl {
-    pub fn new(db: Arc<Mutex<SimpleDB>>) -> Self {
-        let tx = db.lock().unwrap().new_tx().expect("new transaction");
+    pub fn new(db: Arc<Mutex<SimpleDB>>) -> anyhow::Result<Self> {
+        let tx = db.lock().unwrap().new_tx()?;
         trace!("tx: {}", tx.tx_num());
         let conn = ConnectionInternal {
             db,
-            current_tx: Arc::new(Mutex::new(tx)),
+            state: ConnectionState::Active(Arc::new(Mutex::new(tx))),
         };
 
-        Self {
+        Ok(Self {
             conn: Rc::new(RefCell::new(conn)),
-        }
+        })
     }
 }
 
@@ -378,16 +400,19 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::CreateStatementResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("create statement");
-        let sql = pry!(pry!(params.get()).get_sql()).to_str().unwrap();
+        if let Err(e) = self.conn.borrow().ensure_active() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
+        let sql = match pry!(pry!(params.get()).get_sql()).to_str() {
+            Ok(sql) => sql,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         info!("SQL: {}", sql);
-        let planner = self
-            .conn
-            .borrow()
-            .db
-            .lock()
-            .unwrap()
-            .planner()
-            .expect("planner");
+        let db = Arc::clone(&self.conn.borrow().db);
+        let planner = match db.lock().unwrap().planner() {
+            Ok(planner) => planner,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         let stmt: remote_statement::Client = capnp_rpc::new_client(RemoteStatementImpl::new(
             sql,
             planner,
@@ -403,8 +428,13 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::CloseResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
-        let tx_num = self.conn.borrow().current_tx_num();
-        self.conn.borrow_mut().close().expect("close");
+        let tx_num = match self.conn.borrow().current_tx_num() {
+            Ok(tx_num) => tx_num,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        if let Err(e) = self.conn.borrow_mut().close() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
         results.get().set_tx(tx_num);
 
         Promise::ok(())
@@ -414,11 +444,15 @@ impl remote_connection::Server for RemoteConnectionImpl {
         _: remote_connection::CommitParams,
         mut results: remote_connection::CommitResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let tx_num = self.conn.borrow_mut().current_tx.lock().unwrap().tx_num();
+        let tx_num = match self.conn.borrow().current_tx_num() {
+            Ok(tx_num) => tx_num,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         trace!("commit tx: {}", tx_num);
 
-        self.conn.borrow_mut().commit().expect("commit");
-        self.conn.borrow_mut().renew_tx().expect("start new tx");
+        if let Err(e) = self.conn.borrow_mut().close() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
 
         results.get().set_tx(tx_num);
 
@@ -429,10 +463,14 @@ impl remote_connection::Server for RemoteConnectionImpl {
         _: remote_connection::RollbackParams,
         mut results: remote_connection::RollbackResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
-        let tx_num = self.conn.borrow_mut().current_tx.lock().unwrap().tx_num();
+        let tx_num = match self.conn.borrow().current_tx_num() {
+            Ok(tx_num) => tx_num,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         trace!("rollback tx: {}", tx_num);
-        self.conn.borrow_mut().rollback().expect("rollback");
-        self.conn.borrow_mut().renew_tx().expect("start new tx");
+        if let Err(e) = self.conn.borrow_mut().rollback_and_renew() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
 
         results.get().set_tx(tx_num);
 
@@ -444,15 +482,20 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::GetTableSchemaResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get table schema");
-        let tblname = pry!(pry!(params.get()).get_tblname()).to_str().unwrap();
-        let schema = self
-            .conn
-            .borrow()
-            .db
-            .lock()
-            .unwrap()
-            .get_table_schema(tblname, Arc::clone(&self.conn.borrow().current_tx))
-            .expect("table schema");
+        let tblname = match pry!(pry!(params.get()).get_tblname()).to_str() {
+            Ok(tblname) => tblname,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let tx = match self.conn.borrow().current_tx() {
+            Ok(tx) => tx,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let db = Arc::clone(&self.conn.borrow().db);
+        let schema_result = db.lock().unwrap().get_table_schema(tblname, tx);
+        let schema = match schema_result {
+            Ok(schema) => schema,
+            Err(e) => return Promise::err(rpc_error_after_rollback(&self.conn, e)),
+        };
         let mut sch = results.get().init_sch();
         set_schema(schema, &mut sch);
 
@@ -464,15 +507,20 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::GetViewDefinitionResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get view definition");
-        let viewname = pry!(pry!(params.get()).get_viewname()).to_str().unwrap();
-        let (_, def) = self
-            .conn
-            .borrow()
-            .db
-            .lock()
-            .unwrap()
-            .get_view_definitoin(viewname, Arc::clone(&self.conn.borrow().current_tx))
-            .expect("get view definition");
+        let viewname = match pry!(pry!(params.get()).get_viewname()).to_str() {
+            Ok(viewname) => viewname,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let tx = match self.conn.borrow().current_tx() {
+            Ok(tx) => tx,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let db = Arc::clone(&self.conn.borrow().db);
+        let view_result = db.lock().unwrap().get_view_definitoin(viewname, tx);
+        let (_, def) = match view_result {
+            Ok(view) => view,
+            Err(e) => return Promise::err(rpc_error_after_rollback(&self.conn, e)),
+        };
         let mut viewdef = results.get().init_vwdef();
         viewdef.set_vwname(viewname);
         viewdef.set_vwdef(def.as_str());
@@ -485,15 +533,20 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::GetIndexInfoResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("get index info");
-        let tblname = pry!(pry!(params.get()).get_tblname()).to_str().unwrap();
-        let indexinfo = self
-            .conn
-            .borrow()
-            .db
-            .lock()
-            .unwrap()
-            .get_index_info(tblname, Arc::clone(&self.conn.borrow().current_tx))
-            .expect("get index info");
+        let tblname = match pry!(pry!(params.get()).get_tblname()).to_str() {
+            Ok(tblname) => tblname,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let tx = match self.conn.borrow().current_tx() {
+            Ok(tx) => tx,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let db = Arc::clone(&self.conn.borrow().db);
+        let index_result = db.lock().unwrap().get_index_info(tblname, tx);
+        let indexinfo = match index_result {
+            Ok(indexinfo) => indexinfo,
+            Err(e) => return Promise::err(rpc_error_after_rollback(&self.conn, e)),
+        };
         let mut indexes = results.get().init_indexes(indexinfo.len() as u32);
         for (i, (_, ii)) in indexinfo.into_iter().enumerate() {
             let idxname = ii.index_name();
@@ -513,6 +566,9 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::NumsOfReadWrittenBlocksResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("nums of read/written blocks");
+        if let Err(e) = self.conn.borrow().ensure_active() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
         let (r, w) = self.conn.borrow().numbers_of_read_written_blocks();
         results.get().set_r(r);
         results.get().set_w(w);
@@ -526,6 +582,9 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::NumsOfTotalPinnedUnpinnedResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("nums of total pinned/unpinned buffers");
+        if let Err(e) = self.conn.borrow().ensure_active() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
         let (pinned, unpinned) = self.conn.borrow().numbers_of_total_pinned_unpinned();
         results.get().set_pinned(pinned);
         results.get().set_unpinned(unpinned);
@@ -539,6 +598,9 @@ impl remote_connection::Server for RemoteConnectionImpl {
         mut results: remote_connection::BufferCacheHitAssignedResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("buffer cache hit/assigned");
+        if let Err(e) = self.conn.borrow().ensure_active() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
         let (hit, assigned) = self.conn.borrow().buffer_cache_hit_assigned();
         results.get().set_hit(hit);
         results.get().set_assigned(assigned);
@@ -569,7 +631,10 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::ExecuteQueryResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("execute query: {}", self.sql);
-        let tx = Arc::clone(&self.conn.borrow().current_tx);
+        let tx = match self.conn.borrow().current_tx() {
+            Ok(tx) => tx,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         let plan_result = self.planner.borrow_mut().create_query_plan(&self.sql, tx);
         match plan_result {
             Ok(plan) => {
@@ -600,13 +665,19 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::ExecuteUpdateResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("execute update: {}", self.sql);
-        let tx = Arc::clone(&self.conn.borrow().current_tx);
+        let tx = match self.conn.borrow().current_tx() {
+            Ok(tx) => tx,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         let update_result = self.planner.borrow_mut().execute_update(&self.sql, tx);
         let affected = match update_result {
             Ok(affected) => affected,
             Err(e) => return Promise::err(rpc_error_after_rollback(&self.conn, e)),
         };
-        let tx_num = self.conn.borrow().current_tx_num();
+        let tx_num = match self.conn.borrow().current_tx_num() {
+            Ok(tx_num) => tx_num,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         if let Err(e) = self.conn.borrow_mut().close() {
             return Promise::err(capnp::Error::failed(e.to_string()));
         }
@@ -622,7 +693,10 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::CloseResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
-        let tx_num = self.conn.borrow().current_tx_num();
+        let tx_num = match self.conn.borrow().current_tx_num() {
+            Ok(tx_num) => tx_num,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
         if let Err(e) = self.conn.borrow_mut().close() {
             return Promise::err(capnp::Error::failed(e.to_string()));
         }
@@ -636,12 +710,20 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::ExplainPlanResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("explain plan");
-        let planrepr = self
-            .planner
-            .borrow_mut()
-            .create_query_plan(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
-            .unwrap()
-            .repr();
+        let tx = match self.conn.borrow().current_tx() {
+            Ok(tx) => tx,
+            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+        };
+        let plan_result = self.planner.borrow_mut().create_query_plan(&self.sql, tx);
+        let planrepr = match plan_result {
+            Ok(plan) => plan.repr(),
+            Err(e) => {
+                return Promise::err(rpc_error_after_rollback(
+                    &self.conn,
+                    format!("failed to create query plan: {}", e),
+                ));
+            }
+        };
 
         let mut pr = results.get().init_planrepr();
         set_plan_repr(planrepr, &mut pr);
@@ -654,12 +736,19 @@ pub struct RemoteResultSetImpl {
     scan: Arc<Mutex<dyn Scan>>,
     sch: Arc<Schema>,
     conn: Rc<RefCell<ConnectionInternal>>,
+    tx_num: i32,
 }
 impl RemoteResultSetImpl {
     pub fn new(plan: Arc<dyn Plan>, conn: Rc<RefCell<ConnectionInternal>>) -> anyhow::Result<Self> {
+        let tx_num = conn.borrow().current_tx_num()?;
         let scan = plan.open()?;
         let sch = plan.schema();
-        Ok(Self { scan, sch, conn })
+        Ok(Self {
+            scan,
+            sch,
+            conn,
+            tx_num,
+        })
     }
 }
 
@@ -670,7 +759,6 @@ impl remote_result_set::Server for RemoteResultSetImpl {
         mut results: remote_result_set::CloseResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
-        let tx_num = self.conn.borrow().current_tx_num();
         let scan_result = self.scan.lock().unwrap().close();
         let connection_result = self.conn.borrow_mut().close();
         match (scan_result, connection_result) {
@@ -685,7 +773,7 @@ impl remote_result_set::Server for RemoteResultSetImpl {
                 )));
             }
         }
-        results.get().set_tx(tx_num);
+        results.get().set_tx(self.tx_num);
 
         Promise::ok(())
     }
@@ -696,6 +784,9 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         const MAX_ROWS_PER_BATCH: u16 = 1024;
 
+        if let Err(e) = self.conn.borrow().ensure_active() {
+            return Promise::err(capnp::Error::failed(e.to_string()));
+        }
         let limit = pry!(params.get()).get_limit();
         if limit > MAX_ROWS_PER_BATCH {
             return Promise::err(capnp::Error::failed(format!(

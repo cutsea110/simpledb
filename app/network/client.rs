@@ -97,7 +97,13 @@ async fn exec(conn: &mut NetworkConnection, qry: &str) {
         return;
     }
 
-    let mut stmt = conn.create_statement(qry).await.expect("create statement");
+    let mut stmt = match conn.create_statement(qry).await {
+        Ok(stmt) => stmt,
+        Err(e) => {
+            println!("failed to create statement: {}", e);
+            return;
+        }
+    };
     let words: Vec<&str> = qry.split_whitespace().collect();
     if !words.is_empty() {
         let cmd = words[0].trim().to_ascii_lowercase();

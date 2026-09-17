@@ -74,7 +74,13 @@ SELECT viewname, viewdef FROM viewcat;"#
                 return;
             }
             let sql = qry[tokens[0].len()..].trim();
-            let mut stmt = conn.create_statement(sql).await.expect("create statement");
+            let mut stmt = match conn.create_statement(sql).await {
+                Ok(stmt) => stmt,
+                Err(e) => {
+                    println!("failed to create statement: {}", e);
+                    return;
+                }
+            };
             let words: Vec<&str> = sql.split_whitespace().collect();
             if !words.is_empty() {
                 let cmd = words[0].trim().to_ascii_lowercase();

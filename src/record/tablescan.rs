@@ -334,4 +334,39 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn set_val_returns_error_for_mismatched_constants() -> Result<()> {
+        if Path::new("_test/tablescan_set_val").exists() {
+            fs::remove_dir_all("_test/tablescan_set_val")?;
+        }
+
+        let simpledb = SimpleDB::new_with("_test/tablescan_set_val", 400, 8);
+        let tx = Arc::new(Mutex::new(simpledb.new_tx()?));
+        let mut sch = Schema::new();
+        sch.add_i16_field("smallint");
+        sch.add_i32_field("integer");
+        sch.add_string_field("varchar", 9);
+        sch.add_bool_field("bool");
+        sch.add_date_field("date");
+        let layout = Arc::new(Layout::new(Arc::new(sch)));
+        let mut ts = TableScan::new(Arc::clone(&tx), "T", layout)?;
+        ts.insert()?;
+
+        assert!(ts.set_val("smallint", Constant::new_bool(true)).is_err());
+        assert!(ts
+            .set_val(
+                "integer",
+                Constant::new_string("not-an-integer".to_string())
+            )
+            .is_err());
+        assert!(ts.set_val("varchar", Constant::new_i32(1)).is_err());
+        assert!(ts.set_val("bool", Constant::new_i32(1)).is_err());
+        assert!(ts.set_val("date", Constant::new_bool(true)).is_err());
+
+        ts.close()?;
+        tx.lock().unwrap().rollback()?;
+
+        Ok(())
+    }
 }
