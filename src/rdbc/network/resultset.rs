@@ -76,7 +76,7 @@ impl NetworkResultSet {
         Ok(result)
     }
 
-    pub async fn close(&mut self) -> Result<i32> {
+    pub async fn close(&self) -> Result<i32> {
         let response = self.resultset.close_request().send().promise.await?;
         Ok(response.get()?.get_tx())
     }

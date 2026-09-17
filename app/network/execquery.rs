@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use log::{info, warn};
 use std::time::Instant;
 
@@ -38,7 +38,7 @@ fn print_record(row: &[resultset::Value], meta: &NetworkResultSetMetaData) {
     println!();
 }
 
-async fn print_result_set(mut results: NetworkResultSet) -> Result<(i32, i32)> {
+async fn print_result_set(results: NetworkResultSet) -> Result<(i32, i32)> {
     let meta = results.metadata();
 
     // print header
@@ -61,7 +61,19 @@ async fn print_result_set(mut results: NetworkResultSet) -> Result<(i32, i32)> {
     // scan record
     let mut total_count = 0;
     loop {
-        let rows = results.get_rows(MAX_ROWS).await?;
+        let rows = match results.get_rows(MAX_ROWS).await {
+            Ok(rows) => rows,
+            Err(read_error) => {
+                return match results.close().await {
+                    Ok(_) => Err(read_error),
+                    Err(close_error) => Err(anyhow!(
+                        "{}; result-set cleanup also failed: {}",
+                        read_error,
+                        close_error
+                    )),
+                };
+            }
+        };
         let c = rows.len();
         for row in rows {
             print_record(&row, meta);

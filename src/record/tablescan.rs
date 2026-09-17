@@ -166,19 +166,19 @@ impl UpdateScan for TableScan {
     fn set_val(&mut self, fldname: &str, val: Constant) -> Result<()> {
         match self.layout.schema().field_type(fldname) {
             FieldType::SMALLINT => {
-                self.set_i16(fldname, val.as_i16().unwrap())?;
+                self.set_i16(fldname, val.as_i16()?)?;
             }
             FieldType::INTEGER => {
-                self.set_i32(fldname, val.as_i32().unwrap())?;
+                self.set_i32(fldname, val.as_i32()?)?;
             }
             FieldType::VARCHAR => {
-                self.set_string(fldname, val.as_string().unwrap().to_string())?;
+                self.set_string(fldname, val.as_string()?.to_string())?;
             }
             FieldType::BOOL => {
-                self.set_bool(fldname, val.as_bool().unwrap())?;
+                self.set_bool(fldname, val.as_bool()?)?;
             }
             FieldType::DATE => {
-                self.set_date(fldname, val.as_date().unwrap())?;
+                self.set_date(fldname, val.as_date()?)?;
             }
         }
 

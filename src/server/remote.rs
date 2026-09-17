@@ -106,6 +106,20 @@ impl ConnectionInternal {
         trace!("rollback tx: {}", tx_num);
         self.current_tx.lock().unwrap().rollback()
     }
+    pub fn rollback_and_renew(&mut self) -> anyhow::Result<()> {
+        let rollback_result = self.rollback();
+        let renew_result = self.renew_tx();
+
+        match (rollback_result, renew_result) {
+            (Ok(()), Ok(())) => Ok(()),
+            (Err(e), Ok(())) | (Ok(()), Err(e)) => Err(e),
+            (Err(rollback_error), Err(renew_error)) => Err(anyhow::anyhow!(
+                "rollback failed: {}; transaction renewal also failed: {}",
+                rollback_error,
+                renew_error
+            )),
+        }
+    }
     pub fn renew_tx(&mut self) -> anyhow::Result<()> {
         let new_tx = self.db.lock().unwrap().new_tx()?;
         trace!("start new tx: {}", new_tx.tx_num());
@@ -173,6 +187,20 @@ impl ConnectionInternal {
             .lock()
             .unwrap()
             .buffer_cache_hit_assigned()
+    }
+}
+
+fn rpc_error_after_rollback(
+    conn: &Rc<RefCell<ConnectionInternal>>,
+    operation_error: impl std::fmt::Display,
+) -> capnp::Error {
+    let operation_error = operation_error.to_string();
+    match conn.borrow_mut().rollback_and_renew() {
+        Ok(()) => capnp::Error::failed(operation_error),
+        Err(cleanup_error) => capnp::Error::failed(format!(
+            "{}; transaction cleanup failed: {}",
+            operation_error, cleanup_error
+        )),
     }
 }
 
@@ -541,17 +569,15 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::ExecuteQueryResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("execute query: {}", self.sql);
-        match self
-            .planner
-            .borrow_mut()
-            .create_query_plan(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
-        {
+        let tx = Arc::clone(&self.conn.borrow().current_tx);
+        let plan_result = self.planner.borrow_mut().create_query_plan(&self.sql, tx);
+        match plan_result {
             Ok(plan) => {
                 trace!("planned");
                 let schema = plan.schema();
                 let resultset = match RemoteResultSetImpl::new(plan, Rc::clone(&self.conn)) {
                     Ok(resultset) => resultset,
-                    Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+                    Err(e) => return Promise::err(rpc_error_after_rollback(&self.conn, e)),
                 };
                 let resultset: remote_result_set::Client = capnp_rpc::new_client(resultset);
                 let mut result = results.get();
@@ -561,10 +587,10 @@ impl remote_statement::Server for RemoteStatementImpl {
                 return Promise::ok(());
             }
             Err(e) => {
-                return Promise::err(capnp::Error::failed(format!(
-                    "failed to create query plan: {}",
-                    e
-                )));
+                return Promise::err(rpc_error_after_rollback(
+                    &self.conn,
+                    format!("failed to create query plan: {}", e),
+                ));
             }
         }
     }
@@ -574,13 +600,11 @@ impl remote_statement::Server for RemoteStatementImpl {
         mut results: remote_statement::ExecuteUpdateResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("execute update: {}", self.sql);
-        let affected = match self
-            .planner
-            .borrow_mut()
-            .execute_update(&self.sql, Arc::clone(&self.conn.borrow().current_tx))
-        {
+        let tx = Arc::clone(&self.conn.borrow().current_tx);
+        let update_result = self.planner.borrow_mut().execute_update(&self.sql, tx);
+        let affected = match update_result {
             Ok(affected) => affected,
-            Err(e) => return Promise::err(capnp::Error::failed(e.to_string())),
+            Err(e) => return Promise::err(rpc_error_after_rollback(&self.conn, e)),
         };
         let tx_num = self.conn.borrow().current_tx_num();
         if let Err(e) = self.conn.borrow_mut().close() {
@@ -647,11 +671,19 @@ impl remote_result_set::Server for RemoteResultSetImpl {
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         trace!("close");
         let tx_num = self.conn.borrow().current_tx_num();
-        if let Err(e) = self.scan.lock().unwrap().close() {
-            return Promise::err(capnp::Error::failed(e.to_string()));
-        }
-        if let Err(e) = self.conn.borrow_mut().close() {
-            return Promise::err(capnp::Error::failed(e.to_string()));
+        let scan_result = self.scan.lock().unwrap().close();
+        let connection_result = self.conn.borrow_mut().close();
+        match (scan_result, connection_result) {
+            (Ok(()), Ok(())) => {}
+            (Err(e), Ok(())) | (Ok(()), Err(e)) => {
+                return Promise::err(capnp::Error::failed(e.to_string()));
+            }
+            (Err(scan_error), Err(connection_error)) => {
+                return Promise::err(capnp::Error::failed(format!(
+                    "failed to close scan: {}; connection cleanup also failed: {}",
+                    scan_error, connection_error
+                )));
+            }
         }
         results.get().set_tx(tx_num);
 
