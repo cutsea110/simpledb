@@ -1,14 +1,13 @@
 use std::time::Instant;
 
 use log::info;
-use simpledb::rdbc::{network::statement::NetworkStatement, statementadapter::StatementAdapter};
+use simpledb::rdbc::network::statement::NetworkStatement;
 
 pub async fn exec_update_cmd(stmt: &mut NetworkStatement) {
     let start = Instant::now();
-    let res = stmt.execute_update().unwrap();
-    match res.affected().await {
+    match stmt.execute_update().await {
         Err(_) => println!("invalid command"),
-        Ok(affected) => {
+        Ok((affected, tx_num)) => {
             let end = start.elapsed();
             println!(
                 "Affected {} ({}.{:03}s)",
@@ -21,10 +20,7 @@ pub async fn exec_update_cmd(stmt: &mut NetworkStatement) {
                 end.as_secs(),
                 end.subsec_nanos() / 1_000_000
             );
+            println!("transaction {} committed", tx_num);
         }
-    }
-    match res.committed_tx().await {
-        Err(_) => println!("invalid command"),
-        Ok(tx_num) => println!("transaction {} committed", tx_num),
     }
 }

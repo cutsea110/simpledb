@@ -1,9 +1,7 @@
 use itertools::Itertools;
 use std::process;
 
-use simpledb::rdbc::{
-    connectionadapter::ConnectionAdapter, network::connection::NetworkConnection,
-};
+use simpledb::rdbc::network::connection::NetworkConnection;
 
 use crate::{
     explainplan::print_explain_plan, tableschema::print_table_schema,
@@ -27,11 +25,8 @@ pub async fn exec_meta_cmd(conn: &mut NetworkConnection, qry: &str) {
             print_help_meta_cmd();
         }
         ":q" | ":quit" | ":exit" => {
-            match conn.close() {
-                Ok(res) => res.response().await.map_or_else(
-                    |e| println!("failed to get server response: {:?}", e),
-                    |tx_num| println!("transaction {} closed", tx_num),
-                ),
+            match conn.close().await {
+                Ok(tx_num) => println!("transaction {} closed", tx_num),
                 Err(e) => {
                     println!("failed to close transaction: {:?}", e);
                 }
@@ -79,7 +74,13 @@ SELECT viewname, viewdef FROM viewcat;"#
                 return;
             }
             let sql = qry[tokens[0].len()..].trim();
-            let mut stmt = conn.create_statement(sql).expect("create statement");
+            let mut stmt = match conn.create_statement(sql).await {
+                Ok(stmt) => stmt,
+                Err(e) => {
+                    println!("failed to create statement: {}", e);
+                    return;
+                }
+            };
             let words: Vec<&str> = sql.split_whitespace().collect();
             if !words.is_empty() {
                 let cmd = words[0].trim().to_ascii_lowercase();

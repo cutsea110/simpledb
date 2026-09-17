@@ -1,71 +1,53 @@
-use log::{debug, trace};
 use std::cmp::max;
-use std::sync::Arc;
 
-use crate::{
-    rdbc::{
-        model::{FieldType, Schema},
-        resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
-    },
-    remote_capnp::remote_meta_data,
+use crate::rdbc::{
+    model::{FieldType, Schema},
+    resultsetmetadataadapter::{DataType, ResultSetMetaDataAdapter},
 };
 
 pub struct NetworkResultSetMetaData {
-    client: remote_meta_data::Client,
-    sch: Arc<Schema>, // TODO なくす
+    schema: Schema,
 }
-impl NetworkResultSetMetaData {
-    pub fn new(client: remote_meta_data::Client) -> Self {
-        Self {
-            client,
-            sch: Arc::new(Schema::new()),
-        }
-    }
-    // This interface is not smart. Any idea?
-    pub async fn load_schema(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        trace!("load schema");
-        let request = self.client.get_schema_request();
-        let sch = request.send().promise.await?;
-        self.sch = Arc::new(Schema::from(sch.get()?.get_sch()?));
-        debug!("loaded");
 
-        Ok(())
+impl NetworkResultSetMetaData {
+    pub fn new(schema: Schema) -> Self {
+        Self { schema }
+    }
+
+    pub fn column_count(&self) -> usize {
+        self.schema.fields.len()
     }
 }
 
 impl ResultSetMetaDataAdapter for NetworkResultSetMetaData {
     fn get_column_count(&self) -> usize {
-        self.sch.fields.len()
+        self.column_count()
     }
+
     fn get_column_name(&self, column: usize) -> Option<&String> {
-        self.sch.fields.get(column)
+        self.schema.fields.get(column)
     }
+
     fn get_column_type(&self, column: usize) -> Option<DataType> {
-        if let Some(fldname) = self.get_column_name(column) {
-            match self.sch.field_type(fldname) {
-                FieldType::SMALLINT => return Some(DataType::Int16),
-                FieldType::INTEGER => return Some(DataType::Int32),
-                FieldType::VARCHAR => return Some(DataType::Varchar),
-                FieldType::BOOL => return Some(DataType::Bool),
-                FieldType::DATE => return Some(DataType::Date),
-            }
-        }
-
-        None
+        let field = self.get_column_name(column)?;
+        Some(match self.schema.field_type(field) {
+            FieldType::SMALLINT => DataType::Int16,
+            FieldType::INTEGER => DataType::Int32,
+            FieldType::VARCHAR => DataType::Varchar,
+            FieldType::BOOL => DataType::Bool,
+            FieldType::DATE => DataType::Date,
+        })
     }
+
     fn get_column_display_size(&self, column: usize) -> Option<usize> {
-        if let Some(fldname) = self.get_column_name(column) {
-            let fldlength = match self.sch.field_type(fldname) {
-                FieldType::SMALLINT => 6, // WANTFIX
-                FieldType::INTEGER => 6,  // WANTFIX
-                FieldType::VARCHAR => self.sch.length(fldname),
-                FieldType::BOOL => 5,  // length of false
-                FieldType::DATE => 10, // length of YYYY-MM-DD
-            };
-
-            return Some(max(fldname.len(), fldlength) + 1);
-        }
-
-        None
+        let field = self.get_column_name(column)?;
+        let field_length = match self.schema.field_type(field) {
+            FieldType::SMALLINT => 6,
+            FieldType::INTEGER => 11,
+            FieldType::VARCHAR => self.schema.length(field),
+            FieldType::BOOL => 5,
+            FieldType::DATE => 10,
+        };
+        Some(max(field.len(), field_length) + 1)
     }
 }

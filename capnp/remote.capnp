@@ -1,23 +1,5 @@
 @0xa9ab30b6c567e6ae;
 
-struct Tuple(T, U) {
-  # generic pair
-
-  fst @0 :T;
-  snd @1 :U;
-}
-
-struct Map(Key, Value) {
-  # generic map
-
-  entries @0 :List(Entry);
-
-  struct Entry {
-    key   @0 :Key;
-    value @1 :Value;
-  }
-}
-
 struct Date {
   # A standard Gregorian calendar date
 
@@ -39,18 +21,16 @@ enum FieldType {
   date      @4;
 }
 
-struct FieldInfo {
-  # field's information
-
-  type   @0 :FieldType;
-  length @1 :Int32;      # for varchar
+struct Column {
+  name   @0 :Text;
+  type   @1 :FieldType;
+  length @2 :UInt32; # for varchar
 }
 
 struct Schema {
   # table schema
 
-  fields @0 :List(Text);
-  info   @1 :Map(Text, FieldInfo);
+  columns @0 :List(Column);
 }
 
 struct ViewDef {
@@ -78,21 +58,17 @@ interface RemoteDriver {
   }
 }
 
-interface TxBox {
-  read @0 () -> (tx :Int32);
-}
-
 interface RemoteConnection {
   # connection
 
   createStatement   @0 (sql :Text) -> (stmt :RemoteStatement);
-  close             @1 () -> (res :TxBox);
+  close             @1 () -> (tx :Int32);
   commit            @2 () -> (tx :Int32);
   rollback          @3 () -> (tx :Int32);
 
   getTableSchema    @4 (tblname :Text) -> (sch :Schema);
   getViewDefinition @5 (viewname :Text) -> (vwdef :ViewDef);
-  getIndexInfo      @6 (tblname :Text) -> (ii :Map(Text, IndexInfo));
+  getIndexInfo      @6 (tblname :Text) -> (indexes :List(IndexInfo));
 
   numsOfReadWrittenBlocks   @7 () -> (r: UInt32, w: UInt32);
   # extends for statistics by exercise 3.15
@@ -137,8 +113,12 @@ interface RemoteStatement {
     val        @2 :Constant; # value
   }
   struct GroupByScan {
-    fields @0 :List(Text);                  # group by these fields
-    aggfns @1 :List(Tuple(Text, Constant)); # aggregation functions
+    fields @0 :List(Text);       # group by these fields
+    aggfns @1 :List(Aggregation); # aggregation functions
+  }
+  struct Aggregation {
+    field @0 :Text;
+    value @1 :Constant;
   }
   struct Materialize {
   }
@@ -185,52 +165,23 @@ interface RemoteStatement {
     }
   }
 
-  executeQuery  @0 () -> (result :RemoteResultSet);
-  executeUpdate @1 () -> (affected :Affected);
-  close         @2 () -> (res :TxBox);
+  executeQuery  @0 () -> (result :RemoteResultSet, schema :Schema);
+  executeUpdate @1 () -> (affected :Int32, committedTx :Int32);
+  close         @2 () -> (tx :Int32);
   explainPlan   @3 () -> (planrepr :PlanRepr);
-}
-
-interface Affected {
-  read        @0 () -> (affected :Int32);
-  committedTx @1 () -> (tx :Int32);
-}
-
-interface Int16Box {
-  read @0 () -> (val :Int16);
-}
-interface Int32Box {
-  read @0 () -> (val :Int32);
-}
-interface StringBox {
-  read @0 () -> (val :Text);
-}
-interface BoolBox {
-  read @0 () -> (val :Bool);
-}
-interface DateBox {
-  read @0 () -> (val :Date);
 }
 
 
 interface RemoteResultSet {
   # result set
 
-  next        @0 () -> (val :BoolBox);
-  close       @1 () -> (res :TxBox);
-  getMetadata @2 () -> (metadata :RemoteMetaData);
-  getInt16    @3 (fldname :Text) -> (val :Int16Box);
-  getInt32    @4 (fldname :Text) -> (val :Int32Box);
-  getString   @5 (fldname :Text) -> (val :StringBox);
-  getBool     @6 (fldname :Text) -> (val :BoolBox);
-  getDate     @7 (fldname :Text) -> (val :DateBox);
-  getRow      @8 () -> (row :Row); # get one record
-  getRows     @9 (limit :UInt32) -> (count :UInt32, rows :List(Row)); # get records up to limit
+  close   @0 () -> (tx :Int32);
+  getRows @1 (limit :UInt16) -> (rows :List(Row)); # get records up to limit
 
   struct Row {
     # record
 
-    map @0 :Map(Text, Value);
+    values @0 :List(Value); # values follow Schema.columns order
   }
   struct Value {
     union {
@@ -241,10 +192,4 @@ interface RemoteResultSet {
       date    @4 :Date;
     }
   }
-}
-
-interface RemoteMetaData {
-  # metadata
-
-  getSchema @0 () -> (sch :Schema);
 }

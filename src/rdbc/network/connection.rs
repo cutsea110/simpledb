@@ -1,11 +1,11 @@
 use anyhow::Result;
-use std::{collections::HashMap, sync::Arc, usize};
+use std::{collections::HashMap, sync::Arc};
 
 use super::statement::NetworkStatement;
 use crate::{
-    rdbc::{connectionadapter::ConnectionAdapter, model::IndexInfo},
+    rdbc::model::IndexInfo,
     record::schema::{FieldType, Schema},
-    remote_capnp::{self, remote_connection, tx_box},
+    remote_capnp::{self, remote_connection},
 };
 
 pub struct NetworkConnection {
@@ -29,6 +29,16 @@ impl NetworkConnection {
 
         Ok(tx_num)
     }
+    pub async fn create_statement(&mut self, sql: &str) -> Result<NetworkStatement> {
+        let mut request = self.conn.create_statement_request();
+        request.get().set_sql(sql);
+        let response = request.send().promise.await?;
+        Ok(NetworkStatement::new(response.get()?.get_stmt()?))
+    }
+    pub async fn close(&mut self) -> Result<i32> {
+        let response = self.conn.close_request().send().promise.await?;
+        Ok(response.get()?.get_tx())
+    }
     pub async fn get_table_schema(&self, tblname: &str) -> Result<Arc<Schema>> {
         let mut schema = Schema::new();
 
@@ -37,36 +47,16 @@ impl NetworkConnection {
         let reply = request.send().promise.await?;
         let sch = reply.get()?.get_sch()?;
 
-        let mut map = HashMap::new();
-        let entries = sch.get_info()?.get_entries()?;
-        for i in 0..entries.len() {
-            let entry = entries.get(i as u32);
-            let fldname = entry.get_key()?.to_str().unwrap();
-            let val = entry.get_value()?;
-            match val.get_type()? {
-                remote_capnp::FieldType::SmallInt => {
-                    map.insert(fldname, (FieldType::SMALLINT, val.get_length()));
-                }
-                remote_capnp::FieldType::Integer => {
-                    map.insert(fldname, (FieldType::INTEGER, val.get_length()));
-                }
-                remote_capnp::FieldType::Varchar => {
-                    map.insert(fldname, (FieldType::VARCHAR, val.get_length()));
-                }
-                remote_capnp::FieldType::Bool => {
-                    map.insert(fldname, (FieldType::BOOL, val.get_length()));
-                }
-                remote_capnp::FieldType::Date => {
-                    map.insert(fldname, (FieldType::DATE, val.get_length()));
-                }
-            }
-        }
-        let fields = sch.get_fields()?;
-        for i in 0..fields.len() {
-            let fldname = fields.get(i as u32)?.to_str().unwrap();
-            if let Some((t, l)) = map.get(fldname) {
-                schema.add_field(fldname, t.clone(), *l as usize);
-            }
+        for column in sch.get_columns()? {
+            let fldname = column.get_name()?.to_str()?;
+            let field_type = match column.get_type()? {
+                remote_capnp::FieldType::SmallInt => FieldType::SMALLINT,
+                remote_capnp::FieldType::Integer => FieldType::INTEGER,
+                remote_capnp::FieldType::Varchar => FieldType::VARCHAR,
+                remote_capnp::FieldType::Bool => FieldType::BOOL,
+                remote_capnp::FieldType::Date => FieldType::DATE,
+            };
+            schema.add_field(fldname, field_type, column.get_length() as usize);
         }
 
         Ok(Arc::new(schema))
@@ -88,12 +78,10 @@ impl NetworkConnection {
         let mut request = self.conn.get_index_info_request();
         request.get().set_tblname(tblname);
         let reply = request.send().promise.await?;
-        let ii = reply.get()?.get_ii()?;
-        let entries = ii.get_entries()?;
-        for i in 0..entries.len() {
-            let val = entries.get(i as u32).get_value()?;
-            let fldname = val.get_fldname()?.to_str().unwrap();
-            let idxname = val.get_idxname()?.to_str().unwrap();
+        let indexes = reply.get()?.get_indexes()?;
+        for index in indexes {
+            let fldname = index.get_fldname()?.to_str()?;
+            let idxname = index.get_idxname()?.to_str()?;
             let info = IndexInfo::new(fldname, idxname);
             map.insert(fldname.to_string(), info);
         }
@@ -129,39 +117,5 @@ impl NetworkConnection {
         let assigned = reply.get()?.get_assigned();
 
         Ok((hit, assigned))
-    }
-}
-
-pub struct ResponseImpl {
-    client: tx_box::Client,
-}
-impl ResponseImpl {
-    pub fn new(client: tx_box::Client) -> Self {
-        Self { client }
-    }
-    pub async fn response(&self) -> Result<i32> {
-        let request = self.client.read_request();
-        let tx_num = request.send().promise.await?.get()?.get_tx();
-
-        Ok(tx_num)
-    }
-}
-
-impl<'a> ConnectionAdapter<'a> for NetworkConnection {
-    type Stmt = NetworkStatement;
-    type Res = ResponseImpl;
-
-    fn create_statement(&'a mut self, sql: &str) -> Result<Self::Stmt> {
-        let mut request = self.conn.create_statement_request();
-        request.get().set_sql(sql);
-        let stmt = request.send().pipeline.get_stmt();
-
-        Ok(Self::Stmt::new(stmt))
-    }
-    fn close(&mut self) -> Result<Self::Res> {
-        let request = self.conn.close_request();
-        let res = request.send().pipeline.get_res();
-
-        Ok(ResponseImpl::new(res))
     }
 }
