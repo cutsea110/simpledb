@@ -111,7 +111,6 @@ mod tests {
 
     use std::fs;
     use std::path::Path;
-    use std::usize;
 
     #[test]
     fn unit_test() {

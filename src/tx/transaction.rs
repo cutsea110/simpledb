@@ -1,9 +1,6 @@
 use anyhow::Result;
 use chrono::NaiveDate;
-use std::{
-    sync::{Arc, Mutex},
-    usize,
-};
+use std::sync::{Arc, Mutex};
 
 use super::{
     bufferlist::BufferList,

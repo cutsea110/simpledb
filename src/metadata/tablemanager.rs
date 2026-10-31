@@ -3,7 +3,6 @@ use num_traits::FromPrimitive;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
-    usize,
 };
 
 use crate::{

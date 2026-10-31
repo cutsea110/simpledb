@@ -5,7 +5,6 @@ use combine::{
     stream::Stream,
     {between, chainl1, many, many1, optional, satisfy, sep_by, sep_by1, Parser},
 };
-use std::usize;
 
 use super::{
     createindexdata::CreateIndexData, createtabledata::CreateTableData,
